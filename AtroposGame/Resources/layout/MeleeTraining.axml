@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+  android:layout_width="match_parent"
+  android:layout_height="wrap_content">
+  <LinearLayout android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="25dp"
+    android:scrollbars="none">
+
+    <LinearLayout
+      android:id="@+id/Form_list_layoutpane"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:orientation="vertical"
+      android:gravity="center"
+      android:padding="25dp"
+      android:scrollbars="none">
+    </LinearLayout>
+
+    <LinearLayout
+      android:id="@+id/New_form_panel"
+      android:layout_width="fill_parent"
+      android:layout_height="wrap_content"
+      android:gravity="center">
+      <EditText
+          android:id="@+id/form_name_textbox"
+          android:hint="(Form Name)"
+          android:inputType="textPersonName"
+          android:layout_weight="2"
+          android:layout_width="0dp"
+          android:layout_height="wrap_content"
+          android:layout_margin="15dp"
+          android:padding="10dp"
+          android:enabled="false"/>
+      <Button
+          android:id="@+id/Set_form_name_button"
+          android:text="Random"
+          android:layout_weight="1"
+          android:layout_width="0dp"
+          android:layout_height="wrap_content"
+          android:layout_margin="15dp"
+          android:padding="10dp"/>
+    </LinearLayout>
+    <TextView
+        android:id="@+id/stroke_count_display"
+        android:text="Strokes being averaged: None"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:layout_margin="15dp"/>
+    <Button
+        android:id="@+id/reassess_button"
+        android:text="(Re)Assess"
+        android:enabled="false"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:layout_margin="15dp" />
+    <Button
+        android:id="@+id/finalize_button"
+        android:text="Finalize"
+        android:enabled="false"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:layout_margin="15dp" />
+    <Button
+        android:id="@+id/pause_button"
+        android:text="Pause Sensors"
+        android:enabled="false"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:layout_margin="15dp" />
+    <LinearLayout
+      android:id="@+id/parameters_panel"
+      android:layout_width="fill_parent"
+      android:layout_height="wrap_content"
+      android:gravity="center">
+      <EditText
+          android:id="@+id/parameterAtextbox"
+          android:hint="(Parameter A)"
+          android:inputType="textPersonName"
+          android:layout_width="0dp"
+          android:layout_weight="1"
+          android:layout_height="wrap_content"
+          android:padding="10dp"
+          android:layout_margin="15dp"
+          android:visibility="gone"/>
+      <EditText
+          android:id="@+id/parameterBtextbox"
+          android:hint="(Parameter B)"
+          android:inputType="textPersonName"
+          android:layout_width="0dp"
+          android:layout_weight="1"
+          android:layout_height="wrap_content"
+          android:padding="10dp"
+          android:layout_margin="15dp"
+          android:visibility="gone"/>
+      <EditText
+          android:id="@+id/parameterCtextbox"
+          android:hint="(Parameter C)"
+          android:inputType="textPersonName"
+          android:layout_width="0dp"
+          android:layout_weight="1"
+          android:layout_height="wrap_content"
+          android:padding="10dp"
+          android:layout_margin="15dp"
+          android:visibility="gone"/>
+    </LinearLayout>
+    <TextView
+        android:id="@+id/current_signals_text"
+        android:layout_width="fill_parent"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:layout_marginLeft="15dp"
+        android:layout_marginRight="15dp"
+        android:layout_marginTop="30dp" />
+    <TextView
+        android:id="@+id/best_signals_text"
+        android:layout_width="fill_parent"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:layout_marginLeft="15dp"
+        android:layout_marginRight="15dp"
+        android:layout_marginTop="30dp" />
+    <TextView
+        android:id="@+id/result_text"
+        android:layout_width="fill_parent"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:layout_marginLeft="15dp"
+        android:layout_marginRight="15dp"
+        android:layout_marginTop="30dp" />
+  </LinearLayout>
+</ScrollView>

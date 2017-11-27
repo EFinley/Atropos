@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+  android:layout_width="match_parent"
+  android:layout_height="wrap_content">
+  <LinearLayout android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="25dp"
+    android:scrollbars="none">
+
+    <LinearLayout
+      android:id="@+id/Lock_training_layoutpane"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:orientation="vertical"
+      android:gravity="center"
+      android:padding="25dp"
+      android:scrollbars="none">
+    </LinearLayout>
+
+    <LinearLayout
+      android:id="@+id/New_lock_panel"
+      android:layout_width="fill_parent"
+      android:layout_height="wrap_content"
+      android:gravity="center">
+      <EditText
+          android:id="@+id/lock_name_textbox"
+          android:hint="(Lock Name)"
+          android:inputType="textPersonName"
+          android:layout_weight="2"
+          android:layout_width="0dp"
+          android:layout_height="wrap_content"
+          android:layout_margin="15dp"
+          android:padding="10dp"/>
+      <Button
+          android:id="@+id/Set_lock_name_button"
+          android:text="Random"
+          android:layout_weight="1"
+          android:layout_width="0dp"
+          android:layout_height="wrap_content"
+          android:layout_margin="15dp"
+          android:padding="10dp"/>
+    </LinearLayout>
+    <TextView
+        android:id="@+id/tumbler_count_display"
+        android:text="Tumblers: None"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:layout_margin="15dp"/>
+    <Button
+        android:id="@+id/undo_tumbler_button"
+        android:text="Undo / Delete"
+        android:enabled="false"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:layout_margin="15dp" />
+    <Button
+        android:id="@+id/finalize_lock_button"
+        android:text="Finalize Lock"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:layout_margin="15dp"/>
+    <Button
+        android:id="@+id/lock_type_button"
+        android:text="Lock type: Vault"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:layout_margin="15dp"
+        android:visibility="gone"/>
+    <!--<Button
+        android:id="@+id/spell_progress_sfx_button"
+        android:text="Progress SFX ('zwip')"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:layout_margin="15dp"
+        android:visibility="gone"/>
+    <Button
+        android:id="@+id/spell_success_sfx_button"
+        android:text="Success SFX ('fwoosh')"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:layout_margin="15dp"
+        android:visibility="gone"/>-->
+    <!--<TextView
+        android:id="@+id/pGain_seekbar_label"
+        android:text="Proportional Gain (0.15)"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="15dp"
+        android:layout_marginTop="30dp"/>
+  <SeekBar
+        android:id="@+id/pGain_seekbar"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="15dp"
+        android:max="100"
+        android:progress="15"/>
+  <TextView
+        android:id="@+id/iGain_seekbar_label"
+        android:text="Integral Gain (0.3)"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="15dp"
+        android:layout_marginTop="30dp"/>
+  <SeekBar
+        android:id="@+id/iGain_seekbar"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="15dp"
+        android:max="100"
+        android:progress="30"/>
+  <TextView
+        android:id="@+id/dGain_seekbar_label"
+        android:text="Derivative Gain (0.0)"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="15dp"
+        android:layout_marginTop="30dp"/>
+  <SeekBar
+        android:id="@+id/dGain_seekbar"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="15dp"
+        android:max="100"
+        android:progress="0"/>-->
+    <TextView
+          android:id="@+id/current_signals_text"
+          android:layout_width="fill_parent"
+          android:textAppearance="?android:attr/textAppearanceLarge"
+          android:layout_height="wrap_content"
+          android:text=""
+          android:layout_marginLeft="15dp"
+          android:layout_marginRight="15dp"
+          android:layout_marginTop="30dp" />
+    <TextView
+          android:id="@+id/best_signals_text"
+          android:layout_width="fill_parent"
+          android:textAppearance="?android:attr/textAppearanceLarge"
+          android:layout_height="wrap_content"
+          android:text=""
+          android:layout_marginLeft="15dp"
+          android:layout_marginRight="15dp"
+          android:layout_marginTop="30dp" />
+    <TextView
+          android:id="@+id/result_text"
+          android:layout_width="fill_parent"
+          android:textAppearance="?android:attr/textAppearanceLarge"
+          android:layout_height="wrap_content"
+          android:text=""
+          android:layout_marginLeft="15dp"
+          android:layout_marginRight="15dp"
+          android:layout_marginTop="30dp" />
+    <!--<ImageView
+        android:id="@+id/bullet1"
+        android:src="@drawable/bullet"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"/>
+  <ImageView
+        android:id="@+id/bullet2"
+        android:src="@drawable/bullet"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"/>  
+  <ImageView
+        android:id="@+id/bullet3"
+        android:src="@drawable/bullet"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"/>
+  <ImageView
+        android:id="@+id/bullet4"
+        android:src="@drawable/bullet"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"/>
+  <ImageView
+        android:id="@+id/bullet5"
+        android:src="@drawable/bullet"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"/>
+  <ImageView
+        android:id="@+id/bullet6"
+        android:src="@drawable/bullet"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"/>-->
+  </LinearLayout>
+</ScrollView>

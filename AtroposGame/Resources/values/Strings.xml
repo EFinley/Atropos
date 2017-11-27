@@ -1,4 +1,76 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="app_name">AtroposGame</string>
+  <string name="menuitem_character">Character</string>
+  <string name="menuitem_nfc">NFC</string>
+  <string name="menuitem_wifi">WiFi Direct</string>
+  <string name="menuitem_settings">Settings</string>
+
+  <string name="popup_placeholder_character">TODO: Character settings - name, role, etc.</string>
+  <string name="popup_placeholder_nfc">TODO: NFC options; Read or Write NFC tags.</string>
+  <string name="popup_placeholder_wifi">TODO: WiFi Direct controls and channels.</string>
+  <string name="popup_placeholder_settings">TODO: Program settings.  (But GM options unlocked!)</string>
+  <string name="popup_option_not_available">Ambitious! Sorry, but that option isn\'t yet available.</string>
+
+  <string name="select_your_role">Select Your Role</string>
+  <string name="button_write_new_tag">Write new tag</string>
+  <string name="button_launch_directly">Launch Directly</string>
+  <string name="button_select_interaction_mode">Change Interaction Mode</string>
+  <string name="tag_type_gunfight">Tag Type: Gun</string>
+  
+  <string name="directive_calibrate_gun">Calibrate Gun</string>
+  <string name="directive_teach_spell">Teach Spell</string>
+  <string name="directive_security_panel">Hack Security Panel</string>
+  <string name="directive_multimeter">Multimeter</string>
+  <string name="directive_examine">Examine Carefully</string>
+  <string name="directive_wirecutter">Wirecutters</string>
+  <string name="directive_soldering">Soldering Iron</string>
+  <string name="directive_lock_picking">Lock Picks</string>
+  <string name="directive_safe_cracking">Safe Cracking</string>
+  
+  <string name="finish_btn_text">Done</string>
+  <string name="ApplicationName">Atropos</string>
+  <string name="spinnerTSprompt">Select sound file</string>
+  <string name="spinnerTSprompt2">Select file format</string>
+  <string name="spinnerTSprompt3">Select update frequency</string>
+  <string name="spinnerTSprompt4">Select what to change</string>
+  <string-array name="SoundFilesArray">
+    <item>Minimalist</item>
+    <item>Large file, small slice</item>
+    <item>Big and Complicated</item>
+    <item>All at Once</item>
+  </string-array>
+  <string-array name="SoundFileTypesArray">
+    <item>Wave format (.wav)</item>
+    <item>MP3 format (.mp3)</item>
+    <item>Ogg Vorbis format (.ogg)</item>
+  </string-array>
+  <string-array name="UpdateSpeedsArray">
+    <item>Each sensor update (~50 times/sec)</item>
+    <item>Separate fast loop (50 times/sec)</item>
+    <item>Pretty fast (20 times/sec)</item>
+    <item>Medium (10 times/sec)</item>
+    <item>Slowish (5 times/sec)</item>
+    <item>Slow (twice/sec)</item>
+  </string-array>
+  <string-array name="UpdateTypesArray">
+    <item>Volume</item>
+    <item>Pitch (in theory)</item>
+    <item>Playback speed (in theory)</item>
+  </string-array>
+
+  <string name="app_name">Atropos - WiFi Direct</string>
+  <string name="enable_p2p_button">P2P On/Off</string>
+  <string name="discover_peers_button">Discover</string>
+  <string name="connect_peer_button">Connect</string>
+  <string name="disconnect_peer_button">Disconnect</string>
+  <string name="get_file_button">Launch Gallery</string>
+  <string name="empty"></string>
+  <string name="yes">yes</string>
+  <string name="no">no</string>
+  <string name="client_text">This device will act as a client. Click on Gallery button to pick a local(stored) file</string>
+  <string name="empty_message">No devices found. Turn on P2P and perform discovery from the Action Bar</string>
+  <string name="p2p_off_warning">Enable P2P from action bar button above or system settings</string>
+  <string name="group_owner_text">"Am I the Group Owner? "</string>
+  <string name="label_me">ME</string>
+  <string name="label_peers">PEERS</string>
 </resources>

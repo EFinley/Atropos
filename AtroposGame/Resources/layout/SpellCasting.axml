@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:gravity="bottom">
+<!--<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_gravity="bottom"
+    android:gravity="bottom">
+    <TextView
+      android:id="@+id/current_signals_text"
+      android:layout_width="fill_parent"
+      android:textAppearance="?android:attr/textAppearanceLarge"
+      android:layout_height="wrap_content"
+      android:text=""
+      android:layout_marginLeft="15dp"
+      android:layout_marginRight="15dp"
+      android:layout_marginTop="30dp" />
+    <TextView
+      android:id="@+id/best_signals_text"
+      android:layout_width="fill_parent"
+      android:textAppearance="?android:attr/textAppearanceLarge"
+      android:layout_height="wrap_content"
+      android:text=""
+      android:layout_marginLeft="15dp"
+      android:layout_marginRight="15dp"
+      android:layout_marginTop="30dp" />
+    <TextView
+      android:id="@+id/result_text"
+      android:layout_width="fill_parent"
+      android:textAppearance="?android:attr/textAppearanceLarge"
+      android:layout_height="wrap_content"
+      android:text=""
+      android:layout_marginLeft="15dp"
+      android:layout_marginRight="15dp"
+      android:layout_marginTop="30dp" />
+  </LinearLayout>-->
+    <ScrollView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content">
+        <LinearLayout
+            android:id="@+id/Spell_casting_layoutpane"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="bottom"
+            android:layout_gravity="bottom"
+            android:padding="25dp"
+            android:scrollbars="none" />
+    </ScrollView>
+</LinearLayout>

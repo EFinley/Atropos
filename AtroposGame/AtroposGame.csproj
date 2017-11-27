@@ -9,7 +9,7 @@
     <ProjectTypeGuids>{EFBA0AD7-5A72-4C68-AF49-83D382785DCF};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>AtroposGame</RootNamespace>
+    <RootNamespace>com.Atropos</RootNamespace>
     <AssemblyName>AtroposGame</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <AndroidApplication>True</AndroidApplication>
@@ -21,18 +21,23 @@
     <AndroidManifest>Properties\AndroidManifest.xml</AndroidManifest>
     <MonoAndroidResourcePrefix>Resources</MonoAndroidResourcePrefix>
     <MonoAndroidAssetsPrefix>Assets</MonoAndroidAssetsPrefix>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>True</DebugSymbols>
     <DebugType>Full</DebugType>
     <Optimize>False</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;DOTNET35</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AndroidUseSharedRuntime>True</AndroidUseSharedRuntime>
     <AndroidLinkMode>None</AndroidLinkMode>
     <EmbedAssembliesIntoApk>False</EmbedAssembliesIntoApk>
+    <AotAssemblies>false</AotAssemblies>
+    <EnableLLVM>false</EnableLLVM>
+    <BundleAssemblies>false</BundleAssemblies>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugSymbols>True</DebugSymbols>
@@ -48,21 +53,273 @@
     <EmbedAssembliesIntoApk>True</EmbedAssembliesIntoApk>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Accord, Version=3.8.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Accord.3.8.0\lib\netstandard2.0\Accord.dll</HintPath>
+    </Reference>
+    <Reference Include="Accord.MachineLearning, Version=3.8.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Accord.MachineLearning.3.8.0\lib\netstandard2.0\Accord.MachineLearning.dll</HintPath>
+    </Reference>
+    <Reference Include="Accord.Math, Version=3.8.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Accord.Math.3.8.0\lib\netstandard2.0\Accord.Math.dll</HintPath>
+    </Reference>
+    <Reference Include="Accord.Math.Core, Version=3.8.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Accord.Math.3.8.0\lib\netstandard2.0\Accord.Math.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Accord.Statistics, Version=3.8.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Accord.Statistics.3.8.0\lib\netstandard2.0\Accord.Statistics.dll</HintPath>
+    </Reference>
+    <Reference Include="DeviceMotion.Plugin, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Xam.Plugin.DeviceMotion.1.1.2\lib\MonoAndroid10\DeviceMotion.Plugin.dll</HintPath>
+    </Reference>
+    <Reference Include="DeviceMotion.Plugin.Abstractions, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Xam.Plugin.DeviceMotion.1.1.2\lib\MonoAndroid10\DeviceMotion.Plugin.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Microsoft.Threading.Tasks, Version=1.0.12.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Bcl.Async.1.0.168\lib\portable-net45+win8+wpa81\Microsoft.Threading.Tasks.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Threading.Tasks.Extensions, Version=1.0.12.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Bcl.Async.1.0.168\lib\portable-net45+win8+wpa81\Microsoft.Threading.Tasks.Extensions.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.6.0.8\lib\portable-net40+sl5+wp80+win8+wpa81\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="Nito.AsyncEx, Version=4.0.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Nito.AsyncEx.4.0.1\lib\MonoAndroid\Nito.AsyncEx.dll</HintPath>
+    </Reference>
+    <Reference Include="Nito.AsyncEx.Concurrent, Version=4.0.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Nito.AsyncEx.4.0.1\lib\MonoAndroid\Nito.AsyncEx.Concurrent.dll</HintPath>
+    </Reference>
+    <Reference Include="Nito.AsyncEx.Enlightenment, Version=4.0.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Nito.AsyncEx.4.0.1\lib\MonoAndroid\Nito.AsyncEx.Enlightenment.dll</HintPath>
+    </Reference>
+    <Reference Include="PerpetualEngine.SimpleStorage.Droid, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\SimpleStorage.1.4.2\lib\MonoAndroid\PerpetualEngine.SimpleStorage.Droid.dll</HintPath>
+    </Reference>
+    <Reference Include="Plugin.Vibrate, Version=3.0.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Xam.Plugins.Vibrate.3.0.1\lib\MonoAndroid10\Plugin.Vibrate.dll</HintPath>
+    </Reference>
+    <Reference Include="Plugin.Vibrate.Abstractions, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Xam.Plugins.Vibrate.3.0.1\lib\MonoAndroid10\Plugin.Vibrate.Abstractions.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Numerics" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Core" />
     <Reference Include="Mono.Android" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Activatables.cs" />
+    <Compile Include="ActivityBase.cs" />
+    <Compile Include="ActivitySelector.cs" />
+    <Compile Include="ActOnFoundTag.cs" />
+    <Compile Include="BargraphDisplayActivity.cs" />
+    <Compile Include="BypassActivity.cs" />
+    <Compile Include="Communications\Data Request.cs" />
+    <Compile Include="Communications\DeviceDetailFragment - Copy.cs" />
+    <Compile Include="Communications\DeviceDetailFragment.cs" />
+    <Compile Include="Communications\DeviceListFragment.cs" />
+    <Compile Include="Communications\FileTransferService.cs" />
+    <Compile Include="Communications\IDeviceActionListener.cs" />
+    <Compile Include="Communications\Message Receiver.cs" />
+    <Compile Include="Communications\Message Target.cs" />
+    <Compile Include="Communications\Message.cs" />
+    <Compile Include="Communications\Team.cs" />
+    <Compile Include="Communications\WiFiClient.cs" />
+    <Compile Include="Communications\WiFiDirectActivity.cs" />
+    <Compile Include="Communications\WiFiDirectBroadcastReceiver.cs" />
+    <Compile Include="Communications\WiFiServer.cs" />
+    <Compile Include="Data Structures\DatapointT.cs" />
+    <Compile Include="Data Structures\DatapointT1T2.cs" />
+    <Compile Include="Data Structures\IDatapoint.cs" />
+    <Compile Include="Encounters.cs" />
+    <Compile Include="External Code\Ordered Dictionary.cs" />
+    <Compile Include="External Code\SimpleFileDialog.cs" />
+    <Compile Include="External Code\TimedLock.cs" />
+    <Compile Include="Gesture Recognition Core.cs" />
+    <Compile Include="GunfightActivity.cs" />
+    <Compile Include="Hacking\ActionOpportunities.cs" />
+    <Compile Include="Hacking\HackingState.cs" />
+    <Compile Include="Hacking\ICEbreakers.cs" />
+    <Compile Include="Hacking\NodeNarrative.cs" />
+    <Compile Include="Hacking\OpportunityCriteria.cs" />
+    <Compile Include="Hacking\StateChanges.cs" />
+    <Compile Include="Lock Training Activity.cs" />
+    <Compile Include="LockedObjectDefinitions.cs" />
+    <Compile Include="LockOpeningActivities.cs" />
+    <Compile Include="LoggingProvider.cs" />
+    <Compile Include="Machine Learning\ButtonLogic.cs" />
+    <Compile Include="Machine Learning\Classifier.cs" />
+    <Compile Include="Machine Learning\DataSet.cs" />
+    <Compile Include="Machine Learning\FeatureT.cs" />
+    <Compile Include="Machine Learning\FigureOfMerit.cs" />
+    <Compile Include="Machine Learning\FigureOfMerit2.cs" />
+    <Compile Include="Machine Learning\GestureClass.cs" />
+    <Compile Include="Machine Learning\MachineLearning GestureRecog Stages.cs" />
+    <Compile Include="Machine Learning\MachineLearningActivity.cs" />
+    <Compile Include="Machine Learning\Normalization.cs" />
+    <Compile Include="Machine Learning\PlanarizedGestureProvider.cs" />
+    <Compile Include="Machine Learning\Sequence.cs" />
     <Compile Include="MainActivity.cs" />
-    <Compile Include="Resources\Resource.Designer.cs" />
+    <Compile Include="Melee Training Activity.cs" />
+    <Compile Include="MeleeDefinitions.cs" />
+    <Compile Include="MiscUtil\ApplicationChooser.cs" />
+    <Compile Include="MiscUtil\BufferAcquisitionException.cs" />
+    <Compile Include="MiscUtil\CachedBuffer.cs" />
+    <Compile Include="MiscUtil\CachingBufferManager.cs" />
+    <Compile Include="MiscUtil\Checksum\Adler32.cs" />
+    <Compile Include="MiscUtil\Collections\ComparisonComparer.cs" />
+    <Compile Include="MiscUtil\Collections\DictionaryByType.cs" />
+    <Compile Include="MiscUtil\Collections\Extensions\ComparerExt.cs" />
+    <Compile Include="MiscUtil\Collections\Extensions\DictionaryExt.cs" />
+    <Compile Include="MiscUtil\Collections\Extensions\RangeBasedExt.cs" />
+    <Compile Include="MiscUtil\Collections\Extensions\SmartEnumerableExt.cs" />
+    <Compile Include="MiscUtil\Collections\LinkedComparer.cs" />
+    <Compile Include="MiscUtil\Collections\ProjectionComparer.cs" />
+    <Compile Include="MiscUtil\Collections\ProjectionEqualityComparer.cs" />
+    <Compile Include="MiscUtil\Collections\RandomAccessQueue.cs" />
+    <Compile Include="MiscUtil\Collections\Range.cs" />
+    <Compile Include="MiscUtil\Collections\RangeIterator.cs" />
+    <Compile Include="MiscUtil\Collections\ReverseComparer.cs" />
+    <Compile Include="MiscUtil\Collections\SmartEnumerable.cs" />
+    <Compile Include="MiscUtil\Compression\Vcdiff\AddressCache.cs" />
+    <Compile Include="MiscUtil\Compression\Vcdiff\CodeTable.cs" />
+    <Compile Include="MiscUtil\Compression\Vcdiff\Instruction.cs" />
+    <Compile Include="MiscUtil\Compression\Vcdiff\InstructionType.cs" />
+    <Compile Include="MiscUtil\Compression\Vcdiff\IOHelper.cs" />
+    <Compile Include="MiscUtil\Compression\Vcdiff\VcdiffDecoder.cs" />
+    <Compile Include="MiscUtil\Compression\Vcdiff\VcdiffFormatException.cs" />
+    <Compile Include="MiscUtil\Conversion\BigEndianBitConverter.cs" />
+    <Compile Include="MiscUtil\Conversion\DoubleConverter.cs" />
+    <Compile Include="MiscUtil\Conversion\EndianBitConverter.cs" />
+    <Compile Include="MiscUtil\Conversion\Endianness.cs" />
+    <Compile Include="MiscUtil\Conversion\LittleEndianBitConverter.cs" />
+    <Compile Include="MiscUtil\EventArgs.cs" />
+    <Compile Include="MiscUtil\Extensions\ReferenceExt.cs" />
+    <Compile Include="MiscUtil\Extensions\TimeRelated\DateTimeBasedExt.cs" />
+    <Compile Include="MiscUtil\Extensions\TimeRelated\TimeSpanBasedExt.cs" />
+    <Compile Include="MiscUtil\GenericMath.cs" />
+    <Compile Include="MiscUtil\IBuffer.cs" />
+    <Compile Include="MiscUtil\IBufferManager.cs" />
+    <Compile Include="MiscUtil\IO\EndianBinaryReader.cs" />
+    <Compile Include="MiscUtil\IO\EndianBinaryWriter.cs" />
+    <Compile Include="MiscUtil\IO\LineReader.cs" />
+    <Compile Include="MiscUtil\IO\NonClosingStreamWrapper.cs" />
+    <Compile Include="MiscUtil\IO\ReverseLineReader.cs" />
+    <Compile Include="MiscUtil\IO\StreamUtil.cs" />
+    <Compile Include="MiscUtil\IO\StringWriterWithEncoding.cs" />
+    <Compile Include="MiscUtil\Linq\DataProducer.cs" />
+    <Compile Include="MiscUtil\Linq\EditableLookup.cs" />
+    <Compile Include="MiscUtil\Linq\EditableLookup.LookupGrouping.cs" />
+    <Compile Include="MiscUtil\Linq\ExpressionUtil.cs" />
+    <Compile Include="MiscUtil\Linq\Extensions\DataProducerExt.Conversion.cs" />
+    <Compile Include="MiscUtil\Linq\Extensions\DataProducerExt.cs" />
+    <Compile Include="MiscUtil\Linq\Extensions\DataProducerExt.Grouping.cs" />
+    <Compile Include="MiscUtil\Linq\Extensions\DataProducerExt.Math.cs" />
+    <Compile Include="MiscUtil\Linq\Extensions\DataProducerExt.Pipeline.cs" />
+    <Compile Include="MiscUtil\Linq\Extensions\DataProducerExt.SingleReturn.cs" />
+    <Compile Include="MiscUtil\Linq\Extensions\EnumerableExt.cs" />
+    <Compile Include="MiscUtil\Linq\Extensions\ListExt.cs" />
+    <Compile Include="MiscUtil\Linq\Extensions\TypeExt.cs" />
+    <Compile Include="MiscUtil\Linq\Future.cs" />
+    <Compile Include="MiscUtil\Linq\FutureProxy.cs" />
+    <Compile Include="MiscUtil\Linq\IDataProducer.cs" />
+    <Compile Include="MiscUtil\Linq\IFuture.cs" />
+    <Compile Include="MiscUtil\Linq\IOrderedDataProducer.cs" />
+    <Compile Include="MiscUtil\Linq\IProducerGrouping.cs" />
+    <Compile Include="MiscUtil\Linq\KeyValueTuple.cs" />
+    <Compile Include="MiscUtil\Linq\OrderedDataProducer.cs" />
+    <Compile Include="MiscUtil\Linq\ProducerGrouping.cs" />
+    <Compile Include="MiscUtil\NonNullable.cs" />
+    <Compile Include="MiscUtil\NullOp.cs" />
+    <Compile Include="MiscUtil\Operator.cs" />
+    <Compile Include="MiscUtil\PartialComparer.cs" />
+    <Compile Include="MiscUtil\Reflection\PropertyCopy.cs" />
+    <Compile Include="MiscUtil\StaticRandom.cs" />
+    <Compile Include="MiscUtil\Text\UnicodeRange.cs" />
+    <Compile Include="MiscUtil\Text\Utf32String.cs" />
+    <Compile Include="MiscUtil\Threading\CustomThreadPool.cs" />
+    <Compile Include="MiscUtil\Threading\Delegates.cs" />
+    <Compile Include="MiscUtil\Threading\LockOrderException.cs" />
+    <Compile Include="MiscUtil\Threading\LockTimeoutException.cs" />
+    <Compile Include="MiscUtil\Threading\LockToken.cs" />
+    <Compile Include="MiscUtil\Threading\OrderedLock.cs" />
+    <Compile Include="MiscUtil\Threading\SyncLock.cs" />
+    <Compile Include="MiscUtil\Threading\ThreadController.cs" />
+    <Compile Include="MiscUtil\Threading\ThreadPoolWorkItem.cs" />
+    <Compile Include="NfcActivity.cs" />
+    <Compile Include="OrientationProviders.cs" />
+    <Compile Include="ResourceManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Resources\Resource.Designer.cs" />
+    <Compile Include="ScoreTracker.cs" />
+    <Compile Include="SecurityPanelDefinitions.cs" />
+    <Compile Include="SelectorActivities.cs" />
+    <Compile Include="SettingsActivity.cs" />
+    <Compile Include="SFX.cs" />
+    <Compile Include="Speech.cs" />
+    <Compile Include="Spell Results.cs" />
+    <Compile Include="SpellCastingActivity.cs" />
+    <Compile Include="SpellDefinitions.cs" />
+    <Compile Include="SpellTrainingActivity.cs" />
+    <Compile Include="StillnessMonitor.cs" />
+    <Compile Include="StressTestingActivity.cs" />
+    <Compile Include="TextToSpeech\CrossLocale.cs" />
+    <Compile Include="TextToSpeech\CrossTextToSpeech.cs" />
+    <Compile Include="TextToSpeech\ITextToSpeech.cs" />
+    <Compile Include="TextToSpeech\TextToSpeech.cs" />
+    <Compile Include="TextToSpeech\TtsProgressListener.cs" />
+    <Compile Include="Tools.cs" />
+    <Compile Include="Tutorial Definitions.cs" />
+    <Compile Include="Utilities\DictionaryVariants.cs" />
+    <Compile Include="Utilities\EnhancedQuaternion.cs" />
+    <Compile Include="Utilities\ExponentialAveragers.cs" />
+    <Compile Include="Utilities\Extensions.cs" />
+    <Compile Include="Utilities\NullableImproved.cs" />
+    <Compile Include="Vector6.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="GettingStarted.Xamarin" />
-    <None Include="Resources\AboutResources.txt" />
+    <AndroidAsset Include="Assets\FTLTLT.TTF" />
+    <AndroidAsset Include="Assets\PRISTINA.TTF" />
+    <AndroidAsset Include="Assets\Fonts\FTLTLT.TTF" />
+    <AndroidAsset Include="Assets\Fonts\PRISTINA.TTF" />
+    <None Include="App.config" />
+    <None Include="packages.config" />
     <None Include="Properties\AndroidManifest.xml" />
     <None Include="Assets\AboutAssets.txt" />
+    <AndroidResource Include="Resources\layout\BarGraphFeedbackDisplay.axml" />
+    <AndroidResource Include="Resources\layout\BypassTools.axml" />
+    <AndroidResource Include="Resources\layout\Decker.axml" />
+    <AndroidResource Include="Resources\layout\DisplayFoundTag.axml" />
+    <AndroidResource Include="Resources\layout\ElectronicsTool.axml" />
+    <AndroidResource Include="Resources\layout\EventTimeline.axml" />
+    <AndroidResource Include="Resources\layout\fragment_test.axml" />
+    <AndroidResource Include="Resources\layout\Gunfight.axml" />
+    <AndroidResource Include="Resources\layout\LockTraining.axml" />
+    <AndroidResource Include="Resources\layout\MachineLearning.axml" />
+    <AndroidResource Include="Resources\layout\MachineLearning_gestureClassRepresentation.axml" />
+    <AndroidResource Include="Resources\layout\Mage.axml" />
+    <AndroidResource Include="Resources\layout\Mage_old.axml" />
+    <AndroidResource Include="Resources\layout\MeleeTraining.axml" />
+    <AndroidResource Include="Resources\layout\NFC.axml" />
+    <AndroidResource Include="Resources\layout\Operative.axml" />
+    <AndroidResource Include="Resources\layout\Operative_old.axml" />
+    <AndroidResource Include="Resources\layout\OperativeToolbox.axml" />
+    <AndroidResource Include="Resources\layout\Safecrack.axml" />
+    <AndroidResource Include="Resources\layout\Samurai.axml" />
+    <AndroidResource Include="Resources\layout\Samurai_old.axml" />
+    <AndroidResource Include="Resources\layout\SecurityPanelManualMode.axml" />
+    <AndroidResource Include="Resources\layout\SettingsPage.axml" />
+    <AndroidResource Include="Resources\layout\SpellCasting.axml" />
+    <AndroidResource Include="Resources\layout\SpellTraining.axml" />
+    <AndroidResource Include="Resources\layout\StressTestLayout.axml" />
+    <AndroidResource Include="Resources\layout\ToolkitUse.axml" />
+    <AndroidResource Include="Resources\layout\WiFi_main.axml" />
+    <AndroidResource Include="Resources\layout\WiFi_row_devices.axml" />
+    <AndroidResource Include="Resources\raw\_211638_necromantic_loop.flac" />
+    <AndroidResource Include="Resources\raw\_221682_gshwingg_compilation.flac" />
+    <AndroidResource Include="Resources\raw\_259944_midtonePianoesqueLoop.flac" />
+    <AndroidResource Include="Resources\layout\EventTimelineCopy.axml" />
   </ItemGroup>
   <ItemGroup>
     <AndroidResource Include="Resources\layout\Main.axml">
@@ -71,14 +328,192 @@
     <AndroidResource Include="Resources\values\Strings.xml" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Resources\drawable\" />
+    <Folder Include="MiscUtil\Xml\Linq\Extensions\" />
     <Folder Include="Resources\mipmap-hdpi\" />
     <Folder Include="Resources\mipmap-mdpi\" />
     <Folder Include="Resources\mipmap-xhdpi\" />
     <Folder Include="Resources\mipmap-xxhdpi\" />
     <Folder Include="Resources\mipmap-xxxhdpi\" />
   </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\assault_shotgun_image.png" />
+    <AndroidResource Include="Resources\drawable\atropos_sigil.png" />
+    <AndroidResource Include="Resources\drawable\bullet.png" />
+    <AndroidResource Include="Resources\drawable\character_icon.png" />
+    <AndroidResource Include="Resources\drawable\command_prompt_image.png" />
+    <AndroidResource Include="Resources\drawable\details_view.xml" />
+    <AndroidResource Include="Resources\drawable\hacker_logo.jpg" />
+    <AndroidResource Include="Resources\drawable\handgun_image.png" />
+    <AndroidResource Include="Resources\drawable\hitter_logo.jpg" />
+    <AndroidResource Include="Resources\drawable\ic_action_discover.png" />
+    <AndroidResource Include="Resources\drawable\ic_action_on_off.png" />
+    <AndroidResource Include="Resources\drawable\Icon.png" />
+    <AndroidResource Include="Resources\drawable\katana_image.png" />
+    <AndroidResource Include="Resources\drawable\kill_marks_1.png" />
+    <AndroidResource Include="Resources\drawable\kill_marks_10.png" />
+    <AndroidResource Include="Resources\drawable\kill_marks_2.png" />
+    <AndroidResource Include="Resources\drawable\kill_marks_3.png" />
+    <AndroidResource Include="Resources\drawable\kill_marks_4.png" />
+    <AndroidResource Include="Resources\drawable\kill_marks_5.png" />
+    <AndroidResource Include="Resources\drawable\kill_marks_6.png" />
+    <AndroidResource Include="Resources\drawable\kill_marks_7.png" />
+    <AndroidResource Include="Resources\drawable\kill_marks_8.png" />
+    <AndroidResource Include="Resources\drawable\kill_marks_9.png" />
+    <AndroidResource Include="Resources\drawable\kill_marks_star.png" />
+    <AndroidResource Include="Resources\drawable\lockpicks_image.jpg" />
+    <AndroidResource Include="Resources\drawable\machine.png" />
+    <AndroidResource Include="Resources\drawable\magnifier_image.jpg" />
+    <AndroidResource Include="Resources\drawable\magnifying_glass_image.png" />
+    <AndroidResource Include="Resources\drawable\multimeter_image.png" />
+    <AndroidResource Include="Resources\drawable\nfc_icon.png" />
+    <AndroidResource Include="Resources\drawable\section_header.xml" />
+    <AndroidResource Include="Resources\drawable\securitypanel_gray.png" />
+    <AndroidResource Include="Resources\drawable\securitypanel_overlay_bottom.png" />
+    <AndroidResource Include="Resources\drawable\securitypanel_overlay_bottomleft.png" />
+    <AndroidResource Include="Resources\drawable\securitypanel_overlay_center.png" />
+    <AndroidResource Include="Resources\drawable\securitypanel_overlay_topleft.png" />
+    <AndroidResource Include="Resources\drawable\soldering_iron_image.png" />
+    <AndroidResource Include="Resources\drawable\sorcerer_logo.jpg" />
+    <AndroidResource Include="Resources\drawable\spell_casting_image.png" />
+    <AndroidResource Include="Resources\drawable\spellbook_image.png" />
+    <AndroidResource Include="Resources\drawable\spy_logo.jpg" />
+    <AndroidResource Include="Resources\drawable\sword_image.png" />
+    <AndroidResource Include="Resources\drawable\team_icon.png" />
+    <AndroidResource Include="Resources\drawable\team_search_icon.png" />
+    <AndroidResource Include="Resources\drawable\team_search_icon_2color.png" />
+    <AndroidResource Include="Resources\drawable\toolkit_image.png" />
+    <AndroidResource Include="Resources\drawable\vault_dial_image.png" />
+    <AndroidResource Include="Resources\drawable\wifi_icon.png" />
+    <AndroidResource Include="Resources\drawable\wire_cutters_image.png" />
+    <AndroidResource Include="Resources\layout\fragment_test_fragment.xml" />
+    <AndroidResource Include="Resources\layout\WiFi_device_detail.xml" />
+    <AndroidResource Include="Resources\layout\WiFi_device_list.xml" />
+    <AndroidResource Include="Resources\menu\action_items.xml" />
+    <AndroidResource Include="Resources\menu\WiFi_action_items.xml" />
+    <AndroidResource Include="Resources\raw\_100804_reloadclick.wav" />
+    <AndroidResource Include="Resources\raw\_103687_manySparks_motorDies.wav" />
+    <AndroidResource Include="Resources\raw\_104170_mild_ouch.wav" />
+    <AndroidResource Include="Resources\raw\_105016_ffwawshh.wav" />
+    <AndroidResource Include="Resources\raw\_106561__soepy__om22k.wav" />
+    <AndroidResource Include="Resources\raw\_110538_bolt_closing.wav" />
+    <AndroidResource Include="Resources\raw\_129346_male_grunt_1.wav" />
+    <AndroidResource Include="Resources\raw\_136542_electricZap_small.wav" />
+    <AndroidResource Include="Resources\raw\_1470_clash.aif" />
+    <AndroidResource Include="Resources\raw\_147288_swish.wav" />
+    <AndroidResource Include="Resources\raw\_148840_multiple_ricochet.mp3" />
+    <AndroidResource Include="Resources\raw\_151462_clash_compilation.wav" />
+    <AndroidResource Include="Resources\raw\_151920_exhale.wav" />
+    <AndroidResource Include="Resources\raw\_156140_dull_platic_or_metal_impact.wav" />
+    <AndroidResource Include="Resources\raw\_169206_security_voice_activating_alarm.wav" />
+    <AndroidResource Include="Resources\raw\_169209_security_voice_motion_detected.wav" />
+    <AndroidResource Include="Resources\raw\_169551_crisp_faint_impact.wav" />
+    <AndroidResource Include="Resources\raw\_170509_crate_impact.wav" />
+    <AndroidResource Include="Resources\raw\_170660_DeepVenetian.wav" />
+    <AndroidResource Include="Resources\raw\_175949_clash_t.wav" />
+    <AndroidResource Include="Resources\raw\_175957_shing.wav" />
+    <AndroidResource Include="Resources\raw\_178415_shing.wav" />
+    <AndroidResource Include="Resources\raw\_182350_shing.wav" />
+    <AndroidResource Include="Resources\raw\_188544_breathy_ugh.mp3" />
+    <AndroidResource Include="Resources\raw\_19312_swoosh.wav" />
+    <AndroidResource Include="Resources\raw\_202419_african_drums.mp3" />
+    <AndroidResource Include="Resources\raw\_213996_bolt_opening.wav" />
+    <AndroidResource Include="Resources\raw\_215028_shing.mp3" />
+    <AndroidResource Include="Resources\raw\_216093_windingdownwnwnnn.mp3" />
+    <AndroidResource Include="Resources\raw\_218478_shing.mp3" />
+    <AndroidResource Include="Resources\raw\_232918_lock_keyopen_or_pick.mp3" />
+    <AndroidResource Include="Resources\raw\_234804_transmat.mp3" />
+    <AndroidResource Include="Resources\raw\_248116_fwehshh.wav" />
+    <AndroidResource Include="Resources\raw\_249186_120bpm6sanser_g.wav" />
+    <AndroidResource Include="Resources\raw\_257608_clash.wav" />
+    <AndroidResource Include="Resources\raw\_260950_lock_keyopen_or_pick.mp3" />
+    <AndroidResource Include="Resources\raw\_262279_male_grunt_3.wav" />
+    <AndroidResource Include="Resources\raw\_263595_swoosh_compilation.wav" />
+    <AndroidResource Include="Resources\raw\_266419_ancient_spirits.wav" />
+    <AndroidResource Include="Resources\raw\_270474_scream_male.wav" />
+    <AndroidResource Include="Resources\raw\_275123_clash.wav" />
+    <AndroidResource Include="Resources\raw\_277314_electric_arc_short.wav" />
+    <AndroidResource Include="Resources\raw\_277314_electricArc.wav" />
+    <AndroidResource Include="Resources\raw\_27858_clash.wav" />
+    <AndroidResource Include="Resources\raw\_29675_lightningStrike_needs_trimming.wav" />
+    <AndroidResource Include="Resources\raw\_315849_femaleDSharpLoop.wav" />
+    <AndroidResource Include="Resources\raw\_315850_femaleCSharpLoop.wav" />
+    <AndroidResource Include="Resources\raw\_315855_femaleFLoop.wav" />
+    <AndroidResource Include="Resources\raw\_315856_femaleELoop.wav" />
+    <AndroidResource Include="Resources\raw\_315918_electricZap_med.wav" />
+    <AndroidResource Include="Resources\raw\_316626_strongerThanTheDark_needsTrim.wav" />
+    <AndroidResource Include="Resources\raw\_316628_melodicPad2_could_use_trimming.wav" />
+    <AndroidResource Include="Resources\raw\_316629_melodicPad_needs_trimming.wav" />
+    <AndroidResource Include="Resources\raw\_316631_zwong.wav" />
+    <AndroidResource Include="Resources\raw\_340280_male_oof_med.mp3" />
+    <AndroidResource Include="Resources\raw\_340285_female_oof_med.wav" />
+    <AndroidResource Include="Resources\raw\_342294_almostTooChipper.wav" />
+    <AndroidResource Include="Resources\raw\_34249_mild_agh.wav" />
+    <AndroidResource Include="Resources\raw\_344156_alientheremin.wav" />
+    <AndroidResource Include="Resources\raw\_344694_tromping_buzzpulse.wav" />
+    <AndroidResource Include="Resources\raw\_345308_clash_compilation.wav" />
+    <AndroidResource Include="Resources\raw\_346916_fwissh.wav" />
+    <AndroidResource Include="Resources\raw\_346917_ffwush.wav" />
+    <AndroidResource Include="Resources\raw\_348155_reload_seq.wav" />
+    <AndroidResource Include="Resources\raw\_349904_keysOrFastLockpicksAndDoor.wav" />
+    <AndroidResource Include="Resources\raw\_349905_slowGlassShatter.wav" />
+    <AndroidResource Include="Resources\raw\_351602_sonar.wav" />
+    <AndroidResource Include="Resources\raw\_361151_draw.mp3" />
+    <AndroidResource Include="Resources\raw\_365730_lockPicking.wav" />
+    <AndroidResource Include="Resources\raw\_366092_zoom_slowing_down.wav" />
+    <AndroidResource Include="Resources\raw\_366093_kwongg.wav" />
+    <AndroidResource Include="Resources\raw\_371887_gritty_drone.wav" />
+    <AndroidResource Include="Resources\raw\_376818_splashy_mass_impact.wav" />
+    <AndroidResource Include="Resources\raw\_376819_splatty_mass_impact.wav" />
+    <AndroidResource Include="Resources\raw\_377068_galewinds.wav" />
+    <AndroidResource Include="Resources\raw\_37847_infiniteauubergine.wav" />
+    <AndroidResource Include="Resources\raw\_44430_vocalized_ow.wav" />
+    <AndroidResource Include="Resources\raw\_49685_nanoblade_loop.wav" />
+    <AndroidResource Include="Resources\raw\_52458_clash.wav" />
+    <AndroidResource Include="Resources\raw\_55337_gun_cock_2.wav" />
+    <AndroidResource Include="Resources\raw\_55340_gun_cock_3.wav" />
+    <AndroidResource Include="Resources\raw\_81804_violinloop.wav" />
+    <AndroidResource Include="Resources\raw\_85553_male_grunt_2.wav" />
+    <AndroidResource Include="Resources\raw\_85659_shing_compilation.mp3" />
+    <AndroidResource Include="Resources\raw\_96629_ricochet_metal.wav" />
+    <AndroidResource Include="Resources\raw\_96630_ricochet_metal2.wav" />
+    <AndroidResource Include="Resources\raw\_96631_ricochet_metal3.wav" />
+    <AndroidResource Include="Resources\raw\_96632_ricochet_metal4.wav" />
+    <AndroidResource Include="Resources\raw\_96633_ricochet_metal5.wav" />
+    <AndroidResource Include="Resources\raw\_96634_ricochet_wood.wav" />
+    <AndroidResource Include="Resources\raw\_96635_ricochet_wood2.wav" />
+    <AndroidResource Include="Resources\raw\_96636_ricochet_wood3.wav" />
+    <AndroidResource Include="Resources\raw\_97434_bolt_either.wav" />
+    <AndroidResource Include="Resources\raw\_98195_whistling.wav" />
+    <AndroidResource Include="Resources\raw\aura_magic.wav" />
+    <AndroidResource Include="Resources\raw\detection_magic.wav" />
+    <AndroidResource Include="Resources\raw\ethereal.wav" />
+    <AndroidResource Include="Resources\raw\exhale.wav" />
+    <AndroidResource Include="Resources\raw\fwoosh_magic.wav" />
+    <AndroidResource Include="Resources\raw\fzazzle_magic.wav" />
+    <AndroidResource Include="Resources\raw\gun_click_empty.wav" />
+    <AndroidResource Include="Resources\raw\gun_cock.wav" />
+    <AndroidResource Include="Resources\raw\gunshot_0.wav" />
+    <AndroidResource Include="Resources\raw\gunshot_2.wav" />
+    <AndroidResource Include="Resources\raw\gunshot_3.wav" />
+    <AndroidResource Include="Resources\raw\gunshot_4.wav" />
+    <AndroidResource Include="Resources\raw\gunshot_6.wav" />
+    <AndroidResource Include="Resources\raw\kblaa_magic.wav" />
+    <AndroidResource Include="Resources\raw\riffle_magic.wav" />
+    <AndroidResource Include="Resources\raw\ring_buzz_magic.mp3" />
+    <AndroidResource Include="Resources\raw\silence1s.wav" />
+    <AndroidResource Include="Resources\raw\tinkly_magic.wav" />
+    <AndroidResource Include="Resources\raw\zwip_magic.wav" />
+  </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets" />
+  <Import Project="..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets" Condition="Exists('..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets'))" />
+    <Error Condition="!Exists('..\packages\Accord.3.8.0\build\Accord.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Accord.3.8.0\build\Accord.targets'))" />
+  </Target>
+  <Import Project="..\packages\Accord.3.8.0\build\Accord.targets" Condition="Exists('..\packages\Accord.3.8.0\build\Accord.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
 		Other similar extension points exist, see Microsoft.Common.targets.
 		<Target Name="BeforeBuild">

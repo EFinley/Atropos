@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="8dp">
+    <TextView
+        android:text="Stress Test Mini-Utility"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/stressTitle"
+        android:textAlignment="center"
+        android:textStyle="bold" />
+    <TextView
+        android:text="Sound file for testing"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="15dp" />
+    <Spinner
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/spinnerTestSound"
+        android:prompt="@string/spinnerTSprompt" />
+    <TextView
+        android:text="Sound file format"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp" />
+    <Spinner
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/spinnerTestSoundFormat"
+        android:prompt="@string/spinnerTSprompt2" />
+    <TextView
+        android:text="Sound refresh rate"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp" />
+    <Spinner
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/spinnerRefreshRate"
+        android:prompt="@string/spinnerTSprompt3" />
+    <TextView
+        android:text="Characteristic to change"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp" />
+    <Spinner
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/spinnerRefreshType"
+        android:prompt="@string/spinnerTSprompt4" />
+    <CheckBox
+        android:text="Also do a bunch of math"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/doMathCheckbox" />
+    <Button
+        android:text="Begin Test"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="15dp"
+        android:id="@+id/beginTestButton" />
+    <TextView
+        android:text="Outcomes of current test (copy-paste to record)"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/outcomeTextView"
+        android:layout_marginTop="10dp"
+        android:layout_marginRight="5dp"
+        android:layout_marginLeft="5dp"
+        android:textIsSelectable="true" />
+</LinearLayout>

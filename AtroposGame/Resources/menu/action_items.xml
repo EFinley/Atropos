@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/menuaction_character"
+        android:icon="@drawable/character_icon"
+        android:title="@string/menuitem_character"
+        android:showAsAction="ifRoom|withText" />
+    <!--<item
+        android:id="@+id/menuaction_nfc"
+        android:icon="@drawable/nfc_icon"
+        android:title="@string/menuitem_nfc"
+        android:showAsAction="ifRoom|withText" />-->
+    <item
+        android:id="@+id/menuaction_wifi"
+        android:icon="@drawable/wifi_icon"
+        android:title="@string/menuitem_wifi"
+        android:showAsAction="ifRoom|withText" />
+    <item
+        android:id="@+id/menuaction_settings"
+        android:icon="@drawable/ic_action_on_off"
+        android:title="@string/menuitem_settings"
+        android:showAsAction="ifRoom|withText" />
+  
+</menu>

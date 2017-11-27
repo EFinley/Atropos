@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent">
+  <LinearLayout
+      android:id="@+id/mlrn_gestureclass_list_fragmentbigger"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content">
+    <!--<fragment
+      android:name="com.fragmenttesting.test_fragment"
+      android:id="@+id/mlrn_gestureclass_list_fragment"
+      android:layout_width="match_parent"
+      android:layout_height="100dp" />-->
+    <ListView
+        android:id="@+id/list"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:cacheColorHint="#FFDAFF7F" 
+        />
+    <LinearLayout
+        android:id="@+id/mlrn_trainmode_radiobuttons"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+      <RadioButton
+          android:id="@+id/mlrn_trainmode_teachonly"
+          android:layout_width="0dp"
+          android:layout_weight="1"
+          android:layout_height="wrap_content"
+          android:text="Teach + Repeat"/>
+      <RadioButton
+          android:id="@+id/mlrn_trainmode_guessandteach"
+          android:layout_width="0dp"
+          android:layout_weight="1"
+          android:layout_height="wrap_content"
+          android:text="Guess + Teach"/>
+    </LinearLayout>
+  </LinearLayout>
+</LinearLayout>

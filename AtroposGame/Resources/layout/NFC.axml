@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:gravity="center">
+    <TextView
+        android:id="@+id/nfc_text"
+        android:layout_width="fill_parent"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:layout_margin="15dp"
+        android:text="" />
+    <TextView
+        android:id="@+id/nfc_status"
+        android:layout_width="fill_parent"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:layout_margin="15dp"
+        android:visibility="gone"
+        android:text="" />
+    <TextView
+        android:id="@+id/current_mode_label"
+        android:layout_width="fill_parent"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:layout_margin="15dp"
+        android:textAlignment="center"
+        android:text="Currently selected mode:" />
+    <TextView
+        android:id="@+id/current_mode"
+        android:layout_width="fill_parent"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:layout_margin="15dp"
+        android:textAlignment="center"
+        android:text="Fire Gun" />
+    <Button
+        android:id="@+id/select_tag_type_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="(Cycle to next mode)"
+        android:textSize="15sp"
+        android:padding="20dp"
+        android:layout_margin="15dp" />
+    <Button
+        android:id="@+id/write_tag_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Program New Tag for Mode"
+        android:textSize="15sp"
+        android:padding="20dp"
+        android:layout_margin="15dp" />
+    <Button
+        android:id="@+id/launch_directly_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Launch Mode Directly"
+        android:textSize="15sp"
+        android:padding="20dp"
+        android:layout_margin="15dp" />
+</LinearLayout>

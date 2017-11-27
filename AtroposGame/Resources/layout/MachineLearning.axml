@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent">
+  <LinearLayout 
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <TextView
+        android:text="Machine Learning"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/mlrn_maintitle_textview"
+        android:gravity="center"
+        android:layout_marginLeft="5dp" />
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="5dp"
+        android:background="@android:color/holo_blue_light" />
+    <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:orientation="horizontal">
+      <TextView
+         android:text="Dataset Training"
+         android:textAppearance="?android:attr/textAppearanceMedium"
+         android:layout_width="wrap_content"
+         android:layout_height="wrap_content"
+         android:id="@+id/mlrn_subheading_textview"
+         android:layout_margin="10dp" />
+      <EditText
+         android:id="@+id/mlrn_subheading_datasetnamefield"
+         android:hint="Dataset Name"
+         android:layout_height="wrap_content"
+         android:layout_width="wrap_content"
+         android:minWidth="125dip"
+         android:layout_margin="10dip"
+         android:inputType="textCapWords"
+         android:singleLine="true"/>
+    </LinearLayout>
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/mlrn_dataset_controls"
+        android:gravity="center">
+      <Button
+          android:text="Load Dataset"
+          android:id="@+id/mlrn_dataset_load_btn"
+          android:layout_width="wrap_content"
+          android:layout_height="match_parent" />
+      <Button
+          android:text="Save Dataset"
+          android:id="@+id/mlrn_dataset_save_btn"
+          android:layout_width="wrap_content"
+          android:layout_height="match_parent"
+          android:enabled="false" />
+      <Button
+          android:text="Clear"
+          android:id="@+id/mlrn_dataset_clear_btn"
+          android:layout_width="wrap_content"
+          android:layout_height="match_parent" />
+    </LinearLayout>
+    <Button
+        android:id="@+id/mlrn_study_dataset_btn"
+        android:text="Generate Classification AI"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:enabled="false"
+        android:layout_margin="10dp"/>
+    <!--<fragment
+        class="Atropos.Machine_Learning.GestureListFragment"
+        android:id="@+id/mlrn_gestureclass_list_fragment"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />-->
+    <ListView
+        android:id="@+id/list"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:cacheColorHint="#FFDAFF7F"
+        />
+    <LinearLayout
+      android:orientation="horizontal"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:gravity="right">
+      <EditText
+          android:id="@+id/mlrn_new_gesture_class_namefield"
+          android:hint="(New Gesture Class)"
+          android:layout_weight="1"
+          android:layout_width="0dp"
+          android:layout_height="wrap_content"
+          android:layout_margin="5dp"
+          android:inputType="textCapWords"
+          android:padding="5dp"/>
+      <Button
+          android:id="@+id/mlrn_add_gesture_class_btn"
+          android:layout_width="wrap_content"
+          android:layout_gravity="center"
+          android:layout_height="wrap_content"
+          android:text="Add"
+          android:layout_marginLeft="15dp"
+          android:layout_marginTop="5dp"
+          android:layout_marginRight="5dp"
+          android:layout_marginBottom="5dp"
+          android:enabled="false"/>
+    </LinearLayout>
+    <RadioGroup
+      android:id="@+id/mlrn_trainmode_radiobuttons"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:orientation="horizontal">
+      <RadioButton
+        android:id="@+id/mlrn_trainmode_teachonly"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:checked="true"
+        android:text="Teach + Repeat"/>
+      <RadioButton
+        android:id="@+id/mlrn_trainmode_guessandteach"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:text="Guess + Teach"
+        android:enabled="false"/>
+    </RadioGroup>
+    <LinearLayout
+      android:id="@+id/mlrn_latest_sample_display"
+      android:orientation="horizontal"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:visibility="gone"
+      android:background="@android:drawable/alert_dark_frame">
+      <ImageView
+          android:id="@+id/mlrn_latest_sample_visual"
+          android:layout_weight="1"
+          android:layout_width="0dp"
+          android:layout_height="match_parent"
+          android:layout_margin="5dp"
+          android:scaleType="fitStart"
+          android:padding="5dp"/>
+      <LinearLayout
+          android:layout_weight="1"
+          android:layout_width="0dp"
+          android:layout_height="wrap_content"
+          android:layout_margin="5dp"
+          android:orientation="vertical">
+        <TextView
+            android:id="@+id/mlrn_latest_sample_guessfield"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_margin="10dp"/>
+        <Spinner
+            android:id="@+id/mlrn_latest_sample_classname_spinner"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_margin="10dp"/>
+        <Button
+            android:id="@+id/mlrn_latest_sample_discard"
+            android:layout_width="wrap_content"
+            android:layout_gravity="center"
+            android:layout_height="wrap_content"
+            android:text="Discard sample"
+            android:layout_marginLeft="15dp"
+            android:layout_marginTop="5dp"
+            android:layout_marginRight="5dp"
+            android:layout_marginBottom="5dp"/>
+      </LinearLayout>
+    </LinearLayout>
+  </LinearLayout>
+</ScrollView>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+  <LinearLayout
+        android:id="@+id/bargraph_outer_container"
+        android:layout_width="match_parent"
+        android:layout_height="600dip">
+    <LinearLayout
+        android:id="@+id/bargraph_pane"
+        android:visibility="visible"
+        android:layout_width="match_parent"
+        android:layout_height="500dip"
+        android:orientation="vertical"
+        android:padding="25dp"
+        android:scrollbars="none"/>
+    <TextView
+        android:id="@+id/bargraph_text1"
+        android:visibility="gone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="10dip"/>
+    <TextView
+        android:id="@+id/bargraph_text2"
+        android:visibility="gone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="10dip"/>
+    
+  </LinearLayout>
+</LinearLayout>
