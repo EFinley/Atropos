@@ -191,7 +191,7 @@ namespace com.Atropos.Communications
 
             public ServerThread(WifiServer server, Socket socket) : base(server.StopToken)
             {
-                this.server = server;
+                this.server = server; 
                 this.socket = socket;
             }
 
