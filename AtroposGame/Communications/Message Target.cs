@@ -24,6 +24,7 @@ namespace com.Atropos.Communications
     {
         #region Address Book functionality
         public virtual string Name { get; set; }
+        public virtual string IPaddress { get; set; }
         public static explicit operator MessageTarget(string identifier) => AddressBook.Resolve(identifier);
         #endregion
 
@@ -37,7 +38,7 @@ namespace com.Atropos.Communications
         public Message SendMessage(Message message)
         {
             //message.Send(MessageTarget.ReturnAddress, this);
-            WiFiMessageReceiver.Client.SendMessage(this.Name, message);
+            WiFiMessageReceiver.Client.SendMessage(Name, message);
             return message;
         }
         public virtual DataRequest<Tdata> RequestData<Tdata>(string WhatData)

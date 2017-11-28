@@ -39,23 +39,23 @@ namespace com.Atropos.Communications
             return -1;
         }
 
-        public static void Add(MessageTarget target, string IPaddress)
+        public static void Add(MessageTarget target)
         {
-            var i = IPaddresses.IndexOf(IPaddress);
+            var i = IPaddresses.IndexOf(target.IPaddress);
             if (i == -1) i = Names.IndexOf(target.Name);
             if (i != -1)
             {
                 Targets[i] = target;
                 if (target is TeamMember) Roles[i] = (target as TeamMember).Roles.ToArray();
                 else if (Roles[i] == null || Roles[i].Length == 0) Roles[i] = new Role[] { Role.Any };
-                IPaddresses[i] = IPaddress;
+                IPaddresses[i] = target.IPaddress;
             }
             else
             {
                 Names.Add(target.Name);
                 if (target is TeamMember) Roles.Add( (target as TeamMember).Roles.ToArray());
                 else Roles.Add(new Role[] { Role.Any });
-                IPaddresses.Add(IPaddress);
+                IPaddresses.Add(target.IPaddress);
             }
 
             // Also, add it to the master list under Runners.

@@ -24,7 +24,7 @@ namespace com.Atropos.Communications
     {
         public DataRequest() : base() { Activate(); }
         public Message RequestMessage;
-        public void Send() { RequestMessage.Send(RequestMessage.FromAddress, RequestMessage.ToAddress); }
+        public void Send() { WiFiMessageReceiver.Client.SendMessage(RequestMessage); }
 
         #region Equality checking - Tricksy: Does NOT compare the resulting data, only the Message (which in turn only compares the ID number)
         public override bool Equals(object obj)

@@ -34,8 +34,8 @@ namespace com.Atropos.Communications
         public bool IsConnected = false;
         public bool FailQuietly = true;
 
-        public Dictionary<string, string> Addresses = new Dictionary<string, string>();
-        public List<string> TeammateNames { get { return Addresses.Keys.ToList(); } }
+        //public Dictionary<string, string> Addresses = new Dictionary<string, string>();
+        //public List<string> TeammateNames { get { return Addresses.Keys.ToList(); } }
 
         // The streams we use to communicate with the server; these come from the socket.
         private DataInputStream inStream;
@@ -80,13 +80,14 @@ namespace com.Atropos.Communications
                         myAddress = socket.LocalAddress.CanonicalHostName;
                         myName = asWhatName;
                         myRole = asWhatRole;
-                        Addresses.Add(myName, myAddress);
+                        //Addresses.Add(myName, myAddress);
 
-                        OnTeammateDetected?.Invoke(this, new EventArgs<TeamMember>(new TeamMember()
+                        AddressBook.Add(new TeamMember()
                         {
                             Name = myName,
-                            Roles = { asWhatRole, Role.Self }
-                        }));
+                            Roles = { asWhatRole, Role.Self },
+                            IPaddress = myAddress
+                        });
 
                         await Task.Delay(250)
                             .ContinueWith(_ => SendMessage($"{POLL_FOR_NAMES}"))
@@ -149,8 +150,8 @@ namespace com.Atropos.Communications
                     throw new InvalidOperationException($"Connection to communications server is closed. Unable to send message ({message}) to {toWhom}.");
             }
 
-            if (Addresses.ContainsKey(toWhom))
-                toWhom = Addresses[toWhom];
+            if (!AddressBook.IPaddresses.Contains(toWhom))
+                toWhom = AddressBook.IPaddresses[AddressBook.Targets.IndexOf(AddressBook.Resolve(toWhom))];
 
             SendString(outStream, $"{toWhom}|{myAddress}|{message}");
 
@@ -201,7 +202,8 @@ namespace com.Atropos.Communications
                     {
                         Name = respName,
                         Role = (Role)Enum.Parse(typeof(Role), respRole),
-                    }, sender);
+                        IPaddress = sender
+                    });
                 }
                 else if (message.StartsWith(ACK)) 
                 {

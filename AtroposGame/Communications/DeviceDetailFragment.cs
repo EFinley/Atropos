@@ -311,7 +311,7 @@ namespace com.Atropos.Communications
                 {
                     for (int i = 0; i < 20; i++)
                     {
-                        if (Client.Addresses.ContainsKey(_device.Name)) break;
+                        if (AddressBook.Names.Contains(_device.Name)) break;
                         Task.Delay(150).Wait();
                     }
                     RunOnUiThread(() =>

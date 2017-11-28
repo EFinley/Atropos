@@ -85,7 +85,7 @@ namespace com.Atropos.Communications
             {
                 return (o) =>
                 {
-                    Client.SendMessage( message.ReturnAddress, DataLibrarian.FetchRequestedData(message, o) );
+                    Client.SendMessage( message.From, DataLibrarian.FetchRequestedData(message, o) );
                 };
             }
             // Etc. etc. for the other types of message.  Still to do: PushData, ...?

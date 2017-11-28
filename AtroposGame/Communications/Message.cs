@@ -67,7 +67,7 @@ namespace com.Atropos.Communications
             return result;
         }
 
-        //public List<Message> SubMessages;
+        public List<Message> SubMessages;
 
         //public static string MSG = "MSG";
 
