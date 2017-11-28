@@ -121,6 +121,8 @@
     <Compile Include="Communications\DeviceListFragment.cs" />
     <Compile Include="Communications\FileTransferService.cs" />
     <Compile Include="Communications\IDeviceActionListener.cs" />
+    <Compile Include="Communications\WiFiAddressBook.cs" />
+    <Compile Include="Communications\WiFiMessageReceiver.cs" />
     <Compile Include="Communications\Message Receiver.cs" />
     <Compile Include="Communications\Message Target.cs" />
     <Compile Include="Communications\Message.cs" />

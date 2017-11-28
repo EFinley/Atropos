@@ -16,12 +16,19 @@ using MiscUtil;
 using Nito.AsyncEx;
 using System.Threading;
 using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace com.Atropos.Communications
 {
     public abstract class MessageTarget
     {
+        #region Address Book functionality
+        public virtual string Name { get; set; }
+        public static explicit operator MessageTarget(string identifier) => AddressBook.Resolve(identifier);
+        #endregion
+
         public static IMessageReceiver ReturnAddress;
+
         // Technically this'd happen anyway thanks to the implicit cast, but this way it shows up in Intellisense as the first-and-default option, which it should be.
         public Message SendMessage(string message)
         {
@@ -29,14 +36,15 @@ namespace com.Atropos.Communications
         } 
         public Message SendMessage(Message message)
         {
-            message.Send(MessageTarget.ReturnAddress, this);
+            //message.Send(MessageTarget.ReturnAddress, this);
+            WiFiMessageReceiver.Client.SendMessage(this.Name, message);
             return message;
         }
         public virtual DataRequest<Tdata> RequestData<Tdata>(string WhatData)
         {
-            var msg = SendMessage($"RequestData|{WhatData}|{typeof(Tdata).Name}");
-            var dReq = DataRequest<Tdata>.From(msg);
-            return dReq;
+            var msg = DataRequest<Tdata>.CreateFrom(new Message() { Content = $"RequestData|{WhatData}|{typeof(Tdata).Name}", To = Name });
+            msg.Send();
+            return msg;
         }
 
         public virtual void PrepSFX(string SFXname)

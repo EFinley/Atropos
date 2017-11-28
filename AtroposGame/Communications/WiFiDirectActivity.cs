@@ -8,6 +8,7 @@ using Android.Util;
 using Android.Views;
 using Android.Widget;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace com.Atropos.Communications
 {
@@ -45,7 +46,14 @@ namespace com.Atropos.Communications
 
             SetUpDetailView();
             SetUpListView();
-            
+
+            Task.Delay(500)
+                .ContinueWith(_ =>  // Same as inside OnOptionsItemSelected, for the discover peers options item, but there's no easy way to serve up that menu item as a constant.
+                {
+                    OnInitiateDiscovery();
+                    _manager.DiscoverPeers(_channel, new MyActionListener(this, "Discovery", () => { ListAdapter.NotifyDataSetChanged(); }));
+                })
+                .ConfigureAwait(false);
         }
 
         protected override void OnResume()
@@ -194,8 +202,8 @@ namespace com.Atropos.Communications
         public void Disconnect()
         {
             ResetViews();
-            _cts?.Cancel(); // Closes off our async loops - see DeviceDetailFragment.cs.
-            DisconnectSocketStreams(); // Again see DeviceDetailFragment.cs.
+            _cts?.Cancel(); // Closes off our sockets of all sorts - see DeviceDetailFragment.cs, WifiServer.cs, and WifiClient.cs.
+            //DisconnectSocketStreams(); // Again see DeviceDetailFragment.cs.
             _manager.RemoveGroup(_channel, new MyActionListener(this, "Disconnect", () => { DetailView.Visibility = ViewStates.Gone; }));
         }
     }

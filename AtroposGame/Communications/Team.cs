@@ -21,78 +21,125 @@ namespace com.Atropos.Communications
 {
     public enum Role
     {
+        None,
         Hitter,
         Hacker,
         Sorceror,
         Spy,
-        GameMaster,
-        None,
         Any,
-        All
+        All,
+        Self,
+        NPC,
+        GM
     }
 
-    //TODO - Populate MessageTarget.ReturnAddress with own ID!
     public class TeamMember : SenderAndReceiver
     {
-        public string Name;
-        public Role Role;
-        public Socket Socket;
-        
+        public virtual List<Role> Roles { get; set; }
+        public Role Role
+        {
+            get { return Roles?.ElementAtOrDefault(0) ?? Role.None; }
+            set
+            {
+                if (Roles == null || Roles.Count == 0) Roles = new List<Role> { value };
+                else Roles[0] = value;
+            }
+        }
+
+        public TeamMember() : base() { }
+
+        public static TeamMember Nobody = new TeamMember() { Name = "Nobody", Role = Role.None };
+
+        //public interface IHaveAnAlias { string Alias { get; } }
+
+        public static implicit operator string(TeamMember teamMember) => teamMember.Name;
     }
 
-    
+    public class TeamMemberAKA : TeamMember   //, TeamMember.IHaveAnAlias
+    {
+        private TeamMember _member;
+        public string ReferredToAs { get; set; }
+        public string TrueName { get => _member.Name; }
+        public override string Name { get => ReferredToAs; }
 
+        public override List<Role> Roles { get => _member.Roles; set => _member.Roles = value; }
+
+        public TeamMemberAKA(TeamMember member, string referredToAs) : base()
+        {
+            _member = member;
+            ReferredToAs = referredToAs;
+        }
+    }
+
+
+    // Represents any grouping of characters (or of smaller teams)
     public class Team : SenderAndReceiver
     {
+        public override string Name { get; set; } = "Group";
         public List<SenderAndReceiver> Members;
-        public Team(IEnumerable<SenderAndReceiver> source = null)
+        public List<TeamMember> TeamMembers
+        {
+            get
+            {
+                var result = new List<TeamMember>();
+                foreach (var m in Members)
+                {
+                    var member = m as TeamMember;
+                    if (member != null) result.Add(member);
+                    else if (m is Team) result.AddRange((m as Team).TeamMembers);
+                }
+                return result;
+            }
+        }
+        public Team(IEnumerable<SenderAndReceiver> source) : base()
         {
             Members = source?.ToList() ?? new List<SenderAndReceiver>();
         }
-        public  int NumberOfAddressees { get { return Members.Count; } }
-        public int NumberOfAddresseesTotal { get { return Members.Select(m => (m as Team)?.NumberOfAddresseesTotal ?? 1).Sum(); } }
+        public Team(params SenderAndReceiver[] members) : this(source: members) { }
 
-        #region Static methods for quick access (of various kinds)
+        public int NumberOfAddressees { get { return Members.Count; } }
+        public int NumberOfAddresseesTotal { get { return Members.Select(m => (m as Team)?.NumberOfAddresseesTotal ?? 1).Sum(); } }
+    }
+
+
+    public static class Runners
+    { 
         public static Team All { get; set; } = new Team();
+        public static Team Team { get { return new Team(All.TeamMembers.Where(m => !m.Roles.Contains(Role.NPC) && !m.Roles.Contains(Role.GM))); } }
+        public static Team NPCs { get { return new Team(All.TeamMembers.Where(m => m.Roles.Contains(Role.NPC))); } }
+        public static Team GMs { get { return new Team(All.TeamMembers.Where(m => m.Roles.Contains(Role.GM))); } }
         public static Team None { get; } = new Team();
 
-        public static Team Hitters { get { return new Team(All.Members.Where(t => (t as TeamMember)?.Role == Role.Hitter)); } }
-        public static TeamMember Hitter { get { return Hitters.Members.FirstOrDefault() as TeamMember; } }
-        public static Team Hackers { get { return new Team(All.Members.Where(t => (t as TeamMember)?.Role == Role.Hacker)); } }
-        public static TeamMember Hacker { get { return Hackers.Members.FirstOrDefault() as TeamMember; } }
-        public static Team Sorcerors { get { return new Team(All.Members.Where(t => (t as TeamMember)?.Role == Role.Sorceror)); } }
-        public static TeamMember Sorceror { get { return Sorcerors.Members.FirstOrDefault() as TeamMember; } }
-        public static Team Spies { get { return new Team(All.Members.Where(t => (t as TeamMember)?.Role == Role.Spy)); } }
-        public static TeamMember Spy { get { return Spies.Members.FirstOrDefault() as TeamMember; } }
-
-        public static Team To(params string[] names)
+        private static TeamMember WhoHasItListedFirst(Role role)
         {
-            return new Team(All.Members.Where(t => names.Contains((t as TeamMember).Name)));
-        }
-        public static Team To(params Role[] roles)
-        {
-            return new Team(All.Members.Where(t => roles.Contains((t as TeamMember)?.Role ?? Role.None)));
-        }
-        #endregion
-
-        #region Equality implementation... no longer needed, but free.
-        public override bool Equals(object obj)
-        {
-            if (obj is Team) return (this as IEquatable<Team>).Equals(obj as Team);
-            return Members.Equals(obj);
-        }
-        public override int GetHashCode()
-        {
-            return Members.GetHashCode();
+            var peakNumberOfRoles = Team.TeamMembers.Max(m => m.Roles.Count);
+            for (int i = 0; i < peakNumberOfRoles; i++)
+            {
+                foreach (var m in Team.TeamMembers)
+                {
+                    if (m.Roles.ElementAtOrDefault(i) == role) return new TeamMemberAKA(m, role.ToString());
+                }
+            }
+            return TeamMember.Nobody;
         }
 
-        public bool Equals(Team other)
-        {
-            return Members.Equals(other.Members);
-        }
+        public static TeamMember Hitter { get { return WhoHasItListedFirst(Role.Hitter); } }
+        public static TeamMember Hacker { get { return WhoHasItListedFirst(Role.Hacker); } }
+        public static TeamMember Sorceror { get { return WhoHasItListedFirst(Role.Sorceror); } }
+        public static TeamMember Spy { get { return WhoHasItListedFirst(Role.Spy); } }
 
-        public static bool operator==(Team first, Team second) { return first.Equals(second); }
-        public static bool operator!=(Team first, Team second) { return !first.Equals(second); }
-        #endregion
+        public static Team Hitters { get { return new Team(Team.TeamMembers.Where(t => t.Roles.Contains(Role.Hitter))) { Name = "Hitters" }; } }
+        public static Team Hackers { get { return new Team(Team.TeamMembers.Where(t => t.Roles.Contains(Role.Hacker))) { Name = "Hackers" }; } }
+        public static Team Sorcerors { get { return new Team(Team.TeamMembers.Where(t => t.Roles.Contains(Role.Sorceror))) { Name = "Sorcerors" }; } }
+        public static Team Spies { get { return new Team(Team.TeamMembers.Where(t => t.Roles.Contains(Role.Spy))) { Name = "Spies" }; } }
+
+        public static Team ByNames(params string[] names)
+        {
+            return new Team(All.TeamMembers.Where(t => names.Contains(t.Name)));
+        }
+        public static Team ByRoles(params Role[] roles)
+        {
+            return new Team(All.TeamMembers.Where(t => roles.Intersect(t.Roles).Count() > 0));
+        }
     }
 }

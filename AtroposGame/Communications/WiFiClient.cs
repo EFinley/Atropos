@@ -29,8 +29,13 @@ namespace com.Atropos.Communications
         private InetSocketAddress hostAddress;
         public string myName = "My Name";
         public string myAddress = "unknown";
+        public Role myRole = Role.Any;
+
+        public bool IsConnected = false;
+        public bool FailQuietly = true;
 
         public Dictionary<string, string> Addresses = new Dictionary<string, string>();
+        public List<string> TeammateNames { get { return Addresses.Keys.ToList(); } }
 
         // The streams we use to communicate with the server; these come from the socket.
         private DataInputStream inStream;
@@ -40,6 +45,7 @@ namespace com.Atropos.Communications
         public event EventHandler<EventArgs> OnConnectionFailure;
         public event EventHandler<EventArgs<string>> OnMessageSent;
         public event EventHandler<EventArgs<string>> OnMessageReceived;
+        //public event EventHandler<EventArgs<TeamMember>> OnTeammateDetected;
         public int SocketTimeout = 2500;
 
         public bool DoACK = true;
@@ -54,7 +60,7 @@ namespace com.Atropos.Communications
             });
         }
 
-        public void Connect(string asWhatName, int numberOfRetries = 5)
+        public virtual void Connect(string asWhatName, Role asWhatRole = Role.Any, int numberOfRetries = 5)
         {
             Task.Run(async () =>
             {
@@ -69,21 +75,38 @@ namespace com.Atropos.Communications
                     {
                         Log.Debug(_tag, $"Client: Connection accepted to {socket.InetAddress.CanonicalHostName}.");
                         OnConnectionSuccess?.Invoke(this, EventArgs.Empty);
+                        IsConnected = true;
+
                         myAddress = socket.LocalAddress.CanonicalHostName;
                         myName = asWhatName;
+                        myRole = asWhatRole;
                         Addresses.Add(myName, myAddress);
-                        //Task.Delay(250)
-                        //    .ContinueWith(_ => SendMessage("ALL", $"{POLL_FOR_NAMES}"))
-                        //    .ConfigureAwait(false);
+
+                        OnTeammateDetected?.Invoke(this, new EventArgs<TeamMember>(new TeamMember()
+                        {
+                            Name = myName,
+                            Roles = { asWhatRole, Role.Self }
+                        }));
+
+                        await Task.Delay(250)
+                            .ContinueWith(_ => SendMessage($"{POLL_FOR_NAMES}"))
+                            .ConfigureAwait(false);
                     }
                     else
                     {
-                        Log.Debug(_tag, $"Client: Connection unsuccessful.");
                         OnConnectionFailure?.Invoke(this, EventArgs.Empty);
+                        IsConnected = false;
                         if (numberOfRetries > 0)
+                        {
+                            Log.Debug(_tag, $"Client: Connection unsuccessful; retrying in {SocketTimeout} ms.");
                             await Task.Delay(SocketTimeout)
-                                .ContinueWith((_) => { Connect(asWhatName, numberOfRetries - 1); })
+                                .ContinueWith((_) => { Connect(asWhatName, asWhatRole, numberOfRetries - 1); })
                                 .ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            Log.Debug(_tag, "Client: Connection unsuccessful, retry limit exhausted.");
+                        }
                         return;
                     }
 
@@ -99,14 +122,32 @@ namespace com.Atropos.Communications
                 finally
                 {
                     socket.Close();
+                    IsConnected = false;
                 }
             });
         }
 
-        public void SendMessage(string toWhom, string message)
+        public virtual void SendMessage(string message)
         {
-            if (!socket.IsConnected) throw new InvalidOperationException($"Cannot send message without a connection!");
-            if (socket.IsClosed) throw new InvalidOperationException($"Cannot send message over a closed connection!");
+            SendMessage(ALL, message);
+        }
+
+        public virtual void SendMessage(string toWhom, string message)
+        {
+            if (!IsConnected || !socket.IsConnected)
+            {
+                if (FailQuietly)
+                    Log.Error(_tag, $"No connection to communications server! Unable to send message ({message}) to {toWhom}.");
+                else
+                    throw new InvalidOperationException($"No connection to communications server! Unable to send message ({message}) to {toWhom}.");
+            }
+            else if (socket.IsClosed)
+            {
+                if (FailQuietly)
+                    Log.Error(_tag, $"Connection to communications server is closed. Unable to send message ({message}) to {toWhom}.");
+                else
+                    throw new InvalidOperationException($"Connection to communications server is closed. Unable to send message ({message}) to {toWhom}.");
+            }
 
             if (Addresses.ContainsKey(toWhom))
                 toWhom = Addresses[toWhom];
@@ -116,48 +157,64 @@ namespace com.Atropos.Communications
             if (!message.StartsWith(ACK)) OnMessageSent?.Invoke(this, new EventArgs<string>($"(To {toWhom}) {message}"));
         }
 
-        public void SendMessage(string message)
+        public virtual void SendMessage(Message message)
         {
-            SendMessage(ALL, message);
+
         }
+        public virtual void SendMessage(string toWhom, Message message)
+        {
+
+        }
+
+        
 
         private void Listen()
         {
-            try
+            while (!StopToken.IsCancellationRequested)
             {
-                while (!StopToken.IsCancellationRequested)
+                // Get the next message
+                var data = ReadString(inStream).Split("|".ToArray(), 3);
+                if (data.Length != 3)
                 {
-                    // Get the next message
-                    var data = ReadString(inStream).Split("|".ToArray(), 3);
-                    if (data.Length != 3)
-                    {
-                        Log.Debug(_tag, $"Data has <3 entries; [0] is {data.ElementAtOrDefault(0)}, [1] is {data.ElementAtOrDefault(1)}, [2] is {data.ElementAtOrDefault(2)}");
-                    }
-                    var address = data.ElementAtOrDefault(0);
-                    var sender = data.ElementAtOrDefault(1);
-                    var message = data.ElementAtOrDefault(2);
-
-                    if (address != myAddress) continue;
-
-                    if (!message.StartsWith(ACK)) OnMessageReceived?.Invoke(this, new EventArgs<string>(message));
-
-                    //if (message.StartsWith(CMD))
-                    //    HandleClientCommand(sender, message.Replace($"{CMD}|", ""));
-
-                    //if (message == POLL_FOR_NAMES)
-                    //    SendMessage(ALL, $"{ACK}|{POLL_RESPONSE}|{myName}");
-                    //else if (message.StartsWith($"{ACK}|{POLL_RESPONSE}|"))
-                    //{
-                    //    Addresses[message.Split('|')[2]] = sender;
-                    //}
-                    //else if (DoACK && !message.StartsWith(ACK))
-                    if (DoACK && !message.StartsWith(ACK))
-                        SendMessage(sender, $"{ACK}: received [{message}].");
+                    Log.Debug(_tag, $"Data has <3 entries; [0] is {data.ElementAtOrDefault(0)}, [1] is {data.ElementAtOrDefault(1)}, [2] is {data.ElementAtOrDefault(2)}");
                 }
-            }
-            catch (Exception e)
-            {
-                throw e;
+
+                // Parse its components
+                var address = data.ElementAtOrDefault(0);
+                var sender = data.ElementAtOrDefault(1);
+                var message = data.ElementAtOrDefault(2);
+
+                // If it's not for me, ignore it.  Shouldn't happen in current code anyway.  Nor should receiving ALL *from* the server - it should only exist when sending *to* the server.
+                if (!address.IsOneOf(myAddress, ALL)) continue;
+
+                //if (message.StartsWith(CMD))
+                //    HandleClientCommand(sender, message.Replace($"{CMD}|", ""));
+
+                // Parse some special cases - name polling and ACKnowledgments.
+                if (message == POLL_FOR_NAMES)
+                    SendMessage($"{ACK}|{POLL_RESPONSE}|{myName}|{myRole}"); 
+                else if (message.StartsWith($"{ACK}|{POLL_RESPONSE}|"))
+                {
+                    var respName = message.Split('|')[2];
+                    var respRole = message.Split('|')[3];
+                    AddressBook.Add(new TeamMember()
+                    {
+                        Name = respName,
+                        Role = (Role)Enum.Parse(typeof(Role), respRole),
+                    }, sender);
+                }
+                else if (message.StartsWith(ACK)) 
+                {
+                    if (DoACK) // Serving as a proxy for "should I send that to the output window?" as well as "should I send out ACKs myself?"
+                        Log.Debug(_tag, $"ACKback: {message}");
+                }
+
+                // If it doesn't fall into one of our special cases, handle it as a normal message.
+                else 
+                {
+                    OnMessageReceived?.Invoke(this, new EventArgs<string>(message));
+                    if (DoACK) SendMessage(sender, $"{ACK}: received [{message}] from {sender}.");
+                }
             }
         }
 
@@ -166,6 +223,27 @@ namespace com.Atropos.Communications
 
         //}
 
-        
+        private class NullClientClass : WifiClient
+        {
+            public NullClientClass() : base(null, CancellationToken.None)
+            {
+                IsConnected = true;
+            }
+
+            public override void Connect(string asWhatName, Role asWhatRole, int numberOfRetries = 5)
+            {
+                myName = asWhatName;
+            }
+
+            public override void SendMessage(string message)
+            {
+            }
+
+            public override void SendMessage(string toWhom, string message)
+            {
+            }
+        }
+
+        public static WifiClient NullClient = new NullClientClass();
     }
 }

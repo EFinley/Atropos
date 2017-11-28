@@ -24,6 +24,7 @@ namespace com.Atropos.Communications
     {
         public DataRequest() : base() { Activate(); }
         public Message RequestMessage;
+        public void Send() { RequestMessage.Send(RequestMessage.FromAddress, RequestMessage.ToAddress); }
 
         #region Equality checking - Tricksy: Does NOT compare the resulting data, only the Message (which in turn only compares the ID number)
         public override bool Equals(object obj)
@@ -54,23 +55,51 @@ namespace com.Atropos.Communications
     }
     public class DataRequest<Tdata> : DataRequest
     {
+        #region Thread-safe ID number generator
+        private static int _idCounter = 10000; // Just to get us out of range of easily-confused with anything else.
+        private int _idNumber;
+        public int IDnumber
+        {
+            get
+            {
+                if (_idNumber == default(int))
+                {
+                    _idNumber = Interlocked.Increment(ref _idCounter);
+                    _idNumber = Interlocked.CompareExchange(ref _idCounter, 10000, int.MaxValue - 1);
+                }
+                return _idNumber;
+            }
+        }
+        #endregion
+
         public Tdata Data;
         public DataRequest(Message requestMessage) : base()
         {
-            if (requestMessage == null) return; // Will be used in the group version since there we don't want to register this callback for the group, just for the individual sub-requests.
+            if (requestMessage == null) return; // Will be used in the group version since there we don't want to register the following callback for the group, just for the individual sub-requests.
+
             RequestMessage = requestMessage;
-            requestMessage.ReturnAddress.OnReceiveMessage += (o, e) =>
+            DoOnReceiptFunc = GenerateReceiptFunc();
+            WiFiMessageReceiver.OnReceiveMessage += DoOnReceiptFunc;
+        }
+
+        private EventHandler<EventArgs<Message>> DoOnReceiptFunc;
+        private EventHandler<EventArgs<Message>> GenerateReceiptFunc()
+        {
+            return (o, e) =>
             {
-                if (e.Value == requestMessage && e.Value.Content.StartsWith("AsRequested|"))
+                var prefixString = $"AsRequested|{IDnumber}|";
+                if (e.Value == RequestMessage && e.Value.Content.StartsWith(prefixString))
                 {
-                    Data = Serializer.Deserialize<Tdata>(e.Value.Content.Substring("AsRequested|".Length)); // That is, "skip that many chars" - IMO substring's one-arg version ought to be (count), not (startIndex), but I wasn't consulted.
+                    Data = Serializer.Deserialize<Tdata>(e.Value.Content.Substring(prefixString.Length)); // That is, "skip that many chars" - IMO substring's one-arg version ought to be (count), not (startIndex), but I wasn't consulted.
                     OnRequestedDataAvailable?.Invoke(o, new EventArgs<Tdata>(Data));
+
+                    WiFiMessageReceiver.OnReceiveMessage -= DoOnReceiptFunc;
                 }
             };
         }
 
         // Factory function to create either a simple, or a group, DataRequest, as appropriate.
-        public static DataRequest<Tdata> From(Message requestMessage)
+        public static DataRequest<Tdata> CreateFrom(Message requestMessage)
         {
             if (requestMessage.SubMessages == null || requestMessage.SubMessages.Count == 0)
                 return new DataRequest<Tdata>(requestMessage);
@@ -102,10 +131,10 @@ namespace com.Atropos.Communications
 
             var subMsgs = requestMessage.SubMessages;
             if (subMsgs == null || subMsgs.Count == 0)
-                requests = new List<DataRequest<Tdata>>() { DataRequest<Tdata>.From(requestMessage) };
+                requests = new List<DataRequest<Tdata>>() { DataRequest<Tdata>.CreateFrom(requestMessage) };
             else
                 requests = subMsgs
-                            .Select(m => DataRequest<Tdata>.From(m))
+                            .Select(m => DataRequest<Tdata>.CreateFrom(m))
                             .ToList();
         }
 

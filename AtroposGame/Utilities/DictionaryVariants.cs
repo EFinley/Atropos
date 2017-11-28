@@ -177,6 +177,19 @@ namespace com.Atropos
         }
     }
 
+    public static class DictionaryExtensions
+    {
+        public static IEnumerable<Tkey> KeysFor<Tkey, Tvalue>(this IDictionary<Tkey, Tvalue> source, Tvalue value) where Tvalue : IEquatable<Tvalue>
+        {
+            return source.Where(kvp => kvp.Value.Equals(value)).Select(kvp => kvp.Key);
+        }
+
+        public static Tkey KeyFor<Tkey, Tvalue>(this IDictionary<Tkey, Tvalue> source, Tvalue value) where Tvalue : IEquatable<Tvalue>
+        {
+            return source.KeysFor(value).FirstOrDefault();
+        }
+    }
+
     /// <summary>
     /// A dictionary which takes two items as separate keys.  Order matters; an item filed under (a, b) is distinct from under (b, a),
     /// and in fact a and b need not even have the same type.  You need both keys; it'd be possible to use LINQ to obtain "all items with
