@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace com.Atropos.Communications
 {
-    [Activity(Label = "Atropos WiFiP2PDirect")] // , MainLauncher = true
+    [Activity(Label = "Atropos WiFiP2PDirect")]
     public partial class WiFiDirectActivity 
         : Activity, 
           WifiP2pManager.IChannelListener, 

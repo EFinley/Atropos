@@ -27,7 +27,7 @@ using MiscUtil;
 
 namespace com.Atropos
 {
-    [Activity(Label = "Atropos", MainLauncher = true, Icon = "@drawable/atropos_sigil", ScreenOrientation = Android.Content.PM.ScreenOrientation.Portrait)]
+    [Activity(Label = "Atropos", Icon = "@drawable/atropos_sigil", ScreenOrientation = Android.Content.PM.ScreenOrientation.Portrait)]
     public class MainActivity : SelectorActivity
     {
         //static MainActivity() { layoutID = Resource.Layout.Main; }

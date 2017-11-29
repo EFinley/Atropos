@@ -43,7 +43,7 @@ namespace com.Atropos.Communications
             });
         }
 
-        public string ReadString(DataInputStream inStream)
+        public virtual string ReadString(DataInputStream inStream)
         {
             string resultString = String.Empty;
             var res = 255;
@@ -56,7 +56,7 @@ namespace com.Atropos.Communications
                     if (res > 0) resultString += (char)res;
                 }
             }).Wait();
-            Log.Debug(_tag, $"Received '{resultString}'.");
+            //Log.Debug(_tag, $"Received '{resultString}'.");
             return resultString;
         }
 
@@ -133,6 +133,7 @@ namespace com.Atropos.Communications
                 }
                 finally
                 {
+                    Log.Debug(_tag, $"Releasing all connections ({serverThreads.Count} of them).");
                     serverSocket.Close();
                     foreach (var sThread in serverThreads) sThread.Stop();
                 }
@@ -159,6 +160,7 @@ namespace com.Atropos.Communications
 
         public void Forward(string sender, string message)
         {
+            
             foreach (string conn in connections.Keys)
             {
                 if (conn != sender) 
@@ -238,8 +240,17 @@ namespace com.Atropos.Communications
                 // We're also potentially expecting non-fine Java.IO.IOException raises, but for now I'm going to let them stop execution.
                 finally
                 {
+                    Log.Debug(_tag, $"ServerThread to {socket.InetAddress.CanonicalHostName} self-disrupted.");
                     Stop();
                 }
+            }
+
+            public override string ReadString(DataInputStream inStream)
+            {
+                var result = base.ReadString(inStream);
+                if (server.DoACK) // Serves as a proxy for "should I also report to the log file?" as well as "should I send ACKs on the comm channel?"
+                    Log.Debug(_tag, $"Server received raw string [{result}]");
+                return result;
             }
         }
     }

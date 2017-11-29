@@ -131,12 +131,13 @@
                     android:text="Test"
                     android:visibility="gone" />
             </LinearLayout>
-            <ScrollView
+            <!--<ScrollView
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_height="0dip"
+                android:layout_weight="1">-->
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
+                    android:layout_height="150dip">
                     <TextView
                         android:id="@+id/selected_device_name"
                         android:layout_width="match_parent"
@@ -145,20 +146,18 @@
                     <TextView
                         android:id="@+id/selected_device_info"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@android:color/secondary_text_dark" />
+                        android:layout_height="wrap_content" />
                     <TextView
                         android:id="@+id/group_owner"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textStyle="italic" />
+                        android:layout_height="wrap_content" />
                     <TextView
                         android:id="@+id/group_ip"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:textStyle="italic" />
                 </LinearLayout>
-            </ScrollView>
+            <!--</ScrollView>-->
         </LinearLayout>
     <!--<fragment
             class="com.Atropos.android.wifidirect.DeviceDetailFragment"

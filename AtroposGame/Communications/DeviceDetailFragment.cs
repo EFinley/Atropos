@@ -89,8 +89,7 @@ namespace com.Atropos.Communications
 
         protected Socket CommsSocket;
         protected WifiServer Server;
-        protected WifiClient Client;
-        public static WifiClient GetWifiClient { get { return _currentActivity?.Client; } }
+        protected WifiClient Client { get { return WiFiMessageReceiver.Client; } set { WiFiMessageReceiver.Client = value; } }
         public void OnConnectionInfoAvailable(WifiP2pInfo info)
         {
             DismissProgressIndicator();
@@ -108,8 +107,8 @@ namespace com.Atropos.Communications
             // InetAddress from WifiP2pInfo struct.
             view = FindViewById<TextView>(Resource.Id.group_ip);
             view.Text = "Group Owner IP - " + _info.GroupOwnerAddress.HostAddress;
-            Log.Debug(Tag, $"Info received: Group formed [{_info.GroupFormed}], Owner address [{_info.GroupOwnerAddress}] <Host {_info.GroupOwnerAddress.HostAddress}>, Am Owner [{_info.IsGroupOwner}].");
-            Toast.MakeText(this, $"P2P group formed ({((_info.IsGroupOwner) ? "as server" : "as client")})", ToastLength.Short).Show();
+            Log.Debug(Tag, $"Info received: Group formed [{_info.GroupFormed}], Owner address [{_info.GroupOwnerAddress}], Am Owner [{_info.IsGroupOwner}].");
+            Toast.MakeText(this, $"P2P group formed ({((_info.IsGroupOwner) ? "am owner" : "not owner")})", ToastLength.Short).Show();
 
             //**FindViewById<Button>(Resource.Id.btn_start_client).Visibility = ViewStates.Visible;
             FindViewById(Resource.Id.btn_disconnect).Visibility = ViewStates.Visible;
@@ -683,7 +682,7 @@ namespace com.Atropos.Communications
             var view = FindViewById<TextView>(Resource.Id.selected_device_name);
             view.Text = _device.Name;
             view = FindViewById<TextView>(Resource.Id.selected_device_info);
-            view.Text = _device.ToString();
+            view.Text = _device.MACaddress;
 
             if (_device.Status.IsOneOf(WifiP2pDeviceState.Connected, WifiP2pDeviceState.Invited))
             {

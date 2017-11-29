@@ -77,7 +77,7 @@ namespace com.Atropos.Communications
         {
             if (requestMessage == null) return; // Will be used in the group version since there we don't want to register the following callback for the group, just for the individual sub-requests.
 
-            RequestMessage = requestMessage;
+            RequestMessage = requestMessage + $"|{IDnumber}";
             DoOnReceiptFunc = GenerateReceiptFunc();
             WiFiMessageReceiver.OnReceiveMessage += DoOnReceiptFunc;
         }
@@ -164,21 +164,23 @@ namespace com.Atropos.Communications
             // One: Parse out the instructions in the message
             var substrings = message.Content.Split('|');
             if (substrings[0] != "RequestData") return null;
-            var fromWhat = substrings[1];
+            var dataRequestSpecifics = substrings[1];
             var typeName = substrings[2];
-            var rootElementName = fromWhat.Split('.')[0]; // Oh, for a proper slice notation!
-            var memberNames = fromWhat.Split('.').Skip(1).ToArray();
+            var requestIDnumber = substrings[3];
+            var rootElementName = dataRequestSpecifics.Split('.')[0]; // Oh, for a proper slice notation!
+            var memberNames = dataRequestSpecifics.Split('.').Skip(1).ToArray();
 
             // Two: Get the requested data (as an object)
             object Result = FetchData(rootElementName, typeName, memberNames);
 
             // Three: Serialize the data
             var TargetType = Type.GetType(typeName);
-            var serializer = typeof(Serializer.TypedSerializer<>).MakeGenericType(TargetType);
+            var serializer = typeof(Serializer.TypedSerializer<>).MakeGenericType(TargetType); // Tricksy!  We need to construct the generic *class*, can't just use the usual method of a generic *function* (or, not easily, anyway).
             var serialForm = serializer.InvokeStaticMethod<string>("Serialize", Result);
 
             // Four: Alter the content on the Message (but leave its ID number the same) and prep it to be sent back.
-            message.Content = $"AsRequested|{serialForm}";
+            var sender = message.From;
+            message.Content = $"AsRequested|{requestIDnumber}|{serialForm}";
             return message;
         }
 
@@ -186,12 +188,12 @@ namespace com.Atropos.Communications
 
         private static object FetchData(string rootElementName, string typeName, params string[] MemberNames)
         {
-            object currentObject, rootElement;
+            object currentObject;
 
             //var concatString = $"{rootElementName}|{typeName}|{MemberNames.Join(".")}";
             //if (CachedLookups.TryGetValue(concatString, out currentObject)) return currentObject;
-            
-            if (!RootElements.TryGetValue(rootElementName, out rootElement))
+
+            if (!RootElements.TryGetValue(rootElementName, out object rootElement)) // Try to gracefully handle it if someone treats the root element as assumed & supplies the subsidiary root item instead
             {
                 rootElement = FetchNamedItem(typeof(Res), rootElementName)
                             ?? FetchNamedItem(typeof(BaseActivity), rootElementName)
@@ -224,12 +226,14 @@ namespace com.Atropos.Communications
             return currentObject;
         }
 
+        // Case 1 (the most common, hopefully)... they provide a concrete, instantiated, object to grab from.
         public static object FetchNamedItem(object sourceObj, string name)
         {
             if (sourceObj == null) return null;
-            return FetchNamedItem(sourceObj.GetType(), sourceObj, name, true)
-                ?? FetchNamedItem(sourceObj.GetType(), sourceObj, name, false);
+            return FetchNamedItem(sourceObj.GetType(), sourceObj, name, true) // Try it as Public first,
+                ?? FetchNamedItem(sourceObj.GetType(), sourceObj, name, false); // Then try as Private if that fails.
         }
+        // Case 2 (the most common, hopefully)... they provide a static type to grab from.
         public static object FetchNamedItem(Type type, string name)
         {
             return FetchNamedItem(type, null, name, true)

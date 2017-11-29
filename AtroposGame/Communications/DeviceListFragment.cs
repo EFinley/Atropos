@@ -196,7 +196,7 @@ namespace com.Atropos.Communications
         public void OnInitiateDiscovery()
         {
             DismissProgressIndicator();
-            ShowProgressIndicator("Finding Peers", "Press back to cancel");
+            ShowProgressIndicator("Discoverable - Seeking Peers", "Press back to cancel");
         }
     }
 
