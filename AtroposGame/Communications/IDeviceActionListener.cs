@@ -1,6 +1,6 @@
 using Android.Net.Wifi.P2p;
 
-namespace com.Atropos.Communications
+namespace Atropos.Communications
 {
     public interface IDeviceActionListener
     {

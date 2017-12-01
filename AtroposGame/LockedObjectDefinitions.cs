@@ -22,7 +22,7 @@ using System.Numerics;
 using Vector3 = System.Numerics.Vector3;
 
 
-namespace com.Atropos.Locks
+namespace Atropos.Locks
 {
     public class Tumbler
     {

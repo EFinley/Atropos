@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace com.Atropos
+namespace Atropos
 {
     public class Nullable<T> : INullable<T>
     {

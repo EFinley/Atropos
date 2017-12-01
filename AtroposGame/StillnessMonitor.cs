@@ -18,9 +18,9 @@ using System.Threading;
 using System.Numerics;
 using Nito.AsyncEx;
 using Android.Util;
-using com.Atropos.DataStructures;
+using Atropos.DataStructures;
 
-namespace com.Atropos
+namespace Atropos
 {
     public class StillnessProvider : MultiSensorProvider<float>
     {

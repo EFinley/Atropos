@@ -13,7 +13,7 @@ using System.Numerics;
 using PerpetualEngine.Storage;
 using System.Threading.Tasks;
 
-namespace com.Atropos
+namespace Atropos
 {
     public struct DetailResult
     {

@@ -17,9 +17,9 @@ using Accord.Statistics.Models.Regression.Linear;
 using Accord.MachineLearning;
 using static System.Math;
 using Log = Android.Util.Log;
-using com.Atropos.DataStructures;
+using Atropos.DataStructures;
 
-namespace com.Atropos
+namespace Atropos
 {
     public interface ILoggingProvider : IProvider
     {

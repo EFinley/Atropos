@@ -21,7 +21,7 @@ using System.Numerics;
 
 using Vector3 = System.Numerics.Vector3;
 
-namespace com.Atropos.Machine_Learning
+namespace Atropos.Machine_Learning
 {
     /// <summary>
     /// Feature vector: a wrapper around any value type to provide access for the 

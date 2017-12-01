@@ -6,9 +6,9 @@ using MiscUtil;
 using Android.Util;
 using Nito.AsyncEx;
 using System.Numerics;
-using com.Atropos.DataStructures;
+using Atropos.DataStructures;
 
-namespace com.Atropos
+namespace Atropos
 {
     public abstract class ScoreTracker
     {

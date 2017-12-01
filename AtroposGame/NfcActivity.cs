@@ -25,7 +25,7 @@ using System.Linq;
 using PerpetualEngine.Storage;
 using Android.Hardware;
 
-namespace com.Atropos
+namespace Atropos
 {
     [Activity(Label = "Atropos", ScreenOrientation = Android.Content.PM.ScreenOrientation.Portrait)]
     public class NFCActivity : Activity

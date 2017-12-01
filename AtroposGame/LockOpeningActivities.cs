@@ -27,7 +27,7 @@ using Nito.AsyncEx;
 using System.Threading;
 using Android.Graphics;
 
-namespace com.Atropos.Locks
+namespace Atropos.Locks
 
 {
     [Activity(ScreenOrientation = Android.Content.PM.ScreenOrientation.Portrait)]

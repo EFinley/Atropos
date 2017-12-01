@@ -18,7 +18,7 @@ using System.Threading.Tasks;
 using System.Numerics;
 using Vector3 = System.Numerics.Vector3;
 
-namespace com.Atropos
+namespace Atropos
 {
     public abstract class Tool //: ITrackSteadiness
     {

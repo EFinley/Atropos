@@ -5,12 +5,12 @@ using Android.Content;
 using Android.Util;
 using Java.Net;
 
-namespace com.Atropos.Communications
+namespace Atropos.Communications
 {
     //public class FileTransferService: IntentService
     //{
     //    private const int SocketTimeout = 5000;
-    //    public static String ActionSendFile = "com.Atropos.android.wifidirect.SEND_FILE";
+    //    public static String ActionSendFile = "Atropos.android.wifidirect.SEND_FILE";
     //    public static String ExtrasFilePath = "file_url";
     //    public static String ExtrasGroupOwnerAddress = "go_host";
     //    public static String ExtrasGroupOwnerPort = "go_port";

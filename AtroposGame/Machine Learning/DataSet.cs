@@ -10,7 +10,7 @@ using Android.Graphics;
 using PerpetualEngine.Storage;
 using System.Threading.Tasks;
 
-namespace com.Atropos.Machine_Learning
+namespace Atropos.Machine_Learning
 {
     public interface IDataset
     {

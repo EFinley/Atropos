@@ -24,7 +24,7 @@ using Android.Views;
 using Android.Media;
 using Plugin.Vibrate;
 
-namespace com.Atropos
+namespace Atropos
 {
     /// <summary>
     /// This is the activity started when we detect a "gun" NFC tag.

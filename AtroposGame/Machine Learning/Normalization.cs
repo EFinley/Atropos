@@ -23,9 +23,9 @@ using Vector3 = System.Numerics.Vector3;
 using System.Runtime.Serialization;
 using MiscUtil;
 
-using com.Atropos.DataStructures;
+using Atropos.DataStructures;
 
-namespace com.Atropos.Machine_Learning
+namespace Atropos.Machine_Learning
 {
     public static class CrosslinkAxes
     {

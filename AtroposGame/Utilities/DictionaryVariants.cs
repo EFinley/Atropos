@@ -20,7 +20,7 @@ using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Collections;
 
-namespace com.Atropos
+namespace Atropos
 {
     /// <summary>
     /// Acts as a dictionary, but actually just couples together two Lists (and remains 'live' to changes to either one).

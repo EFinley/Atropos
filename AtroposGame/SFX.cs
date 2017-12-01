@@ -16,7 +16,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Nito.AsyncEx;
 
-namespace com.Atropos
+namespace Atropos
 {
     public class SFX //: Java.Lang.Object, MediaPlayer.IOnCompletionListener, MediaPlayer.IOnErrorListener
     {

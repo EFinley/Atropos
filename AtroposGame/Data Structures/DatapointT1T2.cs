@@ -13,9 +13,9 @@ using System.Numerics;
 using MiscUtil;
 using Android.Hardware;
 using System.Threading;
-using com.Atropos.Machine_Learning;
+using Atropos.Machine_Learning;
 
-namespace com.Atropos.DataStructures
+namespace Atropos.DataStructures
 {
     public struct Datapoint<T1, T2> : IDatapoint<T1,T2>
         where T1 : struct

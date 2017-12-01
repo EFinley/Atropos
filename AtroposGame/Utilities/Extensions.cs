@@ -19,7 +19,7 @@ using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Collections;
 
-namespace com.Atropos
+namespace Atropos
 {
     public static class Extensions
     {

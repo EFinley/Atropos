@@ -18,7 +18,7 @@
 //using static System.Math;
 //using Log = Android.Util.Log;
 
-//namespace com.Atropos.Machine_Learning
+//namespace Atropos.Machine_Learning
 //{
 //    /// <summary>
 //    /// Keeps a log of accelerometer data and transforms it into the best-fit frame wherein the data lie

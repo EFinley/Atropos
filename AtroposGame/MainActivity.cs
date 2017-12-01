@@ -25,7 +25,7 @@ using PerpetualEngine.Storage;
 using Android.Hardware;
 using MiscUtil;
 
-namespace com.Atropos
+namespace Atropos
 {
     [Activity(Label = "Atropos", Icon = "@drawable/atropos_sigil", ScreenOrientation = Android.Content.PM.ScreenOrientation.Portrait)]
     public class MainActivity : SelectorActivity

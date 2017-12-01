@@ -24,9 +24,9 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Linq;
-using com.Atropos.DataStructures;
+using Atropos.DataStructures;
 
-namespace com.Atropos.Machine_Learning
+namespace Atropos.Machine_Learning
 {
     [Serializable]
     public class Classifier : ISerializable
@@ -84,9 +84,40 @@ namespace com.Atropos.Machine_Learning
                 // Run the learning algorithm
                 //double error = teacher.Run();
                 //Log.Info("MachineLearning|Classifier", $"Classifier trained with resulting error of {error:f3}.");
-                this.svm = teacher.Learn(inputs, outputs);
+                svm = teacher.Learn(inputs, outputs);
 
                 Dataset = dataSet; // Recorded so we can access it through the Classifier (like inside icebreakers etc).
+
+                // Calibration for probabilistic work... see
+                // http://accord-framework.net/docs/html/T_Accord_MachineLearning_VectorMachines_Learning_ProbabilisticOutputCalibration.htm
+                // (second example on page)
+                var Calibration = new MulticlassSupportVectorLearning<DynamicTimeWarping>()
+                {
+                    Model = svm, // Process starts with an existing machine
+
+                    Learner = (param) => new ProbabilisticOutputCalibration<DynamicTimeWarping>()
+                    {
+                        Model = param.Model
+                    }
+                };
+
+                Calibration.ParallelOptions.MaxDegreeOfParallelism = 1;
+
+                Calibration.Learn(inputs, outputs);
+
+                int[] RecognizedAsClasses = svm.Decide(inputs);
+                double[] Scores = svm.Score(inputs);
+                double[][] LogL = svm.LogLikelihoods(inputs);
+                double[][] Probs = svm.Probabilities(inputs);
+
+                for (int i = 0; i < samples.Count; i++)
+                {
+                    Log.Debug("Classifier", $"Sample #{i}: True {samples[i].TrueClassName}, Recog As {Dataset.ClassNames[RecognizedAsClasses[i]]}.  Score is {Scores[i]:f2}, LogLikelihoods are {LogL[i].Select(l => l.ToString("f1")).Join()}, Probabilities {Probs[i].Select(p => p.ToString("f1")).Join()}.");
+                }
+
+                double error = new Accord.Math.Optimization.Losses.ZeroOneLoss(outputs).Loss(RecognizedAsClasses);
+                double loss = new Accord.Math.Optimization.Losses.CategoryCrossEntropyLoss(outputs).Loss(Probs);
+                Log.Debug("CLASSIFIER", $"Overall zero-one loss is {error:f4}, cross entropy loss is {loss:f4}, whatever the hell those are.");
             }
             catch (Exception e)
             {
@@ -112,7 +143,7 @@ namespace com.Atropos.Machine_Learning
             {
                 //sample.RecognizedAsIndex = svm.Compute(sample.MachineInputs);
                 var prevRecog = sample.RecognizedAsName;
-                var prevRecogErr = sample.RecognitionError;
+                var prevRecogErr = sample.RecognitionScore;
                 sample.RecognizedAsIndex = await Recognize(sample);
 
                 // We will only perform sampling of the ones we have a formal classification for.  The few we might have which are still "guessed at" can be ignored.
@@ -131,7 +162,7 @@ namespace com.Atropos.Machine_Learning
                     (i < 20 || Res.Random * 100.0 < percentageSampling))
                 {
                     var prefix = (sample.TrueClassIndex >= 0) ? sample.TrueClassName : "Sample";
-                    Log.Debug("Classifier|Assessment", $"{prefix}[{i}] reclassified from {prevRecog} ({prevRecogErr:f3}) to {sample.RecognizedAsName} ({sample.RecognitionError:f3}).");
+                    Log.Debug("Classifier|Assessment", $"{prefix}[{i}] reclassified from {prevRecog} ({prevRecogErr:f3}) to {sample.RecognizedAsName} ({sample.RecognitionScore:f3}).");
                 }
                 i++;
             }
@@ -152,27 +183,12 @@ namespace com.Atropos.Machine_Learning
                 return -1;
             }
 
-            //// Do the actual calculation!  But try not to hog resources while you're doing it.
-            //int index = await Task.Run<int>(() =>
-            //{
-            //    //double[] input = Sequence<T>.Preprocess(sequence.SourcePath).Merge(Datapoint<T>.Dimensions);
-            //    //return svm.Compute(input);
-            //    return svm.Compute(sequence.MachineInputs);
-            //});
-
-            // Do the actual calculation!  
-            //double[] input = Sequence<T>.Preprocess(sequence.SourcePath).Merge(Datapoint<T>.Dimensions);
-            //int index = svm.Compute(input);
-            //int index = svm.Compute(sequence.MachineInputs);
-            double calcError;
-            //int index = svm.Compute(sequence.MachineInputs, Accord.MachineLearning.VectorMachines.MulticlassComputeMethod.Voting, out calcError);
-            
-            // Test whether we can now get actual values for the scoring...
             var score = svm.Score(sequence.MachineInputs, out int index);
-            sequence.RecognitionError = score;
-            Log.Debug("Classifier|Recognize", $"Recognized sequence as {Dataset.ClassNames[index]} ({index}), with score {score}");
+            sequence.RecognitionScore = score;
+            // Log.Debug("Classifier|Recognize", $"Recognized sequence as {Dataset.ClassNames[index]} ({index}), with score {score}");
 
-            return await Task.FromResult<int>(index); // Suppresses the async warnings of returning simply 'index'
+            await Task.CompletedTask;
+            return index; 
         }
 
         // I *think* this should work (from the docs on the Accord.IO namespace)... but for now it's untested.  

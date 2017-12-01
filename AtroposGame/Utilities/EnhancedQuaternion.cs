@@ -13,7 +13,7 @@ using Android.Content;
 using System.Threading.Tasks;
 using Android.Hardware;
 
-namespace com.Atropos
+namespace Atropos
 {
     //[Serializable]
     //public struct Vector2

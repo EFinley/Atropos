@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace com.Atropos.TextToSpeech.Abstractions
+namespace Atropos.TextToSpeech.Abstractions
 {
   /// <summary>
   /// Struct for a language local

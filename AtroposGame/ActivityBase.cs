@@ -1,4 +1,4 @@
-namespace com.Atropos
+namespace Atropos
 {
     
     using System;

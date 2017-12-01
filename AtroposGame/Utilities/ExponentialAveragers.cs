@@ -6,9 +6,9 @@ using System.Numerics;
 using static System.Math;
 using System.Collections;
 using System.Linq;
-using com.Atropos.DataStructures;
+using Atropos.DataStructures;
 
-namespace com.Atropos
+namespace Atropos
 {
     public interface IAverage<T>
     {

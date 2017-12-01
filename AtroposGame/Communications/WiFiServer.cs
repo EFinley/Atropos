@@ -16,10 +16,10 @@ using Nito.AsyncEx;
 using Android.Util;
 using Java.Net;
 using System.Threading;
-using static com.Atropos.Communications.WifiBaseClass;
+using static Atropos.Communications.WifiBaseClass;
 using MiscUtil;
 
-namespace com.Atropos.Communications
+namespace Atropos.Communications
 {
     public class WifiBaseClass
     {

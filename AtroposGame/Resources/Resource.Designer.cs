@@ -9,9 +9,9 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-[assembly: global::Android.Runtime.ResourceDesignerAttribute("com.Atropos.Resource", IsApplication=true)]
+[assembly: global::Android.Runtime.ResourceDesignerAttribute("Atropos.Resource", IsApplication=true)]
 
-namespace com.Atropos
+namespace Atropos
 {
 	
 	
@@ -26,7 +26,7 @@ namespace com.Atropos
 		
 		public static void UpdateIdValues()
 		{
-			global::Droid.Resource.String.library_name = global::com.Atropos.Resource.String.library_name;
+			global::Droid.Resource.String.library_name = global::Atropos.Resource.String.library_name;
 		}
 		
 		public partial class Animation

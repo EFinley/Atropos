@@ -11,7 +11,7 @@ using Android.Runtime;
 using Android.Views;
 using Android.Widget;
 
-namespace com.Atropos
+namespace Atropos
 {
     // This is a glorified Enum used as our principal centralized search point.
     public static class InteractionLibrary

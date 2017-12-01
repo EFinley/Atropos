@@ -3,7 +3,7 @@ using Android.Net;
 using Android.Net.Wifi.P2p;
 using Android.Util;
 
-namespace com.Atropos.Communications
+namespace Atropos.Communications
 {
     /// <summary>
     /// A BroadcastReceiver that notifies of important wifi p2p events.

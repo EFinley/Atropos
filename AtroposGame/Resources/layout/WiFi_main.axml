@@ -9,7 +9,7 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
     <!--<fragment
-            class="com.Atropos.android.wifidirect.DeviceListFragment"
+            class="Atropos.android.wifidirect.DeviceListFragment"
             android:id="@+id/frag_list"
             android:layout_width="match_parent"
             android:layout_height="200dip">
@@ -160,7 +160,7 @@
             <!--</ScrollView>-->
         </LinearLayout>
     <!--<fragment
-            class="com.Atropos.android.wifidirect.DeviceDetailFragment"
+            class="Atropos.android.wifidirect.DeviceDetailFragment"
             android:id="@+id/frag_detail"
             android:layout_width="match_parent"
             android:layout_height="match_parent">

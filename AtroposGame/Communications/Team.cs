@@ -17,7 +17,7 @@ using Nito.AsyncEx;
 using System.Threading;
 using System.Reflection;
 
-namespace com.Atropos.Communications
+namespace Atropos.Communications
 {
     public enum Role
     {

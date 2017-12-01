@@ -24,7 +24,7 @@ using Android.Hardware;
 using static System.Math;
 using Log = Android.Util.Log; // Disambiguating with Math.Log( )... heh!
 using Android.Runtime;
-using SimpleFileDialog = com.Atropos.External_Code.SimpleFileDialog;
+using SimpleFileDialog = Atropos.External_Code.SimpleFileDialog;
 using System.IO;
 using Java.IO;
 using File = Java.IO.File;
@@ -32,9 +32,9 @@ using System.Threading;
 using Nito.AsyncEx;
 using PerpetualEngine.Storage;
 using MiscUtil;
-using com.Atropos.DataStructures;
+using Atropos.DataStructures;
 
-namespace com.Atropos.Machine_Learning
+namespace Atropos.Machine_Learning
 {
     /// <summary>
     /// Specific implementation - must specify the type argument of the underlying base class,
@@ -279,7 +279,17 @@ namespace com.Atropos.Machine_Learning
 
                         // If right or wrong, tweak the display properties of the sample.  This may depend on TeachMode.
                         DisplaySampleInfo(MostRecentSample);
-                        if (!TeachOnlyMode && MostRecentSample.RecognizedAsIndex >= 0) Speech.Say(MostRecentSample.RecognizedAsName);
+                        if (!TeachOnlyMode && MostRecentSample.RecognizedAsIndex >= 0)
+                        {
+                            var sc = MostRecentSample.RecognitionScore;
+                            var prefix = (sc < 1) ? "Possibly " :
+                                         (sc < 1.5) ? "Maybe " :
+                                         (sc < 2) ? "Probably " :
+                                         (sc < 2.5) ? "Clearly " :
+                                         (sc < 3) ? "Certainly " :
+                                         "A perfect ";
+                            Speech.Say(prefix + MostRecentSample.RecognizedAsName);
+                        }
                         //});
 
                         _listView.Adapter = _listAdapter;
@@ -926,7 +936,7 @@ namespace com.Atropos.Machine_Learning
         {
             if (Classifier != null && Classifier.MachineOnline)
             {
-                sequence.RecognizedAsIndex = await Classifier.Recognize(MostRecentSample as Sequence<T>);
+                sequence.RecognizedAsIndex = await Classifier.Recognize(sequence as Sequence<T>);
                 //sequence.TrueClassIndex = SelectedGestureClass.index;
             }
             return sequence;

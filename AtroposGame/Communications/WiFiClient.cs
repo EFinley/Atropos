@@ -18,7 +18,7 @@ using Java.Net;
 using System.Threading;
 using MiscUtil;
 
-namespace com.Atropos.Communications
+namespace Atropos.Communications
 {
     public class WifiClient : WifiBaseClass
     {
@@ -70,7 +70,7 @@ namespace com.Atropos.Communications
                     // Connect to the server
                     socket = new Socket();
                     socket.Bind(null);
-
+                
                     socket.Connect(hostAddress, SocketTimeout);
                     if (socket.IsConnected)
                     {

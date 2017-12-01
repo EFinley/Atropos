@@ -14,7 +14,7 @@ using Android.Widget;
 using Android.Util;
 using Android.Support.V7.App;
 
-namespace com.Atropos
+namespace Atropos
 {
     [Activity(MainLauncher = true, ScreenOrientation = Android.Content.PM.ScreenOrientation.Portrait, Theme = "@style/SplashTheme", NoHistory = true)]
     public class SplashActivity : Activity

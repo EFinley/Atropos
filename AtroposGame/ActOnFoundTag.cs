@@ -9,7 +9,7 @@ using Android.Widget;
 using Android.Content;
 using Android.Util;
 
-namespace com.Atropos
+namespace Atropos
 {
     /// <summary>
     /// This activity will be used to launch the appropriate module based on the detected tag.  Note that this activity itself lasts only a very brief time!

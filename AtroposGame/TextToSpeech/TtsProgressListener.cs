@@ -4,7 +4,7 @@ using Android.Speech.Tts;
 using Nito.AsyncEx;
 using System.Collections.Generic;
 
-namespace com.Atropos.TextToSpeech
+namespace Atropos.TextToSpeech
 {
 	/// <summary>
 	/// Tts progress listener.

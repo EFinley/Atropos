@@ -13,7 +13,7 @@ using System.Numerics;
 using Android.Hardware;
 using System.Threading;
 
-namespace com.Atropos
+namespace Atropos
 {
     /// <summary>
     /// A utility object intended to hold two vector quantities, such as acceleration and gyroscope data, or linear

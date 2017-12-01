@@ -22,9 +22,9 @@ using static Accord.Math.Vector;
 using System.Runtime.Serialization;
 using System.Security.Permissions;
 using MiscUtil;
-using com.Atropos.DataStructures;
+using Atropos.DataStructures;
 
-namespace com.Atropos.Machine_Learning
+namespace Atropos.Machine_Learning
 {
     public interface ISequence
     {
@@ -38,6 +38,7 @@ namespace com.Atropos.Machine_Learning
         bool HasContributedToClassifier { get; set; }
         //bool HasBeenTallied { get; set; }
         bool HasBeenSampled { get; set; }
+        double RecognitionScore { get; }
     }
 
     [Serializable]
@@ -67,7 +68,7 @@ namespace com.Atropos.Machine_Learning
         public bool HasBeenSampled { get; set; } = false;
         //bool HasBeenTallied { get; set; } = false;
 
-        public double RecognitionError = 0.0;
+        public double RecognitionScore { get; set; } = 0.0;
 
         public Sequence()
         {

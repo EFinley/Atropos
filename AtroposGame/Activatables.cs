@@ -12,7 +12,7 @@ using Nito.AsyncEx;
 using MiscUtil;
 using System.Threading.Tasks;
 
-namespace com.Atropos
+namespace Atropos
 {
     public interface IActivator
     {

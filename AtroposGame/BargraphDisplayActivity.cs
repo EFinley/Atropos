@@ -15,7 +15,7 @@ using Android.Graphics;
 using Log = Android.Util.Log;
 using static System.Math;
 
-namespace com.Atropos
+namespace Atropos
 {
     public class BargraphDisplayActivity : BaseActivity_Portrait
     {

@@ -1,10 +1,10 @@
-﻿using com.Atropos.TextToSpeech.Abstractions;
+﻿using Atropos.TextToSpeech.Abstractions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace com.Atropos.TextToSpeech
+namespace Atropos.TextToSpeech
 {
 	/// <summary>
 	/// Cross platform TTS implemenations

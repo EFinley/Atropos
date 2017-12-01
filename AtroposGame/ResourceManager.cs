@@ -19,7 +19,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Collections.ObjectModel;
 
-namespace com.Atropos
+namespace Atropos
 {
     public class Res
     {

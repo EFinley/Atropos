@@ -23,7 +23,7 @@ using Android.Views;
 using static System.Math;
 using Log = Android.Util.Log; // Disambiguating with Math.Log( )... heh!
 
-namespace com.Atropos
+namespace Atropos
 {
     /// <summary>
     /// This is the activity started when we detect a "train spell gestures" NFC tag.

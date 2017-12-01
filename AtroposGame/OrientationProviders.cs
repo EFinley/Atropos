@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 using Android.Util;
 using System.Runtime.CompilerServices;
 
-namespace com.Atropos
+namespace Atropos
 {
 
     public interface IProvider : IActivator

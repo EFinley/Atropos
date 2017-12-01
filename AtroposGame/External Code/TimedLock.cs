@@ -8,7 +8,7 @@ using System.Diagnostics;
 using System.Runtime.Serialization;
 using System.Threading;
 
-namespace com.Atropos
+namespace Atropos
 {
 
     /// <summary>

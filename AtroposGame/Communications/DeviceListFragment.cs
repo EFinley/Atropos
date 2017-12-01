@@ -10,7 +10,7 @@ using Android.Widget;
 using System.Linq;
 using System.IO;
 
-namespace com.Atropos.Communications
+namespace Atropos.Communications
 {
     public class WifiPeer : Java.Lang.Object
     {

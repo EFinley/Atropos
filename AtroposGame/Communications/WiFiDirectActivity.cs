@@ -10,9 +10,9 @@ using Android.Widget;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace com.Atropos.Communications
+namespace Atropos.Communications
 {
-    [Activity(Label = "Atropos WiFiP2PDirect")]
+    [Activity(Label = "Atropos WiFi Peer-to-Peer")]
     public partial class WiFiDirectActivity 
         : Activity, 
           WifiP2pManager.IChannelListener, 

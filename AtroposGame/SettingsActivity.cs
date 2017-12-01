@@ -10,9 +10,9 @@ using Android.Runtime;
 using Android.Views;
 using Android.Widget;
 
-using com.Atropos.Machine_Learning;
+using Atropos.Machine_Learning;
 
-namespace com.Atropos
+namespace Atropos
 {
     [Activity(Label = "Atropos :: Settings ::")]
     public class SettingsActivity : SelectorActivity

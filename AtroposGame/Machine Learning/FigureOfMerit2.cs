@@ -9,7 +9,7 @@ using System.Drawing;
 using Android.Graphics;
 using PerpetualEngine.Storage;
 using System.Threading.Tasks;
-using com.Atropos.DataStructures;
+using Atropos.DataStructures;
 using MiscUtil;
 using System.Numerics;
 using System.Runtime.Serialization;
@@ -17,7 +17,7 @@ using Android.App;
 using System.Runtime.CompilerServices;
 using System.Collections;
 
-namespace com.Atropos.Machine_Learning
+namespace Atropos.Machine_Learning
 {
     #region Interfaces and abstract base classes
     public interface IAssess<Tdata>

@@ -24,7 +24,7 @@ using System.Runtime.Serialization;
 using MiscUtil;
 using Nullable = System.Nullable;
 
-namespace com.Atropos.DataStructures
+namespace Atropos.DataStructures
 {
 
     /// <summary>

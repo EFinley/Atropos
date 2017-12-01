@@ -17,7 +17,7 @@ using Environment = Android.OS.Environment;
 
 // Credit for this baby goes to https://github.com/hig-dev/Xamarin-android-file-chooser-dialog.  Thanks!
 
-namespace com.Atropos.External_Code
+namespace Atropos.External_Code
 {
     public class SimpleFileDialog
     {

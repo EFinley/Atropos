@@ -9,14 +9,14 @@ using System.Drawing;
 using Android.Graphics;
 using PerpetualEngine.Storage;
 using System.Threading.Tasks;
-using com.Atropos.DataStructures;
+using Atropos.DataStructures;
 using MiscUtil;
 using System.Numerics;
 using System.Runtime.Serialization;
 using Android.App;
-using com.Atropos.Machine_Learning;
+using Atropos.Machine_Learning;
 
-namespace com.Atropos.Machine_Learning_old
+namespace Atropos.Machine_Learning_old
 {
     #region Interfaces and abstract base classes
     public interface IFoM<T>

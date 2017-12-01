@@ -19,7 +19,7 @@ using System.Collections.Generic;
 using MiscUtil;
 using Nito.AsyncEx;
 
-namespace com.Atropos.Communications
+namespace Atropos.Communications
 {
 
     public partial class WiFiDirectActivity

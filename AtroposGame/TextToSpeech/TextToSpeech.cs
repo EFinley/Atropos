@@ -3,14 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using com.Atropos.TextToSpeech.Abstractions;
+using Atropos.TextToSpeech.Abstractions;
 using Java.Util;
 using Android.Speech.Tts;
 using Android.App;
 using Nito.AsyncEx;
 using Android.Media;
 
-namespace com.Atropos.TextToSpeech
+namespace Atropos.TextToSpeech
 {
     /// <summary>
     /// Text to speech implementation Android

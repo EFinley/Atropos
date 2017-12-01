@@ -26,7 +26,7 @@ using Log = Android.Util.Log; // Disambiguating with Math.Log( )... heh!
 using Nito.AsyncEx;
 using System.Threading;
 
-namespace com.Atropos
+namespace Atropos
 {
     /// <summary>
     /// This is the activity started when we detect a "cast spell" NFC tag.

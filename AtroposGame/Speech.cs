@@ -13,15 +13,15 @@ using Android.Widget;
 using Android.Media;
 using Android.Util;
 
-using com.Atropos.TextToSpeech;
-using com.Atropos.TextToSpeech.Abstractions;
+using Atropos.TextToSpeech;
+using Atropos.TextToSpeech.Abstractions;
 //using Plugin.TextToSpeech;
 //using Plugin.TextToSpeech.Abstractions;
 using ASpeech = Android.Speech.Tts;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace com.Atropos 
+namespace Atropos 
 {
     //public class patchedSpeechService : ASpeech.TextToSpeechService
     //{
@@ -96,7 +96,7 @@ namespace com.Atropos
         public DateTime timeOfUttering;
     }
 
-    public class Speech : com.Atropos.TextToSpeech.TextToSpeech
+    public class Speech : Atropos.TextToSpeech.TextToSpeech
     {
         public List<Utterance> RecentUtterances = new List<Utterance>();
         public TimeSpan SuppressUtteranceInterval = TimeSpan.FromMinutes(10.0);

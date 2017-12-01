@@ -4,7 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 
-namespace com.Atropos.TextToSpeech.Abstractions
+namespace Atropos.TextToSpeech.Abstractions
 {
 	/// <summary>
 	/// Interface for TTS

@@ -13,9 +13,9 @@ using System.Threading.Tasks;
 using System.Threading;
 using Nito.AsyncEx;
 using System.Numerics;
-using com.Atropos.Machine_Learning;
+using Atropos.Machine_Learning;
 
-namespace com.Atropos.Hacking
+namespace Atropos.Hacking
 {
     /// <summary>
     /// High-level class which defines a hacking run.  Will be accessed by GMs and GM tools to construct the runs; is serviced by several
@@ -24,7 +24,7 @@ namespace com.Atropos.Hacking
     /// <example>
     ///     A typical run might be defined like this:
     ///     
-    ///     using com.Atropos.Hacking;
+    ///     using Atropos.Hacking;
     ///     using static Atropos.Hacking.StandardCriteria;
     ///     
     ///     var myNewMatrix = new NodeNarrative(

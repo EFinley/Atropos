@@ -11,9 +11,9 @@ using Android.Views;
 using Android.Widget;
 using MiscUtil;
 using Android.Graphics;
-using com.Atropos.Communications;
+using Atropos.Communications;
 
-namespace com.Atropos
+namespace Atropos
 {
     [Activity]
     public class SelectorActivity : Activity

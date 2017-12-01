@@ -21,7 +21,7 @@ using Android.Media;
 using System.Numerics;
 using Vector3 = System.Numerics.Vector3;
 
-namespace com.Atropos
+namespace Atropos
 {
     public class Stroke
     {

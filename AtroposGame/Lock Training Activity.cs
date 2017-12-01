@@ -23,7 +23,7 @@
 //using static System.Math;
 //using Log = Android.Util.Log; // Disambiguating with Math.Log( )... heh!
 
-//namespace com.Atropos.Locks
+//namespace Atropos.Locks
 //{
 //    [Activity(ScreenOrientation = Android.Content.PM.ScreenOrientation.Portrait)]
 //    public class LockTrainingActivity : LockedObjectOpeningActivity

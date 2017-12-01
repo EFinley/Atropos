@@ -5,7 +5,7 @@ using System.Numerics;
 using MiscUtil;
 using System.Reflection;
 
-namespace com.Atropos.DataStructures
+namespace Atropos.DataStructures
 {
     public interface IDatapoint
     {

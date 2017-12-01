@@ -23,7 +23,7 @@ using Android.Util;
 using System.ComponentModel;
 using System.Numerics;
 
-namespace com.Atropos
+namespace Atropos
 {
     
     public interface IGestureRecognizerStage : IActivator

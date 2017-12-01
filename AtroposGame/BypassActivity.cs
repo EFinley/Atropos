@@ -23,7 +23,7 @@ using Nito.AsyncEx;
 using Android.Graphics;
 using Android.Views;
 
-namespace com.Atropos
+namespace Atropos
 {
     /// <summary>
     /// This activity is launched when we select one of the "hack electronics" tools - examine, multimeter, solderer, or wirecutters.

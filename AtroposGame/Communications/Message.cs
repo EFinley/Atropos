@@ -19,7 +19,7 @@ using System.Reflection;
 
 using System.Text.RegularExpressions;
 
-namespace com.Atropos.Communications
+namespace Atropos.Communications
 {
     public interface IMessage
     {

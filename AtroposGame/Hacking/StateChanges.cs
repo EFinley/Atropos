@@ -13,9 +13,9 @@ using System.Threading.Tasks;
 using System.Threading;
 using Nito.AsyncEx;
 using System.Numerics;
-using com.Atropos.Machine_Learning;
+using Atropos.Machine_Learning;
 
-namespace com.Atropos.Hacking
+namespace Atropos.Hacking
 {
     internal delegate bool StateChangeCriterion(StateAspect target, HackingAttemptState state);
 

@@ -23,7 +23,7 @@ using Android.Views;
 using static System.Math;
 using Log = Android.Util.Log; // Disambiguating with Math.Log( )... heh!
 using Android.Runtime;
-using SimpleFileDialog = com.Atropos.External_Code.SimpleFileDialog;
+using SimpleFileDialog = Atropos.External_Code.SimpleFileDialog;
 using System.IO;
 using File = Java.IO.File;
 using System.Threading;
@@ -33,7 +33,7 @@ using PerpetualEngine.Storage;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-namespace com.Atropos.Machine_Learning
+namespace Atropos.Machine_Learning
 {
     class NamedField
     {

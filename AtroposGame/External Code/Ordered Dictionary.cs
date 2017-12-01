@@ -23,7 +23,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections;
 
-namespace com.Atropos
+namespace Atropos
 {
     public class OrderedDictionary<TKey, TValue> : IDictionary<TKey, TValue>, ICollection<KeyValuePair<TKey, TValue>>, IEnumerable<KeyValuePair<TKey, TValue>>
     {
