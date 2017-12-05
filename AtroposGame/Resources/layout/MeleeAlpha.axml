@@ -7,7 +7,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
         <TextView
-            android:text="Machine Learning"
+            android:text="Melee - Alpha Test Zone"
             android:textAppearance="?android:attr/textAppearanceLarge"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -23,7 +23,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal">
             <TextView
-                android:text="Dataset Training"
+                android:text="Dataset In Use"
                 android:textAppearance="?android:attr/textAppearanceMedium"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -80,33 +80,7 @@
             android:layout_height="0dp"
             android:layout_weight="1"
             android:cacheColorHint="#FFDAFF7F" />
-        <LinearLayout
-            android:orientation="horizontal"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="right">
-            <EditText
-                android:id="@+id/mlrn_new_gesture_class_namefield"
-                android:hint="(New Gesture Class)"
-                android:layout_weight="1"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_margin="5dp"
-                android:inputType="textCapWords"
-                android:padding="5dp" />
-            <Button
-                android:id="@+id/mlrn_add_gesture_class_btn"
-                android:layout_width="wrap_content"
-                android:layout_gravity="center"
-                android:layout_height="wrap_content"
-                android:text="Add"
-                android:layout_marginLeft="15dp"
-                android:layout_marginTop="5dp"
-                android:layout_marginRight="5dp"
-                android:layout_marginBottom="5dp"
-                android:enabled="false" />
-        </LinearLayout>
-        <RadioGroup
+        <!--<RadioGroup
             android:id="@+id/mlrn_trainmode_radiobuttons"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -125,7 +99,14 @@
                 android:layout_height="wrap_content"
                 android:text="Guess + Teach"
                 android:enabled="false" />
-        </RadioGroup>
+            <RadioButton
+                android:id="@+id/mlrn_trainmode_cue"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Cue"
+                android:enabled="false" />
+        </RadioGroup>-->
         <LinearLayout
             android:id="@+id/mlrn_latest_sample_display"
             android:orientation="horizontal"

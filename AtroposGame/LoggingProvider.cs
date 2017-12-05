@@ -76,7 +76,7 @@ namespace Atropos
     public class SmoothLoggingProvider<T> : LoggingSensorProvider<T>, ILoggingProvider<T> where T : struct
     {
         private const int DEFAULTLENGTH = 3;
-        private SmoothedList<T> _smoothedData;
+        protected SmoothedList<T> _smoothedData;
         public override List<T> LoggedData { get { return _smoothedData.ToList(); } }
 
         public SmoothLoggingProvider(IProvider<T> provider, int smoothingLength = DEFAULTLENGTH) : this(provider, smoothingLength, CancellationToken.None) { }

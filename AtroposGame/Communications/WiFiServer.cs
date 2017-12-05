@@ -117,7 +117,7 @@ namespace Atropos.Communications
                         lock (_lock)
                         {
                             // Cache the socket, filed under its address
-                            connections.Add(socket.InetAddress.CanonicalHostName, socket);
+                            connections[socket.InetAddress.CanonicalHostName] = socket;
 
                             // Create and cache a DataOutputStream for sending data over it
                             var dOutStream = new DataOutputStream(socket.OutputStream);
@@ -130,6 +130,10 @@ namespace Atropos.Communications
                         // Ack back to the connection to let it know you're hearing it (and to pass it the address you'll know it by)
                         ForwardTo(socket.InetAddress.CanonicalHostName, SERVER, ACK + CONNECTED_AS + socket.InetAddress.CanonicalHostName);
                     }
+                }
+                catch (Exception e)
+                {
+                    Log.Debug(_tag, $"Exception in server socket listening: \n{e}\n");
                 }
                 finally
                 {
@@ -211,14 +215,17 @@ namespace Atropos.Communications
 
             public void Run()
             {
-                try
-                {
-                    // Create a DataInputStream for communication; the client is using a DataOutputStream to write to us
-                    var dInStream = new DataInputStream(socket.InputStream);
+                // Create a DataInputStream for communication; the client is using a DataOutputStream to write to us
+                var dInStream = new DataInputStream(socket.InputStream);
+                bool Handled;
 
-                    while (!StopToken.IsCancellationRequested)
+                while (!StopToken.IsCancellationRequested)
+                {
+                    Handled = true;
+
+                    // Get the next message
+                    try
                     {
-                        // Get the next message
                         var data = ReadString(dInStream).Split("|".ToArray(), 3);
                         if (data.Length != 3)
                         {
@@ -235,13 +242,38 @@ namespace Atropos.Communications
                         if (server.DoACK && !message.StartsWith(ACK))
                             server.ForwardTo(sender, "Server", $"{ACK}: relaying [{message}] from {sender}.");
                     }
-                }
-                catch (Java.IO.EOFException) { } // This is fine, it's just them done talking to us (for now?)
-                // We're also potentially expecting non-fine Java.IO.IOException raises, but for now I'm going to let them stop execution.
-                finally
-                {
-                    Log.Debug(_tag, $"ServerThread to {socket.InetAddress.CanonicalHostName} self-disrupted.");
-                    Stop();
+                    catch (Java.IO.EOFException e)
+                    {
+                        Log.Debug(_tag, $"EOFException: {e.Message} ({e}).  Trying to reopen stream.");
+                        dInStream.Dispose();
+                        dInStream = new DataInputStream(socket.InputStream);
+                        //Handled = true;
+                        continue;
+                    }
+                    catch (Exception e)
+                    {
+                        if (e.InnerException != null && e.InnerException is Java.IO.EOFException)
+                        {
+                            //Log.Debug(_tag, $"Wrapped EOFException: {e}.  Trying to reopen stream.  Status of socket is: IsInputShutdown? {socket.IsInputShutdown}. KeepAlive? {socket.KeepAlive}. Linger? {socket.SoLinger}.  Timeout? {socket.SoTimeout}. ReuseAddress? {socket.ReuseAddress}. Channel? {socket.Channel}.");
+                            //dInStream.Dispose();
+                            //dInStream = new DataInputStream(socket.InputStream);
+                            ////Handled = true;
+                            continue;
+                        }
+                        else
+                        {
+                            Handled = false;
+                            throw e;
+                        }
+                    }
+                    finally
+                    {
+                        if (!Handled)
+                        {
+                            Log.Debug(_tag, $"ServerThread to {socket.InetAddress.CanonicalHostName} self-disrupted.");
+                            Stop();
+                        }
+                    }
                 }
             }
 

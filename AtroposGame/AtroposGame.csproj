@@ -9,7 +9,7 @@
     <ProjectTypeGuids>{EFBA0AD7-5A72-4C68-AF49-83D382785DCF};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>com.Atropos</RootNamespace>
+    <RootNamespace>Atropos</RootNamespace>
     <AssemblyName>AtroposGame</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <AndroidApplication>True</AndroidApplication>
@@ -187,6 +187,8 @@
     <Compile Include="Machine Learning\FigureOfMerit.cs" />
     <Compile Include="Machine Learning\FigureOfMerit2.cs" />
     <Compile Include="Machine Learning\GestureClass.cs" />
+    <Compile Include="Machine Learning\MeleeAlphaActivity.cs" />
+    <Compile Include="Machine Learning\PeakFinder.cs" />
     <Compile Include="Machine Learning\MachineLearning GestureRecog Stages.cs" />
     <Compile Include="Machine Learning\MachineLearningActivity.cs" />
     <Compile Include="Machine Learning\Normalization.cs" />
@@ -355,6 +357,7 @@
     <AndroidResource Include="Resources\raw\_221682_gshwingg_compilation.flac" />
     <AndroidResource Include="Resources\raw\_259944_midtonePianoesqueLoop.flac" />
     <AndroidResource Include="Resources\layout\EventTimelineCopy.axml" />
+    <AndroidResource Include="Resources\layout\MeleeAlpha.axml" />
   </ItemGroup>
   <ItemGroup>
     <AndroidResource Include="Resources\layout\Main.axml">

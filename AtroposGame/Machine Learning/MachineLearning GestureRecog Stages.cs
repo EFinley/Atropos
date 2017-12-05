@@ -60,28 +60,8 @@ namespace Atropos.Machine_Learning
             protected Classifier Classifier;
             protected SmoothedList<T> SmoothedData;
 
-            protected Phase CurrentPhase = Phase.NotStarted;
-
-            protected double BestScoreThusFar = double.NegativeInfinity,
-                             WorstScoreThusFar = double.PositiveInfinity;
-            protected int NumberOfConsecutiveDecreases = 0,
-                          NumberOfPointsLastScored = 0,
-                          NumPointsAtPeak = 0;
-
-            private int MinimumNumPointsToBegin = 5,
-                        MinimumConsecutiveDecreases = 3;
-            private double ThresholdScore = 1.75;
-            private double DropToPercentageBeforeLabelingMaximum = 0.925;
-
-            protected enum Phase
-            {
-                NotStarted,
-                TooSoon,
-                Eligible,
-                PastThreshold,
-                PastPeak,
-                Finished
-            }
+            protected PeakFinder<T> PeakFinder;
+            protected double ThresholdScore = 1.75;
 
             public SelfEndpointingSingleGestureRecognizer
                 (string label, Classifier classifier, ILoggingProvider<T> Provider)
@@ -90,21 +70,26 @@ namespace Atropos.Machine_Learning
                 Classifier = classifier;
                 SmoothedData = new SmoothedList<T>(3); // Half-life of the "weight" of a data point: three data points later (pretty fast - this is a light smoothing.)
 
+                PeakFinder = new PeakFinder<T>(SmoothedData,
+                    (seq) =>
+                    {
+                        var Seq = new Sequence<T>() { SourcePath = seq.ToArray() };
+                        var analyzedSeq = Current.Analyze(Seq).Result;
+
+                        // If we've stated that we only care about one gesture class, and it's not that, then we're obviously not there yet.
+                        if (Target != null && Seq.RecognizedAsIndex != Target.index) return double.NaN;
+                        else return analyzedSeq.RecognitionScore;
+                    }, thresholdScore: 1.75);
                 InterimInterval = TimeSpan.FromMilliseconds(100);
             }
 
-
-            protected AsyncManualResetEvent FoundIt = new AsyncManualResetEvent();
-            private Sequence<T> ResultSequence;
-
-            public async Task<Sequence<T>> SeekUntilFound(GestureClass target = null)
+            public async Task<Sequence<T>> RunUntilFound(GestureClass target = null)
             {
                 Target = target ?? Target;
                 Activate();
-                await FoundIt.WaitAsync();
 
-                var resultSeq = new Sequence<T>() { SourcePath = VectorProvider.LoggedData.Take(NumPointsAtPeak).ToArray() };
-                return await Current.Analyze(resultSeq) as Sequence<T>;
+                var foundSeqeuence = new Sequence<T>() { SourcePath = (await PeakFinder.FindBestSequence()).ToArray() };
+                return Current.Analyze(foundSeqeuence).Result as Sequence<T>;
             }
 
             protected override bool interimCriterion()
@@ -114,86 +99,12 @@ namespace Atropos.Machine_Learning
 
             protected override async Task interimActionAsync()
             {
-                // This section is basically the phase logic, step by step.  Minimum one step at each phase (just 'cause).
-                // If we haven't begun, start us off!
-                if (CurrentPhase == Phase.NotStarted)
+                for (int i = SmoothedData.Count; i < VectorProvider.LoggedData.Count; i++)
                 {
-                    CurrentPhase = Phase.TooSoon;
-                    return;
+                    SmoothedData.Add(VectorProvider.LoggedData[i]);
                 }
 
-                // Wait for a minimum number of points accumulated before you even START wasting time on calculating the recognition score.
-                if (CurrentPhase == Phase.TooSoon)
-                {
-                    if (VectorProvider.LoggedData.Count >= MinimumNumPointsToBegin) CurrentPhase = Phase.Eligible;
-                    return;
-                }
-
-                // Okay, now we actually need the data and its score.
-                var seq = VectorProvider.LoggedData;
-                var Seq = new Sequence<T>() { SourcePath = seq.ToArray() };
-                await Current.Analyze(Seq);
-
-                // If we've stated that we only care about one gesture class, and it's not that, then we're obviously not there yet.
-                if (Target != null && Seq.RecognizedAsIndex != Target.index) return;
-
-                // Eligible means we're allowed to check if we pass the threshold score yet.
-                if (CurrentPhase == Phase.Eligible)
-                {
-                    if (Seq.RecognitionScore >= ThresholdScore)
-                    {
-                        CurrentPhase = Phase.PastThreshold;
-                        BestScoreThusFar = Seq.RecognitionScore;
-                    }
-                    return;
-                }
-
-                // Once we pass the threshold, we're looking for a peak, so increase the best score until you drop (noticeably) below the prior best.
-                if (CurrentPhase == Phase.PastThreshold)
-                {
-                    if (Seq.RecognitionScore > BestScoreThusFar)
-                    {
-                        BestScoreThusFar = Seq.RecognitionScore;
-                    }
-                    else if (Seq.RecognitionScore < DropToPercentageBeforeLabelingMaximum * BestScoreThusFar)
-                    {
-                        NumPointsAtPeak = NumberOfPointsLastScored;
-                        CurrentPhase = Phase.PastPeak;
-                        WorstScoreThusFar = Seq.RecognitionScore;
-                        return;
-                    }
-
-                    NumberOfPointsLastScored = VectorProvider.LoggedData.Count;
-                    return;
-                }
-
-                // If we think we found a peak, look for N consecutive decreases and then declare victory (using just the sequence up to and including the peak).
-                if (CurrentPhase == Phase.PastPeak)
-                {
-                    if (Seq.RecognitionScore < WorstScoreThusFar)
-                    {
-                        NumberOfConsecutiveDecreases++;
-                        WorstScoreThusFar = Seq.RecognitionScore;
-                        if (NumberOfConsecutiveDecreases > MinimumConsecutiveDecreases)
-                        {
-                            FoundIt.Set(); // Everything else will take care of itself in SeekUntilFound().
-                        }
-                    }
-                    else if (Seq.RecognitionScore > BestScoreThusFar) // Oops! Still goin' up!
-                    {
-                        NumberOfConsecutiveDecreases = 0;
-                        BestScoreThusFar = Seq.RecognitionScore;
-                        CurrentPhase = Phase.PastThreshold;
-                        NumberOfPointsLastScored = VectorProvider.LoggedData.Count;
-                        return;
-                    }
-                    else // Not an increase, but also not a consecutive decrease; no worries.
-                    {
-                        NumberOfConsecutiveDecreases = 0;
-                        WorstScoreThusFar = Seq.RecognitionScore; // Okay, not the *absolute* worst score thus far, but whatevs.
-                    }
-                }
-                
+                PeakFinder.ConsiderAllAvailable(); // Will cause FindBestSequence() to fire, if indeed it has (now) found one.
             }
         }
     }
