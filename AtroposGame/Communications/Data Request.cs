@@ -17,6 +17,8 @@ using Nito.AsyncEx;
 using System.Threading;
 using System.Reflection;
 
+using static Atropos.Communications.WifiCore;
+
 namespace Atropos.Communications
 {
 
@@ -24,7 +26,7 @@ namespace Atropos.Communications
     {
         public DataRequest() : base() { Activate(); }
         public Message RequestMessage;
-        public void Send() { WiFiMessageReceiver.Client.SendMessage(RequestMessage); }
+        public void Send() { WiFiMessageCenter.Client?.SendMessage(RequestMessage); }
 
         #region Equality checking - Tricksy: Does NOT compare the resulting data, only the Message (which in turn only compares the ID number)
         public override bool Equals(object obj)
@@ -77,9 +79,9 @@ namespace Atropos.Communications
         {
             if (requestMessage == null) return; // Will be used in the group version since there we don't want to register the following callback for the group, just for the individual sub-requests.
 
-            RequestMessage = requestMessage + $"|{IDnumber}";
+            RequestMessage = requestMessage + $"{NEXT}{IDnumber}";
             DoOnReceiptFunc = GenerateReceiptFunc();
-            WiFiMessageReceiver.OnReceiveMessage += DoOnReceiptFunc;
+            WiFiMessageCenter.OnReceiveMessage += DoOnReceiptFunc;
         }
 
         private EventHandler<EventArgs<Message>> DoOnReceiptFunc;
@@ -87,13 +89,13 @@ namespace Atropos.Communications
         {
             return (o, e) =>
             {
-                var prefixString = $"AsRequested|{IDnumber}|";
+                var prefixString = $"AsRequested{NEXT}{IDnumber}{NEXT}";
                 if (e.Value == RequestMessage && e.Value.Content.StartsWith(prefixString))
                 {
                     Data = Serializer.Deserialize<Tdata>(e.Value.Content.Substring(prefixString.Length)); // That is, "skip that many chars" - IMO substring's one-arg version ought to be (count), not (startIndex), but I wasn't consulted.
                     OnRequestedDataAvailable?.Invoke(o, new EventArgs<Tdata>(Data));
 
-                    WiFiMessageReceiver.OnReceiveMessage -= DoOnReceiptFunc;
+                    WiFiMessageCenter.OnReceiveMessage -= DoOnReceiptFunc;
                 }
             };
         }
@@ -162,7 +164,7 @@ namespace Atropos.Communications
         public static Message FetchRequestedData(Message message, object dataObject)
         {
             // One: Parse out the instructions in the message
-            var substrings = message.Content.Split('|');
+            var substrings = message.Content.Split(onNEXT);
             if (substrings[0] != "RequestData") return null;
             var dataRequestSpecifics = substrings[1];
             var typeName = substrings[2];

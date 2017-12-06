@@ -36,6 +36,7 @@ namespace Atropos
             // Set our view from the layout resource associated with this activity
             SetContentView(layoutID);
 
+            // Set up the Encounter Prompts - the buttons which simulate location awareness
             foreach (var PromptID in EncounterPromptIDs)
             {
                 var Prompt = FindViewById<RelativeLayout>(PromptID);
@@ -63,7 +64,14 @@ namespace Atropos
                 };
             }
 
+            // Default to Postcard From The Shadows encounter sequence (during testing, given that there are no others defined)
             if (EncounterElement.CurrentElement == null && EncounterPrompts.Count > 0) DisplayElement(EncounterElement.SetUpPostcard());
+
+            // Feedback on whether our networking info is carrying through changeover...
+            if (WiFiMessageCenter.Client != null)
+            {
+                Toast.MakeText(this, $"Found WifiClient, IsConnected {WiFiMessageCenter.Client.IsConnected}, with {AddressBook.Names.Join()} in the address book.", ToastLength.Long).Show();
+            }
         }
 
         public override bool OnCreateOptionsMenu(IMenu menu)

@@ -17,9 +17,11 @@ using Nito.AsyncEx;
 using System.Threading;
 using System.Reflection;
 
+using static Atropos.Communications.WifiCore;
+
 namespace Atropos.Communications
 {
-    public static class WiFiMessageReceiver
+    public static class WiFiMessageCenter
     {
         public static event EventHandler<EventArgs<Message>> OnReceiveMessage;
 
@@ -37,7 +39,7 @@ namespace Atropos.Communications
         }
         public static Action<object> ParseMessageToAction(Message message)
         {
-            var substrings = message.Content.Split('|');
+            var substrings = message.Content.Split(onNEXT);
             if (substrings[0] == "RequestActivity")
             {
                 return (o) =>
@@ -55,7 +57,7 @@ namespace Atropos.Communications
                     
                 return (o) =>
                 {
-                    var FX = Res.SFX.Register($"RequestedFX|{substrings[2]}", ResourceID);
+                    var FX = Res.SFX.Register($"RequestedFX{NEXT}{substrings[2]}", ResourceID);
                     FX.Activate();
                 };
             }
@@ -64,12 +66,12 @@ namespace Atropos.Communications
                 return (o) =>
                 {
                     IEffect FX;
-                    if (!Res.SFX.Effects.TryGetValue($"RequestedFX|{substrings[2]}", out FX))
+                    if (!Res.SFX.Effects.TryGetValue($"RequestedFX{NEXT}{substrings[2]}", out FX))
                     {
                         int ResourceID;
                         if (substrings[1] == "int") ResourceID = int.Parse(substrings[2]);
                         else ResourceID = typeof(Resource.Id).GetStaticProperty<int>(substrings[2]);
-                        FX = Res.SFX.Register($"RequestedFX|{substrings[2]}", ResourceID);
+                        FX = Res.SFX.Register($"RequestedFX{NEXT}{substrings[2]}", ResourceID);
                     }
                     FX.Activate();
                 };

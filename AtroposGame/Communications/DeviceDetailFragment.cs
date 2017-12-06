@@ -89,7 +89,7 @@ namespace Atropos.Communications
 
         protected Socket CommsSocket;
         protected WifiServer Server;
-        protected WifiClient Client { get { return WiFiMessageReceiver.Client; } set { WiFiMessageReceiver.Client = value; } }
+        protected WifiClient Client { get { return WiFiMessageCenter.Client; } set { WiFiMessageCenter.Client = value; } }
         public void OnConnectionInfoAvailable(WifiP2pInfo info)
         {
             DismissProgressIndicator();
@@ -310,7 +310,7 @@ namespace Atropos.Communications
                 {
                     for (int i = 0; i < 20; i++)
                     {
-                        if (AddressBook.Names.Contains(_device.Name)) break;
+                        if (AddressBook.Names.Contains(MyDevice.DeviceName)) break;
                         Task.Delay(150).Wait();
                     }
                     RunOnUiThread(() =>

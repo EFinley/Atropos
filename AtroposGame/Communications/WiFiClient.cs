@@ -20,7 +20,7 @@ using MiscUtil;
 
 namespace Atropos.Communications
 {
-    public class WifiClient : WifiBaseClass
+    public class WifiClient : WifiCore
     {
         protected new string _tag = "WifiClient";
 
@@ -38,8 +38,8 @@ namespace Atropos.Communications
         //public List<string> TeammateNames { get { return Addresses.Keys.ToList(); } }
 
         // The streams we use to communicate with the server; these come from the socket.
-        private DataInputStream inStream;
-        private DataOutputStream outStream;
+        protected DataInputStream inStream;
+        protected DataOutputStream outStream;
 
         public event EventHandler<EventArgs> OnConnectionSuccess;
         public event EventHandler<EventArgs> OnConnectionFailure;
@@ -91,10 +91,6 @@ namespace Atropos.Communications
                             Roles = new List<Role>() { asWhatRole, Role.Self },
                             IPaddress = myAddress
                         });
-
-                        await Task.Delay(250)
-                            .ContinueWith(_ => SendMessage($"{POLL_FOR_NAMES}"))
-                            .ConfigureAwait(false);
                     }
                     else
                     {
@@ -117,16 +113,21 @@ namespace Atropos.Communications
                     inStream = new DataInputStream(socket.InputStream);
                     outStream = new DataOutputStream(socket.OutputStream);
 
-                    await Task.Run((Action)Listen);
+                    WifiCore.RunSendingLooper(this);
+
+                    await Task.Delay(250)
+                        .ContinueWith(_ => SendMessage($"{POLL_FOR_NAMES}"))
+                        .ConfigureAwait(false);
+
+                    await Task.Run((Action)Listen); // When finished, *should* mean that it's received its stop signal and is thus ready to close.
+
+                    Log.Debug(_tag, "Closing client connection normally(??).");
+                    socket.Close();
+                    IsConnected = false;
                 }
                 catch (Exception e)
                 {
                     throw e;
-                }
-                finally
-                {
-                    socket.Close();
-                    IsConnected = false;
                 }
             });
         }
@@ -152,11 +153,18 @@ namespace Atropos.Communications
                 else
                     throw new InvalidOperationException($"Connection to communications server is closed. Unable to send message ({message}) to {toWhom}.");
             }
+            else if (socket.IsOutputShutdown)
+            { 
+                if (FailQuietly)
+                    Log.Error(_tag, $"Connection to communications server is output-shutdown. Unable to send message ({message}) to {toWhom}.");
+                else
+                    throw new InvalidOperationException($"Connection to communications server is output-shutdown. Unable to send message ({message}) to {toWhom}.");
+            }
 
             if (!AddressBook.IPaddresses.Contains(toWhom) && toWhom != ALL)
                 toWhom = AddressBook.IPaddresses[AddressBook.Targets.IndexOf(AddressBook.Resolve(toWhom))];
 
-            SendString(outStream, $"{toWhom}|{myAddress}|{message}");
+            SendString(outStream, inStream, $"{toWhom}{NEXT}{myAddress}{NEXT}{message}");
 
             if (!message.StartsWith(ACK)) OnMessageSent?.Invoke(this, new EventArgs<string>($"(To {toWhom}) {message}"));
         }
@@ -180,7 +188,7 @@ namespace Atropos.Communications
             while (!StopToken.IsCancellationRequested)
             {
                 // Get the next message
-                var data = ReadString(inStream).Split("|".ToArray(), 3);
+                var data = ReadString(inStream, outStream).Split(onNEXT, 3);
                 if (data.Length != 3)
                 {
                     Log.Debug(_tag, $"Data has <3 entries; [0] is {data.ElementAtOrDefault(0)}, [1] is {data.ElementAtOrDefault(1)}, [2] is {data.ElementAtOrDefault(2)}");
@@ -192,26 +200,26 @@ namespace Atropos.Communications
                 var message = data.ElementAtOrDefault(2);
 
                 // If it's not for me, ignore it.  Shouldn't happen in current code anyway.  Nor should receiving ALL *from* the server - it should only exist when sending *to* the server.
-                if (!address.IsOneOf(myAddress, ALL))
+                if (address == ALL) Log.Debug(_tag, $"Received \"{Readable(message)}\" addressed to ALL, clientside; shouldn't happen, debug server.");
+                else if (address != myAddress)
                 {
-                    if (address == ALL) Log.Debug(_tag, $"Received \"{message}\" addressed to ALL, clientside; shouldn't happen, debug server.");
-                    else Log.Debug(_tag, $"Received \"{message}\" addressed to {address} (I'm {myAddress}); ignoring it.");
-                    continue;
+                    Log.Debug(_tag, $"Received \"{Readable(message)}\" addressed to {Readable(address)} (I'm {Readable(myAddress)}); I ought to ignore it, but parsing it anyway, 'cause WTF.");
+                    //continue;
                 }
 
                 //if (message.StartsWith(CMD))
-                //    HandleClientCommand(sender, message.Replace($"{CMD}|", ""));
+                //    HandleClientCommand(sender, message.Replace($"{CMD}{NEXT}", ""));
 
                 // Parse some special cases - name polling and ACKnowledgments.
                 if (message == POLL_FOR_NAMES)
                 {
-                    SendMessage($"{ACK}|{POLL_RESPONSE}|{myName}|{myRole}");
+                    SendMessage($"{ACK}{NEXT}{POLL_RESPONSE}{NEXT}{myName}{NEXT}{myRole}");
                     Log.Debug(_tag, $"Received {POLL_FOR_NAMES} from {sender}; replying with my name ({myName}) and role ({myRole}).");
                 }
-                else if (message.StartsWith($"{ACK}|{POLL_RESPONSE}|"))
+                else if (message.StartsWith($"{ACK}{NEXT}{POLL_RESPONSE}{NEXT}"))
                 {
-                    var respName = message.Split('|')[2];
-                    var respRole = message.Split('|')[3];
+                    var respName = message.Split(onNEXT)[2];
+                    var respRole = message.Split(onNEXT)[3];
                     Log.Debug(_tag, $"Received {POLL_RESPONSE} from {sender}, giving their name ({respName}) and role ({respRole}).  Adding to address book.");
                     AddressBook.Add(new TeamMember()
                     {
@@ -223,23 +231,25 @@ namespace Atropos.Communications
                 else if (message.StartsWith(ACK)) 
                 {
                     if (DoACK) // Serving as a proxy for "should I send that to the output window?" as well as "should I send out ACKs myself?"
-                        Log.Debug(_tag, $"ACKback: {message}");
+                        Log.Debug(_tag, $"ACKback: {Readable(message)}");
                 }
 
                 // If it doesn't fall into one of our special cases, handle it as a normal message.
                 else 
                 {
                     OnMessageReceived?.Invoke(this, new EventArgs<string>(message));
-                    if (DoACK) SendMessage(sender, $"{ACK}: received [{message}] from {sender}.");
+                    WiFiMessageCenter.ActOnMessage(new Message() { From = sender, To = address, Content = message });
+                    if (DoACK) SendMessage(sender, $"{ACK}: received [{Readable(message)}] from {sender}.");
                 }
             }
+            Log.Debug(_tag, $"Reached end of Listen() loop - about to close connection.");
         }
 
-        public override string ReadString(DataInputStream inStream)
+        public override string ReadString(DataInputStream inStream, DataOutputStream outStream)
         {
-            var result = base.ReadString(inStream);
+            var result = base.ReadString(inStream, outStream);
             if (DoACK) // Serves as a proxy for "should I also report to the log file?" as well as "should I send ACKs on the comm channel?"
-                Log.Debug(_tag, $"Client received raw string [{result}]");
+                Log.Debug(_tag, $"Client received raw string [{Readable(result)}]");
             return result;
         }
 

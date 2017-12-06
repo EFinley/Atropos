@@ -152,7 +152,7 @@
     <Compile Include="Communications\FileTransferService.cs" />
     <Compile Include="Communications\IDeviceActionListener.cs" />
     <Compile Include="Communications\WiFiAddressBook.cs" />
-    <Compile Include="Communications\WiFiMessageReceiver.cs" />
+    <Compile Include="Communications\WiFiMessageCenter.cs" />
     <Compile Include="Communications\Message Receiver.cs" />
     <Compile Include="Communications\Message Target.cs" />
     <Compile Include="Communications\Message.cs" />
@@ -160,6 +160,7 @@
     <Compile Include="Communications\WiFiClient.cs" />
     <Compile Include="Communications\WiFiDirectActivity.cs" />
     <Compile Include="Communications\WiFiDirectBroadcastReceiver.cs" />
+    <Compile Include="Communications\WiFiCore.cs" />
     <Compile Include="Communications\WiFiServer.cs" />
     <Compile Include="Data Structures\DatapointT.cs" />
     <Compile Include="Data Structures\DatapointT1T2.cs" />

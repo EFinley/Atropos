@@ -358,14 +358,21 @@ namespace Atropos
                         ResultSFXVolume = random.NextDouble();
                     }
 
-                    // Play the SFX (I no longer recall why this is separate from the above, but I think there was a good reason. ;) )
+                    // Play the SFX depending on hit/miss status and the odds (within each) of an audible response.  Not every wound/ricochet is audible!
                     if (DoResultSFX)
                     {
                         if (DidHit)
                         {
                             ShotHitSFX.Play(ResultSFXVolume, useSpeakers: true);
+                            // Experimental!!
+                            Atropos.Communications.Runners.MyTeammates.PlaySFX(ShotHitSFX);
                         }
-                        else ShotMissSFX.Play(ResultSFXVolume, useSpeakers: true);
+                        else
+                        {
+                            ShotMissSFX.Play(ResultSFXVolume, useSpeakers: true);
+                            // Experimental!!
+                            Atropos.Communications.Runners.MyTeammates.PlaySFX(ShotMissSFX);
+                        }
                     }
                 }
                 catch (Exception)

@@ -16,60 +16,12 @@ using Nito.AsyncEx;
 using Android.Util;
 using Java.Net;
 using System.Threading;
-using static Atropos.Communications.WifiBaseClass;
+using static Atropos.Communications.WifiCore;
 using MiscUtil;
 
 namespace Atropos.Communications
 {
-    public class WifiBaseClass
-    {
-        protected string _tag = "WifiBaseClass";
-
-        // A central cancellation coordinator
-        protected CancellationTokenSource _cts;
-        public CancellationToken StopToken { get { return _cts?.Token ?? CancellationToken.None; } }
-
-        public WifiBaseClass(CancellationToken? stopToken = null)
-        {
-            _cts = CancellationTokenSource.CreateLinkedTokenSource(stopToken ?? CancellationToken.None);
-        }
-
-        public static void SendString(DataOutputStream stream, string message)
-        {
-            Task.Run(() =>
-            {
-                stream.WriteChars(message);
-                stream.WriteChar(0);
-            });
-        }
-
-        public virtual string ReadString(DataInputStream inStream)
-        {
-            string resultString = String.Empty;
-            var res = 255;
-            Task.Run(() =>
-            {
-                while (res > 0 && !StopToken.IsCancellationRequested)
-                {
-                    res = inStream.ReadChar();
-                    //Log.Debug(_tag, $"Received '{res}' (aka {(char)res}).");
-                    if (res > 0) resultString += (char)res;
-                }
-            }).Wait();
-            //Log.Debug(_tag, $"Received '{resultString}'.");
-            return resultString;
-        }
-
-        public static string ACK = "ACK";
-        public static string CMD = "CMD";
-        public static string POLL_FOR_NAMES = "POLL_FOR_NAMES";
-        public static string POLL_RESPONSE = "POLL_RESPONSE";
-        public static string ALL = "ALL";
-        public static string SERVER = "SERVER";
-        public static string CONNECTED_AS = " - Connected as ";
-    }
-
-    public class WifiServer : WifiBaseClass
+    public class WifiServer : WifiCore
     {
         // We use a single fixed port number for all of our work here.
         public const int Port = 42445;
@@ -82,6 +34,7 @@ namespace Atropos.Communications
 
         // A lookup table for the pre-generated output streams associated with each socket accepted - saves on allocations of new streams.
         private Dictionary<Socket, DataOutputStream> outputStreams = new Dictionary<Socket, DataOutputStream>();
+        private Dictionary<Socket, DataInputStream> inputStreams = new Dictionary<Socket, DataInputStream>();
 
         // Another lookup table for the sockets based on the supplied address for their recipient
         private Dictionary<string, Socket> connections = new Dictionary<string, Socket>();
@@ -89,7 +42,7 @@ namespace Atropos.Communications
         protected new string _tag = "WifiServer";
         private object _lock = new object();
 
-        public event EventHandler<EventArgs<String>> OnServerCommandReceived;
+        //public event EventHandler<EventArgs<String>> OnServerCommandReceived;
 
         public WifiServer(CancellationToken? stopToken = null) : base(stopToken) { }
 
@@ -120,8 +73,8 @@ namespace Atropos.Communications
                             connections[socket.InetAddress.CanonicalHostName] = socket;
 
                             // Create and cache a DataOutputStream for sending data over it
-                            var dOutStream = new DataOutputStream(socket.OutputStream);
-                            outputStreams.Add(socket, dOutStream);
+                            outputStreams.Add(socket, new DataOutputStream(socket.OutputStream));
+                            inputStreams.Add(socket, new DataInputStream(socket.InputStream));
                         }
 
                         // Create a new thread for this connection
@@ -181,11 +134,12 @@ namespace Atropos.Communications
             }
             var recipientSocket = connections[address];
             var dOutStream = outputStreams[recipientSocket];
+            var dInStream = inputStreams[recipientSocket];
 
-            SendString(dOutStream, $"{address}|{sender}|{message}");
+            SendString(dOutStream, dInStream, $"{address}{NEXT}{sender}{NEXT}{message}");
         }
 
-        public class ServerThread : WifiBaseClass
+        public class ServerThread : WifiCore
         {
             protected new string _tag = "ServerThread";
 
@@ -217,16 +171,18 @@ namespace Atropos.Communications
             {
                 // Create a DataInputStream for communication; the client is using a DataOutputStream to write to us
                 var dInStream = new DataInputStream(socket.InputStream);
+                var dOutStream = new DataOutputStream(socket.OutputStream);
+
                 bool Handled;
 
                 while (!StopToken.IsCancellationRequested)
                 {
-                    Handled = true;
+                    Handled = false;
 
                     // Get the next message
                     try
                     {
-                        var data = ReadString(dInStream).Split("|".ToArray(), 3);
+                        var data = ReadString(dInStream, dOutStream).Split(onNEXT, 3);
                         if (data.Length != 3)
                         {
                             Log.Debug(_tag, $"Data has <3 entries; [0] is {data.ElementAtOrDefault(0)}, [1] is {data.ElementAtOrDefault(1)}, [2] is {data.ElementAtOrDefault(2)}");
@@ -235,30 +191,32 @@ namespace Atropos.Communications
                         var sender = data.ElementAtOrDefault(1);
                         var message = data.ElementAtOrDefault(2);
 
-                        //if (address != SERVER) server.ForwardTo(address, sender, message); 
-                        //else server.OnServerCommandReceived?.Invoke(this, new EventArgs<string>($"{sender}|{message}"));
-                        server.Forward(sender, message);
+                        if (address != SERVER) server.ForwardTo(address, sender, message); 
+                        //else server.OnServerCommandReceived?.Invoke(this, new EventArgs<string>($"{sender}{NEXT}{message}"));
+                        //else server.Forward(sender, message);
 
                         if (server.DoACK && !message.StartsWith(ACK))
-                            server.ForwardTo(sender, "Server", $"{ACK}: relaying [{message}] from {sender}.");
+                            server.ForwardTo(sender, "Server", $"{ACK}: relaying [{Readable(message)}] from {sender}.");
+
+                        Handled = true; // If we made it to here, then we don't need to close things down.
                     }
                     catch (Java.IO.EOFException e)
                     {
-                        Log.Debug(_tag, $"EOFException: {e.Message} ({e}).  Trying to reopen stream.");
-                        dInStream.Dispose();
-                        dInStream = new DataInputStream(socket.InputStream);
+                        Log.Debug(_tag, $"EOFException: {e.Message} ({e}).  Stream is closed!");
+                        //dInStream.Dispose();
+                        //dInStream = new DataInputStream(socket.InputStream);
                         //Handled = true;
-                        continue;
+                        //continue;
                     }
                     catch (Exception e)
                     {
                         if (e.InnerException != null && e.InnerException is Java.IO.EOFException)
                         {
-                            //Log.Debug(_tag, $"Wrapped EOFException: {e}.  Trying to reopen stream.  Status of socket is: IsInputShutdown? {socket.IsInputShutdown}. KeepAlive? {socket.KeepAlive}. Linger? {socket.SoLinger}.  Timeout? {socket.SoTimeout}. ReuseAddress? {socket.ReuseAddress}. Channel? {socket.Channel}.");
+                            Log.Debug(_tag, $"Wrapped EOFException: {e}.  Stream seems closed!  Status of socket is: IsOutputShutdown? {socket.IsOutputShutdown}. IsInputShutdown? {socket.IsInputShutdown}. KeepAlive? {socket.KeepAlive}. Linger? {socket.SoLinger}.  Timeout? {socket.SoTimeout}. ReuseAddress? {socket.ReuseAddress}. Channel? {socket.Channel}.");
                             //dInStream.Dispose();
                             //dInStream = new DataInputStream(socket.InputStream);
-                            ////Handled = true;
-                            continue;
+                            //Handled = true;
+                            //continue;
                         }
                         else
                         {
@@ -277,11 +235,11 @@ namespace Atropos.Communications
                 }
             }
 
-            public override string ReadString(DataInputStream inStream)
+            public override string ReadString(DataInputStream inStream, DataOutputStream outStream)
             {
-                var result = base.ReadString(inStream);
+                var result = base.ReadString(inStream, outStream);
                 if (server.DoACK) // Serves as a proxy for "should I also report to the log file?" as well as "should I send ACKs on the comm channel?"
-                    Log.Debug(_tag, $"Server received raw string [{result}]");
+                    Log.Debug(_tag, $"Server received raw string [{Readable(result)}]");
                 return result;
             }
         }

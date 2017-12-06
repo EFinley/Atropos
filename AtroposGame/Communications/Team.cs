@@ -105,17 +105,18 @@ namespace Atropos.Communications
     public static class Runners
     { 
         public static Team All { get; set; } = new Team();
-        public static Team Team { get { return new Team(All.TeamMembers.Where(m => !m.Roles.Contains(Role.NPC) && !m.Roles.Contains(Role.GM))); } }
+        public static Team PCs { get { return new Team(All.TeamMembers.Where(m => !m.Roles.Contains(Role.NPC) && !m.Roles.Contains(Role.GM))); } }
+        public static Team MyTeammates { get { return new Team(PCs.TeamMembers.Where(m => !m.Roles.Contains(Role.Self))); } }
         public static Team NPCs { get { return new Team(All.TeamMembers.Where(m => m.Roles.Contains(Role.NPC))); } }
         public static Team GMs { get { return new Team(All.TeamMembers.Where(m => m.Roles.Contains(Role.GM))); } }
         public static Team None { get; } = new Team();
 
         private static TeamMember WhoHasItListedFirst(Role role)
         {
-            var peakNumberOfRoles = Team.TeamMembers.Max(m => m.Roles.Count);
+            var peakNumberOfRoles = PCs.TeamMembers.Max(m => m.Roles.Count);
             for (int i = 0; i < peakNumberOfRoles; i++)
             {
-                foreach (var m in Team.TeamMembers)
+                foreach (var m in PCs.TeamMembers)
                 {
                     if (m.Roles.ElementAtOrDefault(i) == role) return new TeamMemberAKA(m, role.ToString());
                 }
@@ -128,10 +129,10 @@ namespace Atropos.Communications
         public static TeamMember Sorceror { get { return WhoHasItListedFirst(Role.Sorceror); } }
         public static TeamMember Spy { get { return WhoHasItListedFirst(Role.Spy); } }
 
-        public static Team Hitters { get { return new Team(Team.TeamMembers.Where(t => t.Roles.Contains(Role.Hitter))) { Name = "Hitters" }; } }
-        public static Team Hackers { get { return new Team(Team.TeamMembers.Where(t => t.Roles.Contains(Role.Hacker))) { Name = "Hackers" }; } }
-        public static Team Sorcerors { get { return new Team(Team.TeamMembers.Where(t => t.Roles.Contains(Role.Sorceror))) { Name = "Sorcerors" }; } }
-        public static Team Spies { get { return new Team(Team.TeamMembers.Where(t => t.Roles.Contains(Role.Spy))) { Name = "Spies" }; } }
+        public static Team Hitters { get { return new Team(PCs.TeamMembers.Where(t => t.Roles.Contains(Role.Hitter))) { Name = "Hitters" }; } }
+        public static Team Hackers { get { return new Team(PCs.TeamMembers.Where(t => t.Roles.Contains(Role.Hacker))) { Name = "Hackers" }; } }
+        public static Team Sorcerors { get { return new Team(PCs.TeamMembers.Where(t => t.Roles.Contains(Role.Sorceror))) { Name = "Sorcerors" }; } }
+        public static Team Spies { get { return new Team(PCs.TeamMembers.Where(t => t.Roles.Contains(Role.Spy))) { Name = "Spies" }; } }
 
         public static Team ByNames(params string[] names)
         {

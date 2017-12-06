@@ -181,6 +181,9 @@ namespace Atropos
                 _currentSelectedEffect = value;
             }
         }
+        public IEffect Last { get { return _lastSelectedEffect; } }
+        public IEffect Current { get { return _currentSelectedEffect; } }
+
         public string Name { get; set; }
 
         public EffectGroup(string name, params IEffect[] effects)
@@ -834,6 +837,8 @@ namespace Atropos
             }
             Res.SFX.Unregister(this);
         }
+
+        public int GetResourceID() { return _resourceID; }
         
         // Static zero entities which nonetheless are legal and won't throw.  MUCH trickier than it sounds!
         public static Effect None { get; private set; }

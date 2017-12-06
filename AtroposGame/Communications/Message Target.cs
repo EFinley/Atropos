@@ -18,6 +18,8 @@ using System.Threading;
 using System.Reflection;
 using System.Text.RegularExpressions;
 
+using static Atropos.Communications.WifiCore;
+
 namespace Atropos.Communications
 {
     public abstract class MessageTarget
@@ -38,35 +40,48 @@ namespace Atropos.Communications
         public Message SendMessage(Message message)
         {
             //message.Send(MessageTarget.ReturnAddress, this);
-            WiFiMessageReceiver.Client.SendMessage(Name, message);
+            WiFiMessageCenter.Client?.SendMessage(Name, message);
             return message;
         }
         public virtual DataRequest<Tdata> RequestData<Tdata>(string WhatData)
         {
-            var msg = DataRequest<Tdata>.CreateFrom(new Message() { Content = $"RequestData|{WhatData}|{typeof(Tdata).Name}", To = Name });
+            var msg = DataRequest<Tdata>.CreateFrom(new Message() { Content = $"RequestData{NEXT}{WhatData}{NEXT}{typeof(Tdata).Name}", To = Name });
             msg.Send();
             return msg;
         }
 
         public virtual void PrepSFX(string SFXname)
-            { SendMessage($"PrepSFX|string|{SFXname}"); }
+            { SendMessage($"PrepSFX{NEXT}string{NEXT}{SFXname}"); }
         public virtual void PrepSFX(int SFXresourceID)
-            { SendMessage($"PrepSFX|int|{SFXresourceID}"); }
+            { SendMessage($"PrepSFX{NEXT}int{NEXT}{SFXresourceID}"); }
+        public virtual void PrepSFX(IEffect SFXeffect)
+        {
+            if (SFXeffect is EffectGroup effGroup) PrepSFX(effGroup.Current);
+            else if (SFXeffect is Effect effect) PrepSFX(effect.GetResourceID());
+        }
 
         public virtual void PlaySFX(string SFXname)
-            { SendMessage($"PlaySFX|string|{SFXname}"); }
+            { SendMessage($"PlaySFX{NEXT}string{NEXT}{SFXname}"); }
         public virtual void PlaySFX(int SFXresourceID)
-            { SendMessage($"PlaySFX|int|{SFXresourceID}"); }
+            { SendMessage($"PlaySFX{NEXT}int{NEXT}{SFXresourceID}"); }
         // TODO: Consider how best to pass on the many options which can be provided to this function; only some apply, but still.
+        public virtual void PlaySFX(IEffect SFXeffect)
+        {
+            if (SFXeffect is EffectGroup effGroup) PlaySFX(effGroup.Current);
+            else if (SFXeffect is Effect effect) PlaySFX(effect.GetResourceID());
+        }
 
         public virtual void Speak(string content)
-            { SendMessage($"SpeechSay|string|{content}"); }
+            { SendMessage($"SpeechSay{NEXT}string{NEXT}{content}"); }
         // TODO: Consider how best to pass on the many options which can be provided to this function; only some apply, but still.
+
+        public virtual void Toast(string content)
+            { SendMessage($"Toast{NEXT}string{NEXT}{content}"); } 
 
         public virtual void PushData<Tdata>(string ToWhat, Tdata Data)
         {
             var serializedForm = Serializer.Serialize<Tdata>(Data);
-            SendMessage($"PushData|{ToWhat}|{typeof(Tdata).FullName}|{serializedForm}");
+            SendMessage($"PushData{NEXT}{ToWhat}{NEXT}{typeof(Tdata).FullName}{NEXT}{serializedForm}");
         }
         public virtual void RequestActivityLaunch<Tactivity, Tdata>(Tdata PassedInfo = default(Tdata)) where Tactivity : Activity
         {
@@ -74,7 +89,7 @@ namespace Atropos.Communications
             // If it cannot be serialized, but is nontrivial, then...???
             { }
             var serializedForm = Serializer.Serialize<Tdata>(PassedInfo);
-            SendMessage($"RequestActivity|{typeof(Tactivity).FullName}|PassedInfo|{typeof(Tdata).FullName}|{serializedForm}");
+            SendMessage($"RequestActivity{NEXT}{typeof(Tactivity).FullName}{NEXT}PassedInfo{NEXT}{typeof(Tdata).FullName}{NEXT}{serializedForm}");
         }
     }
 }

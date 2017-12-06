@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace Atropos.Communications
 {
-    [Activity(Label = "Atropos WiFi Peer-to-Peer")]
+    [Activity(Label = "Atropos WiFi Peer-to-Peer", ScreenOrientation = Android.Content.PM.ScreenOrientation.Portrait)]
     public partial class WiFiDirectActivity 
         : Activity, 
           WifiP2pManager.IChannelListener, 
