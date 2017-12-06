@@ -24,143 +24,96 @@ namespace Atropos.Communications
     {
         protected new string _tag = "WifiClient";
 
-        // The socket connecting us to the server
-        private Socket socket;
-        private InetSocketAddress hostAddress;
-        public string myName = "My Name";
-        public string myAddress = "unknown";
+        public string myName;
+        public string myAddress;
         public Role myRole = Role.Any;
 
-        public bool IsConnected = false;
-        public bool FailQuietly = true;
+        //public Dictionary<string, Socket> Connections = new Dictionary<string, Socket>();
+        public Dictionary<string, ClientThread> ClientThreads = new Dictionary<string, ClientThread>();
 
-        //public Dictionary<string, string> Addresses = new Dictionary<string, string>();
-        //public List<string> TeammateNames { get { return Addresses.Keys.ToList(); } }
-
-        // The streams we use to communicate with the server; these come from the socket.
-        private DataInputStream inStream;
-        private DataOutputStream outStream;
-
-        public event EventHandler<EventArgs> OnConnectionSuccess;
-        public event EventHandler<EventArgs> OnConnectionFailure;
-        public event EventHandler<EventArgs<string>> OnMessageSent;
-        public event EventHandler<EventArgs<string>> OnMessageReceived;
-        //public event EventHandler<EventArgs<TeamMember>> OnTeammateDetected;
-        public int SocketTimeout = 2500;
+        public event EventHandler<EventArgs<string>> OnConnectionSuccess; // The string in this case is the IP address in question.
+        public event EventHandler<EventArgs<string>> OnConnectionFailure; // Ditto.
+        public event EventHandler<EventArgs<Message>> OnMessageSent;
 
         public bool DoACK = true;
 
-        public WifiClient(string hostname, CancellationToken? stopToken = null) : base(stopToken)
+        public WifiClient(CancellationToken? stopToken = null) : base(stopToken) { }
+
+        
+        public virtual Task Connect(string hostName, int numRetries = 5)
         {
-            if (String.IsNullOrEmpty(hostname)) return;
-            hostAddress = new InetSocketAddress(hostname, WifiServer.Port);
-            _cts.Token.Register(() =>
+            return Task.Run(() =>
             {
-                inStream?.Dispose();
-                outStream?.Dispose();
+                // Do we already have an open connection to the target?  If so, fine, we're done.
+                if (ClientThreads.TryGetValue(hostName, out ClientThread cThread) && cThread.IsConnected) return;
+
+                // More normally, we need to establish a connection and store it as a ClientThread.
+                var clientThread = new ClientThread(this, hostName);
+                clientThread.Connect(numRetries);
+                ClientThreads[hostName] = clientThread;
             });
         }
 
-        public virtual void Connect(string asWhatName, Role asWhatRole = Role.Any, int numberOfRetries = 5)
+        public virtual void Disconnect(string hostName)
         {
-            Task.Run(async () =>
-            {
-                try
-                {
-                    // Connect to the server
-                    socket = new Socket();
-                    socket.Bind(null);
-                
-                    socket.Connect(hostAddress, SocketTimeout);
-                    if (socket.IsConnected)
-                    {
-                        Log.Debug(_tag, $"Client: Connection accepted to {socket.InetAddress.CanonicalHostName}.");
-                        OnConnectionSuccess?.Invoke(this, EventArgs.Empty);
-                        IsConnected = true;
-
-                        myAddress = socket.LocalAddress.CanonicalHostName;
-                        myName = asWhatName;
-                        myRole = asWhatRole;
-                        //Addresses.Add(myName, myAddress);
-
-                        var tm = new TeamMember();
-
-                        AddressBook.Add(new TeamMember()
-                        {
-                            Name = myName,
-                            Roles = new List<Role>() { asWhatRole, Role.Self },
-                            IPaddress = myAddress
-                        });
-
-                        await Task.Delay(250)
-                            .ContinueWith(_ => SendMessage($"{POLL_FOR_NAMES}"))
-                            .ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        OnConnectionFailure?.Invoke(this, EventArgs.Empty);
-                        IsConnected = false;
-                        if (numberOfRetries > 0)
-                        {
-                            Log.Debug(_tag, $"Client: Connection unsuccessful; retrying in {SocketTimeout} ms.");
-                            await Task.Delay(SocketTimeout)
-                                .ContinueWith((_) => { Connect(asWhatName, asWhatRole, numberOfRetries - 1); })
-                                .ConfigureAwait(false);
-                        }
-                        else
-                        {
-                            Log.Debug(_tag, "Client: Connection unsuccessful, retry limit exhausted.");
-                        }
-                        return;
-                    }
-
-                    inStream = new DataInputStream(socket.InputStream);
-                    outStream = new DataOutputStream(socket.OutputStream);
-
-                    await Task.Run((Action)Listen);
-                }
-                catch (Exception e)
-                {
-                    throw e;
-                }
-                finally
-                {
-                    socket.Close();
-                    IsConnected = false;
-                }
-            });
+            if (!ClientThreads.TryGetValue(hostName, out ClientThread cThread)) return;
+            ClientThreads.Remove(hostName);
+            cThread.Stop();
         }
 
         public virtual void SendMessage(string message)
         {
             SendMessage(ALL, message);
         }
-
         public virtual void SendMessage(string toWhom, string message)
         {
-            if (!IsConnected || !socket.IsConnected)
-            {
-                if (FailQuietly)
-                    Log.Error(_tag, $"No connection to communications server! Unable to send message ({message}) to {toWhom}.");
-                else
-                    throw new InvalidOperationException($"No connection to communications server! Unable to send message ({message}) to {toWhom}.");
-            }
-            else if (socket.IsClosed)
-            {
-                if (FailQuietly)
-                    Log.Error(_tag, $"Connection to communications server is closed. Unable to send message ({message}) to {toWhom}.");
-                else
-                    throw new InvalidOperationException($"Connection to communications server is closed. Unable to send message ({message}) to {toWhom}.");
-            }
-
+            // We allow names (or potentially even roles) in the toWhom field... that's what AddressBook.Resolve() is for.
+            // But ultimately we need just an IP address.
             if (!AddressBook.IPaddresses.Contains(toWhom) && toWhom != ALL)
                 toWhom = AddressBook.IPaddresses[AddressBook.Targets.IndexOf(AddressBook.Resolve(toWhom))];
 
-            SendString(outStream, $"{toWhom}|{myAddress}|{message}");
+            else if (toWhom == ALL)
+            {
+                foreach (var tgt in AddressBook.Targets)
+                    SendMessage(tgt.IPaddress, message);
+                return;
+            }
 
-            if (!message.StartsWith(ACK)) OnMessageSent?.Invoke(this, new EventArgs<string>($"(To {toWhom}) {message}"));
+            Connect(toWhom); // No-op if already connected.
+            var cThread = ClientThreads[toWhom];
+
+            //if (!socket.IsConnected)
+            //{
+            //    if (FailQuietly)
+            //        Log.Error(_tag, $"No connection to communications server! Unable to send message ({message}) to {toWhom}.");
+            //    else
+            //        throw new InvalidOperationException($"No connection to communications server! Unable to send message ({message}) to {toWhom}.");
+            //}
+            //else if (socket.IsClosed)
+            //{
+            //    if (FailQuietly)
+            //        Log.Error(_tag, $"Connection to communications server is closed. Unable to send message ({message}) to {toWhom}.");
+            //    else
+            //        throw new InvalidOperationException($"Connection to communications server is closed. Unable to send message ({message}) to {toWhom}.");
+            //}
+
+            Task.Run(async () =>
+            {
+                message = $"{toWhom}{NEXT}{myAddress}{NEXT}{message}";
+                var SendingTask = cThread.TrySendMessage(message);
+                if (!await SendingTask)
+                {
+                    Disconnect(toWhom);
+                    await Task.Delay(50);
+                    Connect(toWhom, 0);
+                    Log.Debug(_tag, $"Retrying connection to {toWhom}, resending {message}.");
+                    if (!await cThread.TrySendMessage(message)) return;
+                }
+                if (!message.StartsWith(ACK)) OnMessageSent.Raise(message);
+            });
         }
 
+        // Overloads to take a Message rather than a string - presumably because the sender etc. are already embedded.
         public virtual void SendMessage(Message message)
         {
             if (!String.IsNullOrEmpty(message.To))
@@ -173,99 +126,194 @@ namespace Atropos.Communications
             SendMessage(message);
         }
 
-        
-
-        private void Listen()
-        {
-            while (!StopToken.IsCancellationRequested)
-            {
-                // Get the next message
-                var data = ReadString(inStream).Split("|".ToArray(), 3);
-                if (data.Length != 3)
-                {
-                    Log.Debug(_tag, $"Data has <3 entries; [0] is {data.ElementAtOrDefault(0)}, [1] is {data.ElementAtOrDefault(1)}, [2] is {data.ElementAtOrDefault(2)}");
-                }
-
-                // Parse its components
-                var address = data.ElementAtOrDefault(0);
-                var sender = data.ElementAtOrDefault(1);
-                var message = data.ElementAtOrDefault(2);
-
-                // If it's not for me, ignore it.  Shouldn't happen in current code anyway.  Nor should receiving ALL *from* the server - it should only exist when sending *to* the server.
-                if (!address.IsOneOf(myAddress, ALL))
-                {
-                    if (address == ALL) Log.Debug(_tag, $"Received \"{message}\" addressed to ALL, clientside; shouldn't happen, debug server.");
-                    else Log.Debug(_tag, $"Received \"{message}\" addressed to {address} (I'm {myAddress}); ignoring it.");
-                    continue;
-                }
-
-                //if (message.StartsWith(CMD))
-                //    HandleClientCommand(sender, message.Replace($"{CMD}|", ""));
-
-                // Parse some special cases - name polling and ACKnowledgments.
-                if (message == POLL_FOR_NAMES)
-                {
-                    SendMessage($"{ACK}|{POLL_RESPONSE}|{myName}|{myRole}");
-                    Log.Debug(_tag, $"Received {POLL_FOR_NAMES} from {sender}; replying with my name ({myName}) and role ({myRole}).");
-                }
-                else if (message.StartsWith($"{ACK}|{POLL_RESPONSE}|"))
-                {
-                    var respName = message.Split('|')[2];
-                    var respRole = message.Split('|')[3];
-                    Log.Debug(_tag, $"Received {POLL_RESPONSE} from {sender}, giving their name ({respName}) and role ({respRole}).  Adding to address book.");
-                    AddressBook.Add(new TeamMember()
-                    {
-                        Name = respName,
-                        Roles = new List<Role>() { (Role)Enum.Parse(typeof(Role), respRole) }, // Turns the string "Hitter" into Role.Hitter, etc.
-                        IPaddress = sender
-                    });
-                }
-                else if (message.StartsWith(ACK)) 
-                {
-                    if (DoACK) // Serving as a proxy for "should I send that to the output window?" as well as "should I send out ACKs myself?"
-                        Log.Debug(_tag, $"ACKback: {message}");
-                }
-
-                // If it doesn't fall into one of our special cases, handle it as a normal message.
-                else 
-                {
-                    OnMessageReceived?.Invoke(this, new EventArgs<string>(message));
-                    if (DoACK) SendMessage(sender, $"{ACK}: received [{message}] from {sender}.");
-                }
-            }
-        }
-
-        public override string ReadString(DataInputStream inStream)
-        {
-            var result = base.ReadString(inStream);
-            if (DoACK) // Serves as a proxy for "should I also report to the log file?" as well as "should I send ACKs on the comm channel?"
-                Log.Debug(_tag, $"Client received raw string [{result}]");
-            return result;
-        }
-
         //private void HandleClientCommand(string sender, string commandMessage)
         //{
 
         //}
 
-        private class NullClientClass : WifiClient
+        public void RegisterInfo(string groupOwnerAddress, string asWhom, string atAddress, params Role[] roles)
         {
-            public NullClientClass() : base(null, CancellationToken.None)
+            // Step 1: Define myself as a TeamMember, put myself in my address book
+            var myself = new TeamMember()
             {
-                IsConnected = true;
+                Name = asWhom,
+                IPaddress = atAddress,
+                Roles = roles.ToList()
+            };
+            myself.Roles.Add(Role.Self);
+            AddressBook.Add(myself);
+            myName = myself.Name;
+            myRole = myself.Role;
+
+            // Step 2: Set up a message handler to manage it when an introduction message arrives
+            WiFiMessageReceiver.Server.OnMessageReceived += (o, e) =>
+            {
+                if (e.Value.Content.StartsWith($"{INTRODUCING}{NEXT}"))
+                {
+                    var introducedTeamMember = TeamMember.FromIntroductionString(e.Value.Content);
+                    if (introducedTeamMember.IPaddress != myAddress)
+                        AddressBook.Add(introducedTeamMember);
+                }
+            };
+
+            // Step 3: Send out our own introduction message (or "archive" it awaiting player #2's introduction message).
+            if (groupOwnerAddress != myself.IPaddress)
+                SendMessage(groupOwnerAddress, myself.IntroductionString());
+            else WifiServer.GroupOwnerIntroMessageLog.Add(myself.IntroductionString());
+        }
+
+        public class ClientThread : WifiBaseClass
+        {
+            protected new string _tag = "ClientThread";
+
+            // The client that spawned us
+            private WifiClient client;
+
+            // The socket that connects us to our (singular, for a given ClientThread) server-endpoint.
+            private Socket socket;
+            public bool IsConnected { get { return socket?.IsConnected ?? false; } }
+
+            public int SocketTimeout = 2500;
+            private string hostAddress;
+
+
+            public ClientThread(WifiClient client, string hostAddress) : base(client.StopToken)
+            {
+                this.client = client;
+                this.hostAddress = hostAddress; //new InetSocketAddress(hostAddress, WifiServer.Port);
             }
 
-            public override void Connect(string asWhatName, Role asWhatRole, int numberOfRetries = 5)
+            public void Connect(int numberOfRetries = 5)
             {
-                myName = asWhatName;
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        // Connect to the server
+                        socket = new Socket();
+                        socket.Bind(null);
+                        socket.Connect(new InetSocketAddress(hostAddress, WifiServer.Port), SocketTimeout);
+
+                        if (socket.IsConnected)
+                        {
+                            Log.Debug(_tag, $"Client: Connection accepted to {socket.InetAddress.CanonicalHostName}.");
+                            client.OnConnectionSuccess.Raise(this, hostAddress);
+
+                            // Weirdly, up to this point we don't necessarily know our own IP address; let's fix that.
+                            client.myAddress = socket.LocalAddress.CanonicalHostName;
+                            
+                        }
+                        else
+                        {
+                            client.OnConnectionFailure.Raise(this, hostAddress);
+                            if (numberOfRetries > 0)
+                            {
+                                Log.Debug(_tag, $"Client: Connection unsuccessful; retrying in {SocketTimeout} ms.");
+                                await Task.Delay(SocketTimeout)
+                                    .ContinueWith((_) => { Connect(numberOfRetries - 1); })
+                                    .ConfigureAwait(false);
+                                return;
+                            }
+                            else
+                            {
+                                Log.Debug(_tag, "Client: Connection unsuccessful, retry limit exhausted.");
+                                _cts.Cancel();
+                            }
+                            return;
+                        }
+
+                        //inStream = new DataInputStream(socket.InputStream);
+                        //outStream = new DataOutputStream(socket.OutputStream);
+
+                        // Now, instead of exiting this function, pass off control but remain pending;
+                        // when our StopToken is cancelled, finish off with your finally clause.
+                        await _cts.Token.AsTask();
+                    }
+                    finally
+                    {
+                        socket.Close();
+                    }
+                });
+            }
+
+            //public ClientThread Start() // "Fluent" idiom
+            //{
+            //    Task.Run((Action)Run);
+            //    return this;
+            //}
+
+            public void Stop()
+            {
+                _cts.Cancel(); // No-op if already done.
+                client.Disconnect(hostAddress); // Likewise.
+            }
+
+            public async Task<bool> TrySendMessage(string message)
+            {
+                DataOutputStream dOutStream = null;
+                DataInputStream dInStream = null;
+                bool SendingSuccess = false;
+                TimeSpan timeOut = TimeSpan.FromMilliseconds(1500);
+
+                try
+                {
+                    // Create a DataOutputStream for communication; the server is using a DataInputStream to listen to us.
+                    dOutStream = new DataOutputStream(socket.OutputStream);
+                    // We'll also want a DataInputStream, very briefly, to receive our anticipated ACK character.
+                    dInStream = new DataInputStream(socket.InputStream);
+
+                    // We have three end conditions... we cancel it externally, it times out, or we succeed.
+                    //var CancelTask = StopToken.AsTask(); // But this one is taken care of by StopToken inside the Task.Run() below.
+                    var TimeoutTask = Task.Delay(timeOut);
+                    var SendingTask = Task.Run(() =>
+                    {
+                        SendString(dOutStream, message);
+                        var ackback = dInStream.ReadChar(); // Block until we receive a single character - ascii ACK - on the opposite line.
+                        if (ackback != ACKchar)
+                            throw new TaskCanceledException($"Somehow we received {ackback} (#{(int)ackback}) rather than ACK (#{(int)ACKchar}); no idea why.");
+                    }, StopToken);
+
+                    // WhenAny's semantics are, frankly, fucked up.  The WhenAny is returning a Task<Task>,
+                    // whose inner Task is guaranteed to be completed / faulted / cancelled (and to be the
+                    // first one that happened to).  So we have to await both (or just reference the Result
+                    // of the inner one, since it's done already, but that has issues with no-Result-because-cancelled etc).
+                    await (await Task.WhenAny(TimeoutTask, SendingTask).ConfigureAwait(false))
+                        .ContinueWith(t => { SendingSuccess = (t == SendingTask && t.Status == TaskStatus.RanToCompletion); })
+                        .ConfigureAwait(false);
+                }
+                finally
+                {
+                    dOutStream?.Close();
+                    dInStream?.Close();
+                }
+                return SendingSuccess;
+            }
+        }
+
+        private class NullClientClass : WifiClient
+        {
+            protected new string _tag = "Null_WifiClient";
+
+            public NullClientClass() : base(CancellationToken.None)
+            {
+                //IsConnected = true;
+            }
+
+            public override Task Connect(string hostname, int numberOfRetries = 5)
+            {
+                myName = "NullClient";
+                myRole = Role.None;
+                return Task.CompletedTask;
             }
 
             public override void SendMessage(string message)
             {
+                Log.Debug(_tag, $"Discarding message <<{message}>> without acknowledgment.");
             }
 
             public override void SendMessage(string toWhom, string message)
             {
+                Log.Debug(_tag, $"Discarding message <<{message}>> to ({toWhom}), without acknowledgment.");
             }
         }
 

@@ -17,6 +17,8 @@ using Nito.AsyncEx;
 using System.Threading;
 using System.Reflection;
 
+using static Atropos.Communications.WifiBaseClass;
+
 namespace Atropos.Communications
 {
     public static class WiFiMessageReceiver
@@ -24,6 +26,9 @@ namespace Atropos.Communications
         public static event EventHandler<EventArgs<Message>> OnReceiveMessage;
 
         public static WifiClient Client;
+        public static WifiServer Server;
+
+        public static string MyIPaddress;
 
         public static void ActOnMessage(Message message)
         {
@@ -31,13 +36,13 @@ namespace Atropos.Communications
         }
         public static void ActOnMessage(EventArgs<Message> messageEventArgs)
         {
-            OnReceiveMessage?.Invoke(Client, messageEventArgs);
+            OnReceiveMessage?.Invoke(Server, messageEventArgs);
             var doThis = ParseMessageToAction(messageEventArgs.Value);
             doThis?.Invoke(BaseActivity.CurrentActivity);
         }
         public static Action<object> ParseMessageToAction(Message message)
         {
-            var substrings = message.Content.Split('|');
+            var substrings = message.Content.Split(onNEXT);
             if (substrings[0] == "RequestActivity")
             {
                 return (o) =>
@@ -50,9 +55,17 @@ namespace Atropos.Communications
             else if (substrings[0] == "PrepSFX")
             {
                 int ResourceID;
-                if (substrings[1] == "int") ResourceID = int.Parse(substrings[2]);
-                else ResourceID = typeof(Resource.Id).GetStaticProperty<int>(substrings[2]);
-                    
+                try
+                {
+                    if (substrings[1] == "int") ResourceID = int.Parse(substrings[2]);
+                    else ResourceID = typeof(Resource.Id).GetStaticProperty<int>(substrings[2]);
+                }
+                catch (ArgumentNullException)
+                {
+                    Log.Debug("WiFiMessageReceiver", $"No such SFX found to prepare ({substrings[2]})!");
+                    return (o) => { };
+                }
+
                 return (o) =>
                 {
                     var FX = Res.SFX.Register($"RequestedFX|{substrings[2]}", ResourceID);
@@ -63,12 +76,20 @@ namespace Atropos.Communications
             {
                 return (o) =>
                 {
-                    IEffect FX;
-                    if (!Res.SFX.Effects.TryGetValue($"RequestedFX|{substrings[2]}", out FX))
+                    if (!Res.SFX.Effects.TryGetValue($"RequestedFX|{substrings[2]}", out IEffect FX))
                     {
                         int ResourceID;
-                        if (substrings[1] == "int") ResourceID = int.Parse(substrings[2]);
-                        else ResourceID = typeof(Resource.Id).GetStaticProperty<int>(substrings[2]);
+                        try
+                        {
+                            if (substrings[1] == "int") ResourceID = int.Parse(substrings[2]);
+                            else ResourceID = typeof(Resource.Id).GetStaticProperty<int>(substrings[2]);
+                        }
+                        catch (ArgumentNullException)
+                        {
+                            Log.Debug("WiFiMessageReceiver", $"No such SFX found to play ({substrings[2]})!");
+                            return;
+                        }
+
                         FX = Res.SFX.Register($"RequestedFX|{substrings[2]}", ResourceID);
                     }
                     FX.Activate();

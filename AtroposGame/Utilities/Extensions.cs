@@ -487,6 +487,16 @@ namespace Atropos
             if (methInfo.ReturnType != typeof(T)) throw new ArgumentException($"Static method {methodName} on {type.Name} returns {methInfo.ReturnType.Name} (not {typeof(T).Name}).");
             return (T)methInfo.Invoke(null, parameters);
         }
+
+        public static void Raise<T>(this EventHandler<EventArgs<T>> sourceEvent, object sender, T value)
+        {
+            sourceEvent?.Invoke(sender, new EventArgs<T>(value));
+        }
+
+        public static void Raise<T>(this EventHandler<EventArgs<T>> sourceEvent, T value, [System.Runtime.CompilerServices.CallerMemberName] string callerName = "this") // Has to be assigned a default due to the way CallerMemberName is implemented.
+        {
+            sourceEvent?.Invoke(callerName, new EventArgs<T>(value));
+        }
     }
 
     public static class AndroidLayoutUtilExtensions

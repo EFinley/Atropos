@@ -19,6 +19,8 @@ using System.Collections.Generic;
 using MiscUtil;
 using Nito.AsyncEx;
 
+using static Atropos.Communications.WifiBaseClass;
+
 namespace Atropos.Communications
 {
 
@@ -88,7 +90,7 @@ namespace Atropos.Communications
         private static int CumulativeInt = 0;
 
         protected Socket CommsSocket;
-        protected WifiServer Server;
+        protected WifiServer Server { get { return WiFiMessageReceiver.Server; } set { WiFiMessageReceiver.Server = value; } }
         protected WifiClient Client { get { return WiFiMessageReceiver.Client; } set { WiFiMessageReceiver.Client = value; } }
         public void OnConnectionInfoAvailable(WifiP2pInfo info)
         {
@@ -122,13 +124,19 @@ namespace Atropos.Communications
                 return;
             }
 
-            // After the group negotiation, we assign the group owner as the message-relay
-            // server. The message server is a multiple-threaded, multiple-connection server
-            // socket.
+            // After the group negotiation, each participant sets up a single server (listens for incoming connections,
+            // handles their messages), and a single client (handles creating a new connection to the designated server,
+            // sends messages).  
+            Server = new WifiServer(_cts.Token);
+            Server.HandleIncomingConnections();
+            Client = new WifiClient(_cts.Token);
+
+            // The group owner's only extra responsibility is to use their server to listen for "Hi, I'm
+            // X (at IP address Y)" and broadcast that to all members of the group, and send the prior intros
+            // to the new member.
             if (_info.IsGroupOwner)
             {
-                Server = new WifiServer(_cts.Token);
-                Server.Listen();
+                Server.OnMessageReceived += WifiServer.GroupOwnerForwardingHandler;
             }
             #region Previous almost-working code...
             //ServerSocket serverSocket = null;
@@ -284,16 +292,14 @@ namespace Atropos.Communications
             //    });
             #endregion
 
-            // Whether or not you're the server, everybody then signs on to that server as a client.
-            Client = new WifiClient(_info.GroupOwnerAddress.ToString().TrimStart('/'), _cts.Token);
-
+            // Set up to announce the results onscreen...
             var statusText = FindViewById<TextView>(Resource.Id.status_text);
-            Client.OnMessageReceived += (o, e) =>
+            Server.OnMessageReceived += (o, e) =>
             {
-                Log.Debug(Tag, $"Received '{e.Value}'.");
+                Log.Debug(Tag, $"Received \"{e.Value.Content}\".");
                 RunOnUiThread(() =>
                 {
-                    statusText.Text = "String received - " + e.Value;
+                    statusText.Text = "String received - " + e.Value.Content;
                 });
             };
             Client.OnMessageSent += (o, e) =>
@@ -331,7 +337,18 @@ namespace Atropos.Communications
             //    }
             //    else Team.All.Members.Add(detectedTeammate);
             //};
-            Client.Connect(MyDevice.DeviceName);
+
+            // To kickstart things, we need to connect to the group owner and send them our Introduction string - which
+            // most importantly lets them know we're an Atropos instance on IP x.x.x.x (doesn't seem to be readily pullable from
+            // the WifiP2P stuff, dunno why not).
+
+            Task.Run(async () =>
+            {
+                var groupOwner = _info.GroupOwnerAddress.CanonicalHostName;
+                await Client.Connect(groupOwner);
+                Client.RegisterInfo(groupOwner, MyDevice.DeviceName, Client.myAddress, Role.Any);
+                if (Client.myAddress == groupOwner) Client.Disconnect(groupOwner);
+            });
         }
 
 //        public void DisconnectSocketStreams()

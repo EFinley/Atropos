@@ -39,21 +39,21 @@ namespace Atropos.Communications
             Task.Run(() =>
             {
                 stream.WriteChars(message);
-                stream.WriteChar(0);
+                stream.WriteChar(END);
             });
         }
 
         public virtual string ReadString(DataInputStream inStream)
         {
             string resultString = String.Empty;
-            var res = 255;
+            var res = START;
             Task.Run(() =>
             {
-                while (res > 0 && !StopToken.IsCancellationRequested)
+                while (res != END && !StopToken.IsCancellationRequested)
                 {
                     res = inStream.ReadChar();
                     //Log.Debug(_tag, $"Received '{res}' (aka {(char)res}).");
-                    if (res > 0) resultString += (char)res;
+                    if (res != END) resultString += (char)res;
                 }
             }).Wait();
             //Log.Debug(_tag, $"Received '{resultString}'.");
@@ -65,8 +65,19 @@ namespace Atropos.Communications
         public static string POLL_FOR_NAMES = "POLL_FOR_NAMES";
         public static string POLL_RESPONSE = "POLL_RESPONSE";
         public static string ALL = "ALL";
-        public static string SERVER = "SERVER";
+        public static string GROUPSERVER = "SERVER";
         public static string CONNECTED_AS = " - Connected as ";
+        public static string INTRODUCING = "Introducing myself";
+
+        public static char ACKchar = (char)6;
+        public static char START = (char)2; // Not actually used, except as a placeholder value, but that could change.
+        public static char LF = (char)10;
+        public static char ENDTRANSBLOCK = (char)23;
+        public static char GROUP_SEPARATOR = (char)29;
+        public static char RECORD_SEPARATOR = (char)30;
+        public static char NEXT = GROUP_SEPARATOR;
+        public static char[] onNEXT = new char[] { NEXT }; // Because Split(onThis, numGroups) requires a char array as onThis.
+        public static char END = LF;
     }
 
     public class WifiServer : WifiBaseClass
@@ -75,27 +86,29 @@ namespace Atropos.Communications
         public const int Port = 42445;
 
         // A boolean indicating whether this server should send ACKnowledgment messages
-        public bool DoACK = true;
+        public bool DoACK = false;
 
         // The ServerSocket (aka Socket Factory!) we'll use for accepting new connections.
         private ServerSocket serverSocket;
 
-        // A lookup table for the pre-generated output streams associated with each socket accepted - saves on allocations of new streams.
-        private Dictionary<Socket, DataOutputStream> outputStreams = new Dictionary<Socket, DataOutputStream>();
+        //// A lookup table for the pre-generated output streams associated with each socket accepted - saves on allocations of new streams.
+        //private Dictionary<Socket, DataOutputStream> outputStreams = new Dictionary<Socket, DataOutputStream>();
 
         // Another lookup table for the sockets based on the supplied address for their recipient
         private Dictionary<string, Socket> connections = new Dictionary<string, Socket>();
+        private Dictionary<string, ServerThread> serverThreads = new Dictionary<string, ServerThread>();
 
         protected new string _tag = "WifiServer";
         private object _lock = new object();
 
-        public event EventHandler<EventArgs<String>> OnServerCommandReceived;
+        public event EventHandler<EventArgs<Message>> OnMessageReceived;
+        //public event EventHandler<EventArgs<String>> OnServerCommandReceived;
 
         public WifiServer(CancellationToken? stopToken = null) : base(stopToken) { }
 
-        public void Listen()
+        public void HandleIncomingConnections()
         {
-            List<ServerThread> serverThreads = new List<ServerThread>();
+            //List<ServerThread> serverThreads = new List<ServerThread>();
 
             Task.Run(() =>
             {
@@ -119,16 +132,16 @@ namespace Atropos.Communications
                             // Cache the socket, filed under its address
                             connections[socket.InetAddress.CanonicalHostName] = socket;
 
-                            // Create and cache a DataOutputStream for sending data over it
-                            var dOutStream = new DataOutputStream(socket.OutputStream);
-                            outputStreams.Add(socket, dOutStream);
+                            //// Create and cache a DataOutputStream for sending data over it
+                            //var dOutStream = new DataOutputStream(socket.OutputStream);
+                            // outputStreams.Add(socket, dOutStream);
                         }
 
                         // Create a new thread for this connection
-                        serverThreads.Add(new ServerThread(this, socket).Start());
+                        serverThreads[socket.InetAddress.CanonicalHostName] = new ServerThread(this, socket).Start();
 
-                        // Ack back to the connection to let it know you're hearing it (and to pass it the address you'll know it by)
-                        ForwardTo(socket.InetAddress.CanonicalHostName, SERVER, ACK + CONNECTED_AS + socket.InetAddress.CanonicalHostName);
+                        //// Ack back to the connection to let it know you're hearing it (and to pass it the address you'll know it by)
+                        //ForwardTo(socket.InetAddress.CanonicalHostName, GROUPSERVER, ACK + CONNECTED_AS + socket.InetAddress.CanonicalHostName);
                     }
                 }
                 catch (Exception e)
@@ -139,7 +152,7 @@ namespace Atropos.Communications
                 {
                     Log.Debug(_tag, $"Releasing all connections ({serverThreads.Count} of them).");
                     serverSocket.Close();
-                    foreach (var sThread in serverThreads) sThread.Stop();
+                    foreach (var sThread in serverThreads.Values) sThread.Stop();
                 }
             });
         }
@@ -150,7 +163,8 @@ namespace Atropos.Communications
             lock(_lock)
             {
                 connections.Remove(s.InetAddress.CanonicalHostName);
-                outputStreams.Remove(s);
+                serverThreads.Remove(s.InetAddress.CanonicalHostName);
+                //outputStreams.Remove(s);
                 Log.Debug(_tag, $"Removing connection to {s.InetAddress.CanonicalHostName}");
 
                 // Make sure it's closed
@@ -162,28 +176,57 @@ namespace Atropos.Communications
             }
         }
 
-        public void Forward(string sender, string message)
-        {
+        //public void Forward(string sender, string message)
+        //{
             
-            foreach (string conn in connections.Keys)
-            {
-                if (conn != sender) 
-                    ForwardTo(conn, sender, message);
-            }
-        }
+        //    foreach (string conn in connections.Keys)
+        //    {
+        //        if (conn != sender) 
+        //            ForwardTo(conn, sender, message);
+        //    }
+        //}
 
-        public void ForwardTo(string address, string sender, string message)
+        //public void ForwardTo(string address, string sender, string message)
+        //{
+        //    if (address == ALL)
+        //    {
+        //        foreach (string conn in connections.Keys) ForwardTo(conn, sender, message);
+        //        return;
+        //    }
+        //    var recipientSocket = connections[address];
+        //    var dOutStream = outputStreams[recipientSocket];
+
+        //    SendString(dOutStream, $"{address}{NEXT}{sender}{NEXT}{message}");
+        //}
+
+        #region Group-Owner Specific: List of intro messages, intro-message handling function
+        public static List<string> GroupOwnerIntroMessageLog = new List<string>();
+        public static void GroupOwnerForwardingHandler(object sender, EventArgs<Message> e)
         {
-            if (address == ALL)
+            if (e.Value.Content.StartsWith($"{INTRODUCING}{NEXT}") && !GroupOwnerIntroMessageLog.Contains(e.Value.Content))
             {
-                foreach (string conn in connections.Keys) ForwardTo(conn, sender, message);
-                return;
-            }
-            var recipientSocket = connections[address];
-            var dOutStream = outputStreams[recipientSocket];
+                var newIntroMessage = e.Value.Content;
 
-            SendString(dOutStream, $"{address}|{sender}|{message}");
+                // Send the new introduction to all the previously signed-up folks...
+                foreach (var target in AddressBook.Targets)
+                {
+                    WiFiMessageReceiver.Client.SendMessage(target.IPaddress, newIntroMessage);
+                }
+
+                // Also send the prior intro strings to the new guy...
+                foreach (var priorIntro in GroupOwnerIntroMessageLog)
+                {
+                    WiFiMessageReceiver.Client.SendMessage(e.Value.From, priorIntro);
+                }
+
+                // ... And log it in with the other prior messages.
+                GroupOwnerIntroMessageLog.Add(newIntroMessage);
+            }
+
+            // TODO?  We might want a "Please resend me all the intro messages" command which would be caught here.
+            // Or anything else which only the group owner can do... although that's not many, in this setup.
         }
+        #endregion
 
         public class ServerThread : WifiBaseClass
         {
@@ -215,18 +258,20 @@ namespace Atropos.Communications
 
             public void Run()
             {
-                // Create a DataInputStream for communication; the client is using a DataOutputStream to write to us
+                // Create a DataInputStream for communication; the client is using a DataOutputStream to write to us.
                 var dInStream = new DataInputStream(socket.InputStream);
+                // We'll also want a DataOutputStream, very briefly, to send our ACK character.
+                var dOutStream = new DataOutputStream(socket.OutputStream);
                 bool Handled;
 
                 while (!StopToken.IsCancellationRequested)
                 {
-                    Handled = true;
+                    Handled = false;
 
                     // Get the next message
                     try
                     {
-                        var data = ReadString(dInStream).Split("|".ToArray(), 3);
+                        var data = ReadString(dInStream).Split(onNEXT, 3);
                         if (data.Length != 3)
                         {
                             Log.Debug(_tag, $"Data has <3 entries; [0] is {data.ElementAtOrDefault(0)}, [1] is {data.ElementAtOrDefault(1)}, [2] is {data.ElementAtOrDefault(2)}");
@@ -235,34 +280,62 @@ namespace Atropos.Communications
                         var sender = data.ElementAtOrDefault(1);
                         var message = data.ElementAtOrDefault(2);
 
-                        //if (address != SERVER) server.ForwardTo(address, sender, message); 
-                        //else server.OnServerCommandReceived?.Invoke(this, new EventArgs<string>($"{sender}|{message}"));
-                        server.Forward(sender, message);
+                        // If it's not for me, ignore it.  Shouldn't happen in current code anyway.
+                        if (!address.IsOneOf(WiFiMessageReceiver.MyIPaddress, ALL))
+                        {
+                            Log.Debug(_tag, $"Received \"{message}\" addressed to {address} (I'm {WiFiMessageReceiver.MyIPaddress}); ignoring it, but you should look into how it happened.");
+                            continue;
+                        }
 
-                        if (server.DoACK && !message.StartsWith(ACK))
-                            server.ForwardTo(sender, "Server", $"{ACK}: relaying [{message}] from {sender}.");
+                        dOutStream.WriteChar(ACKchar);
+
+                        //if (server.DoACK && !message.StartsWith(ACK))
+                        //    server.ForwardTo(sender, "Server", $"{ACK}: relaying [{message}] from {sender}.");
+
+                        // Now handle the message contents
+                        if (message.StartsWith($"{INTRODUCING}{NEXT}"))
+                        {
+                            var newTeammate = TeamMember.FromIntroductionString(message);
+                            Log.Debug(_tag, $"Received introduction from {newTeammate.IPaddress}, giving their name ({newTeammate.Name}) and roles {newTeammate.Roles.Join()}.  Adding to address book.");
+                            AddressBook.Add(newTeammate);
+                        }
+                        // If it doesn't fall into one of our special cases, handle it as a normal message.
+                        else
+                        {
+                            server.OnMessageReceived.Raise(new Message()
+                            {
+                                From = sender,
+                                To = address,
+                                Content = message
+                            });
+                            //if (DoACK) SendMessage(sender, $"{ACK}: received [{message}] from {sender}.");
+                        }
                     }
                     catch (Java.IO.EOFException e)
                     {
-                        Log.Debug(_tag, $"EOFException: {e.Message} ({e}).  Trying to reopen stream.");
-                        dInStream.Dispose();
-                        dInStream = new DataInputStream(socket.InputStream);
+                        Log.Debug(_tag, $"EOFException: {e.Message} ({e}).  Logging & rethrowing.");
+                        throw e;
+                        //Log.Debug(_tag, $"EOFException: {e.Message} ({e}).  Trying to reopen stream.");
+                        //dInStream.Dispose();
+                        //dInStream = new DataInputStream(socket.InputStream);
                         //Handled = true;
-                        continue;
+                        //continue;
                     }
                     catch (Exception e)
                     {
                         if (e.InnerException != null && e.InnerException is Java.IO.EOFException)
                         {
+                            Log.Debug(_tag, $"Wrapped EOFException: {e}.  Logging & rethrowing.  Status of socket is: IsInputShutdown? {socket.IsInputShutdown}. KeepAlive? {socket.KeepAlive}. Linger? {socket.SoLinger}.  Timeout? {socket.SoTimeout}. ReuseAddress? {socket.ReuseAddress}. Channel? {socket.Channel}.");
+                            throw e.InnerException;
                             //Log.Debug(_tag, $"Wrapped EOFException: {e}.  Trying to reopen stream.  Status of socket is: IsInputShutdown? {socket.IsInputShutdown}. KeepAlive? {socket.KeepAlive}. Linger? {socket.SoLinger}.  Timeout? {socket.SoTimeout}. ReuseAddress? {socket.ReuseAddress}. Channel? {socket.Channel}.");
                             //dInStream.Dispose();
                             //dInStream = new DataInputStream(socket.InputStream);
                             ////Handled = true;
-                            continue;
+                            //continue;
                         }
                         else
                         {
-                            Handled = false;
+                            //Handled = false;
                             throw e;
                         }
                     }
