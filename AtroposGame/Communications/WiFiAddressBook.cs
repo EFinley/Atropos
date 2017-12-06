@@ -26,7 +26,18 @@ namespace Atropos.Communications
         public static List<Role[]> Roles = new List<Role[]>();
         public static List<MessageTarget> Targets = new List<MessageTarget>();
 
-        public static MessageTarget Self { get { return Targets.SingleOrDefault(t => (t as TeamMember)?.Roles.Contains(Role.Self) ?? false); } }
+        private static int WhoHasItListedFirst(Role role)
+        {
+            var peakNumberOfRoles = Roles.Max(m => m.Length);
+            for (int listingIndex = 0; listingIndex < peakNumberOfRoles; listingIndex++)
+            {
+                for (int memberIndex = 0; memberIndex < Names.Count; memberIndex++)
+                {
+                    if (Roles[memberIndex].ElementAtOrDefault(listingIndex) == role) return memberIndex;
+                }
+            }
+            return -1;
+        }
 
         public static void Add(MessageTarget target)
         {
@@ -35,24 +46,20 @@ namespace Atropos.Communications
             if (i != -1)
             {
                 Targets[i] = target;
-                if (target is TeamMember targetMember) Roles[i] = targetMember.Roles.ToArray();
+                if (target is TeamMember) Roles[i] = (target as TeamMember).Roles.ToArray();
                 else if (Roles[i] == null || Roles[i].Length == 0) Roles[i] = new Role[] { Role.Any };
                 IPaddresses[i] = target.IPaddress;
             }
             else
             {
-                Targets.Add(target);
                 Names.Add(target.Name);
-                if (target is TeamMember targetMember) Roles.Add( targetMember.Roles.ToArray());
+                if (target is TeamMember) Roles.Add( (target as TeamMember).Roles.ToArray());
                 else Roles.Add(new Role[] { Role.Any });
                 IPaddresses.Add(target.IPaddress);
             }
 
             // Also, add it to the master list under Runners.
-            if (!Runners.All.Members.Any(t => t.IPaddress == target.IPaddress))
-                Runners.All.Members.Add((SenderAndReceiver)target);
-
-            Log.Debug("WiFiAddressBook", $"Adding {target.Name} ({target.IPaddress}) as entry #{Targets.Count} in address book.");
+            Runners.All.Members.Add((SenderAndReceiver)target);
         }
 
         public static MessageTarget Resolve(string identifier)
@@ -72,21 +79,7 @@ namespace Atropos.Communications
             }
             var result = (i >= 0) ? Targets[i] : TeamMember.Nobody;
             if ((result as TeamMember)?.Name == identifier) return result;
-            else return new TeamMember() { IPaddress = identifier };
-        }
-
-        // Utility function for the above.
-        private static int WhoHasItListedFirst(Role role)
-        {
-            var peakNumberOfRoles = Roles.Max(m => m.Length);
-            for (int listingIndex = 0; listingIndex < peakNumberOfRoles; listingIndex++)
-            {
-                for (int memberIndex = 0; memberIndex < Names.Count; memberIndex++)
-                {
-                    if (Roles[memberIndex].ElementAtOrDefault(listingIndex) == role) return memberIndex;
-                }
-            }
-            return -1;
+            else return new TeamMemberAKA((result as TeamMember), identifier);
         }
     }
 }

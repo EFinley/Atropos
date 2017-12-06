@@ -17,8 +17,6 @@ using Nito.AsyncEx;
 using System.Threading;
 using System.Reflection;
 
-using static Atropos.Communications.WifiBaseClass;
-
 namespace Atropos.Communications
 {
     public enum Role
@@ -38,7 +36,7 @@ namespace Atropos.Communications
     public class TeamMember : SenderAndReceiver
     {
         public virtual List<Role> Roles { get; set; }
-        public Role Role // Always refers to Roles[0], even if Roles doesn't exist yet.
+        public Role Role
         {
             get { return Roles?.ElementAtOrDefault(0) ?? Role.None; }
             set
@@ -52,44 +50,12 @@ namespace Atropos.Communications
 
         public static TeamMember Nobody = new TeamMember() { Name = "Nobody", Role = Role.None };
 
+        //public interface IHaveAnAlias { string Alias { get; } }
+
         public static implicit operator string(TeamMember teamMember) => teamMember.Name;
-        public string IntroductionString() { return IntroductionAs(this); }
-
-        #region Static "conversion operators" for a TeamMember to and from an "Introduction string"
-        public static string IntroductionAs(TeamMember member)
-        {
-            return IntroductionAs(member.Name, member.IPaddress, member.Roles.ToArray());
-        }
-        public static string IntroductionAs(string asWhatName, string IPaddress, params Role[] asWhatRoles)
-        {
-            var result = $"{INTRODUCING}{NEXT}{asWhatName}{NEXT}{IPaddress}";
-            foreach (var asWhatRole in asWhatRoles)
-            {
-                if (asWhatRole == Role.Self) continue; // Don't send that!!
-                result += $"{NEXT}{asWhatRole.ToString()}";
-            }
-            return result;
-        }
-        public static TeamMember FromIntroductionString(string introString)
-        {
-            var substrings = introString.Split(onNEXT);
-
-            var respName = substrings[1];
-            var respIP = substrings[2];
-            var roles = substrings.Skip(3).Select(r => (Role)Enum.Parse(typeof(Role), r)).ToList(); // Turns the string "Hitter" into Role.Hitter, etc.
-            //Log.Debug(_tag, $"Received {POLL_RESPONSE} from {sender}, giving their name ({respName}) and role ({respRole}).  Adding to address book.");
-
-            return new TeamMember()
-            {
-                Name = respName,
-                IPaddress = respIP,
-                Roles = roles
-            };
-        }
-        #endregion
     }
 
-    public class TeamMemberAKA : TeamMember
+    public class TeamMemberAKA : TeamMember   //, TeamMember.IHaveAnAlias
     {
         private TeamMember _member;
         public string ReferredToAs { get; set; }
@@ -118,8 +84,9 @@ namespace Atropos.Communications
                 var result = new List<TeamMember>();
                 foreach (var m in Members)
                 {
-                    if (m is TeamMember member && m != TeamMember.Nobody) result.Add(member);
-                    else if (m is Team team) result.AddRange(team.TeamMembers);
+                    var member = m as TeamMember;
+                    if (member != null) result.Add(member);
+                    else if (m is Team) result.AddRange((m as Team).TeamMembers);
                 }
                 return result;
             }
@@ -143,7 +110,6 @@ namespace Atropos.Communications
         public static Team GMs { get { return new Team(All.TeamMembers.Where(m => m.Roles.Contains(Role.GM))); } }
         public static Team None { get; } = new Team();
 
-        // Utility method for the ensuing - so if you have a Hitter/Hacker, and a pure Hacker, Team.Hacker gets you the latter.
         private static TeamMember WhoHasItListedFirst(Role role)
         {
             var peakNumberOfRoles = Team.TeamMembers.Max(m => m.Roles.Count);
