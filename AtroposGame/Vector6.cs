@@ -39,6 +39,7 @@ namespace Atropos
 
         public List<Vector6> LoggedData { get; private set; } = new List<Vector6>();
         public List<TimeSpan> Intervals { get; private set; } = new List<TimeSpan>();
+        public List<TimeSpan> Timestamps { get; private set; } = new List<TimeSpan>();
 
         public DualVector3LoggingProvider(IProvider<Vector3> provider1, IProvider<Vector3> provider2)
             : base(provider1, provider2) { }
@@ -56,6 +57,7 @@ namespace Atropos
         {
             LoggedData.Add(new Vector6() { V1 = (providers[0] as IProvider<Vector3>).Data, V2 = (providers[1] as IProvider<Vector3>).Data });
             Intervals.Add(providers[0].Interval);
+            Timestamps.Add(Timestamps.LastOrDefault() + providers[0].Interval);
         }
     }
 }

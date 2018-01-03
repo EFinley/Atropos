@@ -487,6 +487,21 @@ namespace Atropos
             if (methInfo.ReturnType != typeof(T)) throw new ArgumentException($"Static method {methodName} on {type.Name} returns {methInfo.ReturnType.Name} (not {typeof(T).Name}).");
             return (T)methInfo.Invoke(null, parameters);
         }
+
+        public static TimeSpan MultipliedBy(this TimeSpan start, double multiplier)
+        {
+            return TimeSpan.FromTicks((long)(start.Ticks * multiplier));
+        }
+        public static TimeSpan DividedBy(this TimeSpan start, double divider)
+        {
+            if (divider == 0) throw new DivideByZeroException();
+            return TimeSpan.FromTicks((long)(start.Ticks / divider));
+        }
+
+        public static void Vibration(this Plugin.Vibrate.Abstractions.IVibrate source, int milliseconds)
+        {
+            source.Vibration(TimeSpan.FromMilliseconds(milliseconds));
+        }
     }
 
     public static class AndroidLayoutUtilExtensions

@@ -190,11 +190,14 @@ namespace Atropos
 
         public override void Activate(CancellationToken? externalStopToken = null)
         {
-            //DependsOn(externalStopToken ?? CancellationToken.None);
+            DependsOn(externalStopToken ?? CancellationToken.None);
             if (IsActive)
             {
                 if (externalStopToken != null)
+                {
                     Log.Warn("SensorProvider|Activate", "Caution - attempted activation with new external cancellation token, but we're already active.");
+                    externalStopToken.Value.Register(() => { Deactivate(); });
+                }
                 return;
             }
             base.Activate(externalStopToken);
@@ -466,7 +469,7 @@ namespace Atropos
         {
             base.Activate(externalStopToken);
 
-            foreach (var p in providers) p.Activate(StopToken);
+            foreach (var p in providers) if (!p.IsActive) p.Activate(StopToken);
             CombinerLoop().LaunchAsOrphan(StopToken, $"CombinerLoop({this.GetType().Name})");
         }
 

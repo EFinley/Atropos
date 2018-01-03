@@ -54,6 +54,13 @@ namespace Atropos
         private static Random globalRandom = new Random();
         public static double Random { get { return globalRandom.NextDouble(); } }
         public static float RandomF { get { return (float)globalRandom.NextDouble(); } }
+        public static double RandomZ { get { return Accord.Math.Special.Ierf(Random); } }
+        public static double GetRandomCoefficient(double sigma) { return GetRandomCoefficient(1.0, sigma); }
+        public static double GetRandomCoefficient(double mean, double sigma) // From Wikipedia: for Gamma(theta, k), mean = k * theta, variance ( = std. dev. squared) = theta^2 * k
+        {
+            var theta = sigma * sigma / mean;
+            return new Accord.Statistics.Distributions.Univariate.GammaDistribution(theta, mean / theta).Generate();
+        }
 
         private System.Diagnostics.Stopwatch stopWatch = new System.Diagnostics.Stopwatch();
         public static void Mark(string label) { Android.Util.Log.Debug("Timing", $"{Res.ourceManager.stopWatch.ElapsedMilliseconds}ms to {label}."); }

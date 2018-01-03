@@ -27,6 +27,8 @@ namespace Atropos.Machine_Learning
         public int numExamplesSampledCorrectlyRecognized;
         //public double percentageCorrect { get { return (numExamples > 0) ? 100 * (double)numExamplesCorrectlyRecognized / (double)numExamples : 0.0; } }
 
+        public virtual bool IsTrainable { get { return true; } } // Characteristic of this entire class (simpler to write than testing for whether it's this class or a subclass)
+
         //// Less obviously, some averaging processes to keep track of the typical features of the gesture - total dimensions, total time,
         //// eventually other stuff like energy spectra etc. if necessary.
         //private AdvancedRollingAverage<float> _avgWidth, _avgHeight, _avgDuration;
@@ -52,9 +54,58 @@ namespace Atropos.Machine_Learning
             //}
         }
 
+        public virtual string PercentageText
+        {
+            get
+            {
+                if (numExamplesSampled == numExamples) // 100% sampling - display actual counts right/wrong
+                {
+                    if (numExamples > 0) return $"{(100.0 * numExamplesCorrectlyRecognized / numExamples):f0}%";
+                    else return "0%";
+                }
+                else
+                {
+                    if (numExamplesSampled > 0) return $"{(100.0 * numExamplesSampledCorrectlyRecognized / numExamplesSampled):f0}%";
+                    else return "0%";
+                }
+            }
+        }
+        public virtual string DetailsText
+        {
+            get
+            {
+                if (numExamplesSampled == numExamples) // 100% sampling - display actual counts right/wrong
+                {
+                    return $"({numExamplesCorrectlyRecognized} / {numExamples})";
+                }
+                else
+                {
+                    return $"({numExamples} @ {(100.0 * numExamplesSampled / numExamples):f0}%)";
+                }
+            }
+        }
+        public virtual string AddedItemsText
+        {
+            get
+            {
+                return $"+ {numNewExamplesCorrectlyRecognized} / {numNewExamples}";
+            }
+        }
+
+
         // Static members (defaults etc).
         [NonSerialized]
         public static Bitmap NullVisualization = Bitmap.CreateBitmap(64, 64, Bitmap.Config.Argb8888);
         public static GestureClass NullGesture = new GestureClass() { className = null, index = -10, visualization = NullVisualization };
+    }
+
+    [Serializable]
+    public class ColourGestureClass : GestureClass
+    {
+        public override bool IsTrainable { get { return false; } } // Characteristic of this entire class (simpler to write than testing for whether it's this class or the base class)
+
+        public override string PercentageText { get { return String.Empty; } }
+        public override string DetailsText { get { return "(Used for colour only)"; } }
+        public override string AddedItemsText { get { return String.Empty; } }
     }
 }

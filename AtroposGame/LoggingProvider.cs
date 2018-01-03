@@ -30,6 +30,7 @@ namespace Atropos
     {
         List<T> LoggedData { get; }
         List<TimeSpan> Intervals { get; }
+        List<TimeSpan> Timestamps { get; }
     }
 
     /// <summary>
@@ -44,6 +45,7 @@ namespace Atropos
     {
         public virtual List<T> LoggedData { get; private set; } = new List<T>(); 
         public List<TimeSpan> Intervals { get; private set; } = new List<TimeSpan>();
+        public List<TimeSpan> Timestamps { get; private set; } = new List<TimeSpan>();
         protected IProvider<T> Provider;
 
         public LoggingSensorProvider(IProvider<T> provider) : this(provider, CancellationToken.None) { }
@@ -55,6 +57,7 @@ namespace Atropos
         protected override void DoWhenAllDataIsReady()
         {
             LoggedData.Add(Provider.Data);
+            Timestamps.Add(Intervals.LastOrDefault() + Provider.Interval);
             Intervals.Add(Provider.Interval);
         }
 
@@ -89,6 +92,7 @@ namespace Atropos
         protected override void DoWhenAllDataIsReady()
         {
             _smoothedData.Add(Provider.Data);
+            Timestamps.Add(Intervals.LastOrDefault() + providers[0].Interval);
             Intervals.Add(Provider.Interval);
         }
     }
@@ -109,6 +113,7 @@ namespace Atropos
 
         public virtual List<Datapoint<T1, T2>> LoggedData { get; private set; } = new List<Datapoint<T1, T2>>();
         public List<TimeSpan> Intervals { get; private set; } = new List<TimeSpan>();
+        public List<TimeSpan> Timestamps { get; private set; } = new List<TimeSpan>();
 
         // Normal ctors... 
         public ClusterLoggingProvider(IProvider<T1> provider1, IProvider<T2> provider2)
@@ -170,6 +175,7 @@ namespace Atropos
         {
             LoggedData.Add(new Datapoint<T1, T2>() { Value1 = (providers[0] as IProvider<T1>).Data, Value2 = (providers[1] as IProvider<T2>).Data });
             if (LoggedData.All(d => d.Magnitude() < 1e-10) && LoggedData.Count > 5) throw new Exception("Caught another zero list of data... WHY???");
+            Timestamps.Add(Intervals.LastOrDefault() + providers[0].Interval);
             Intervals.Add(providers[0].Interval);
         }
     }
@@ -199,6 +205,7 @@ namespace Atropos
         protected override void DoWhenAllDataIsReady()
         {
             _smoothedData.Add(new Datapoint<T1, T2>() { Value1 = (providers[0] as IProvider<T1>).Data, Value2 = (providers[1] as IProvider<T2>).Data });
+            Timestamps.Add(Intervals.LastOrDefault() + providers[0].Interval);
             Intervals.Add(providers[0].Interval);
         }
     }

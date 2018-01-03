@@ -47,6 +47,7 @@ namespace Atropos.Machine_Learning
 
         public void CreateMachine<T>(DataSet<T> dataSet) where T : struct
         {
+            dataSet.CleanOutNontrainableSequences();
             BindingList<Sequence<T>> samples = dataSet.Samples;
 
             double[][] inputs = new double[samples.Count][];
@@ -62,7 +63,7 @@ namespace Atropos.Machine_Learning
 
                 // Zero as the length of an input seq. means that it should accept variable numbers of points in an input sequence
                 // (which is what we need for DTW).
-                svm = new MulticlassSupportVectorMachine<DynamicTimeWarping>(0, new DynamicTimeWarping(Datapoint<T>.Dimensions), dataSet.ClassNames.Count);
+                svm = new MulticlassSupportVectorMachine<DynamicTimeWarping>(0, new DynamicTimeWarping(Datapoint<T>.Dimensions), dataSet.ActualGestureClasses.Count);
 
                 // Create the learning algorithm to teach the multiple class classifier
                 //var teacher = new MulticlassSupportVectorLearning<DynamicTimeWarping>(svm, inputs, outputs)
@@ -112,7 +113,8 @@ namespace Atropos.Machine_Learning
 
                 for (int i = 0; i < samples.Count; i++)
                 {
-                    Log.Debug("Classifier", $"Sample #{i}: True {samples[i].TrueClassName}, Recog As {Dataset.ClassNames[RecognizedAsClasses[i]]}.  Score is {Scores[i]:f2}, LogLikelihoods are {LogL[i].Select(l => l.ToString("f1")).Join()}, Probabilities {Probs[i].Select(p => p.ToString("f1")).Join()}.");
+                    samples[i].RecognizedAsIndex = RecognizedAsClasses[i];
+                    Log.Debug("Classifier", $"Sample #{i}: True {samples[i].TrueClassName}, Recog As {samples[i].RecognizedAsName}.  Score is {Scores[i]:f2}, LogLikelihoods are {LogL[i].Select(l => l.ToString("f1")).Join()}, Probabilities {Probs[i].Select(p => p.ToString("f1")).Join()}.");
                 }
 
                 double error = new Accord.Math.Optimization.Losses.ZeroOneLoss(outputs).Loss(RecognizedAsClasses);
@@ -135,7 +137,7 @@ namespace Atropos.Machine_Learning
                 Samples = Samples.Take((int)Math.Round(Samples.Count * percentageSampling / 100.0)).ToList();
             }
             //foreach (var sample in dataSet.Samples) sample.HasBeenSampled = false;
-            foreach (var gC in dataSet.Classes) { gC.numExamplesSampled = gC.numExamplesSampledCorrectlyRecognized = 0; }
+            foreach (var gC in dataSet.ActualGestureClasses) { gC.numExamplesSampled = gC.numExamplesSampledCorrectlyRecognized = 0; }
 
             // Classify selected training instances using the (typically new/updated) classifier
             int i = 0;
@@ -149,9 +151,9 @@ namespace Atropos.Machine_Learning
                 // We will only perform sampling of the ones we have a formal classification for.  The few we might have which are still "guessed at" can be ignored.
                 if (sample.TrueClassIndex >= 0)
                 {
-                    dataSet.Classes[sample.TrueClassIndex].numExamplesSampled++;
+                    dataSet.ActualGestureClasses[sample.TrueClassIndex].numExamplesSampled++;
                     if (sample.RecognizedAsIndex == sample.TrueClassIndex)
-                        dataSet.Classes[sample.TrueClassIndex].numExamplesSampledCorrectlyRecognized++;
+                        dataSet.ActualGestureClasses[sample.TrueClassIndex].numExamplesSampledCorrectlyRecognized++;
                 }
                 //sample.HasBeenSampled = true;
 
@@ -187,12 +189,14 @@ namespace Atropos.Machine_Learning
             sequence.RecognitionScore = score;
             // Log.Debug("Classifier|Recognize", $"Recognized sequence as {Dataset.ClassNames[index]} ({index}), with score {score}");
 
+            // If the match is too lousy, call it unknown instead of making a bad call
+            if (score < 0.5) index = -1;
+
             await Task.CompletedTask;
             return index; 
         }
 
-        // I *think* this should work (from the docs on the Accord.IO namespace)... but for now it's untested.  
-        // Be nice to be able to serialize the computed AI, though.
+        // I *think* this should work (from the docs on the Accord.IO namespace)... and it does seem to be working.
         public byte[] SerializedString
         {
             get

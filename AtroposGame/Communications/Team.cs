@@ -84,9 +84,8 @@ namespace Atropos.Communications
                 var result = new List<TeamMember>();
                 foreach (var m in Members)
                 {
-                    var member = m as TeamMember;
-                    if (member != null) result.Add(member);
-                    else if (m is Team) result.AddRange((m as Team).TeamMembers);
+                    if (m is TeamMember member) result.Add(member);
+                    else if (m is Team team) result.AddRange(team.TeamMembers);
                 }
                 return result;
             }
@@ -102,21 +101,21 @@ namespace Atropos.Communications
     }
 
 
-    public static class Runners
+    public static class HeyYou
     { 
-        public static Team All { get; set; } = new Team();
-        public static Team PCs { get { return new Team(All.TeamMembers.Where(m => !m.Roles.Contains(Role.NPC) && !m.Roles.Contains(Role.GM))); } }
-        public static Team MyTeammates { get { return new Team(PCs.TeamMembers.Where(m => !m.Roles.Contains(Role.Self))); } }
-        public static Team NPCs { get { return new Team(All.TeamMembers.Where(m => m.Roles.Contains(Role.NPC))); } }
-        public static Team GMs { get { return new Team(All.TeamMembers.Where(m => m.Roles.Contains(Role.GM))); } }
+        public static Team Everybody { get; set; } = new Team();
+        public static Team Runners { get { return new Team(Everybody.TeamMembers.Where(m => !m.Roles.Contains(Role.NPC) && !m.Roles.Contains(Role.GM))); } }
+        public static Team MyTeammates { get { return new Team(Runners.TeamMembers.Where(m => !m.Roles.Contains(Role.Self))); } }
+        public static Team NPCs { get { return new Team(Everybody.TeamMembers.Where(m => m.Roles.Contains(Role.NPC))); } }
+        public static Team GMs { get { return new Team(Everybody.TeamMembers.Where(m => m.Roles.Contains(Role.GM))); } }
         public static Team None { get; } = new Team();
 
         private static TeamMember WhoHasItListedFirst(Role role)
         {
-            var peakNumberOfRoles = PCs.TeamMembers.Max(m => m.Roles.Count);
+            var peakNumberOfRoles = Runners.TeamMembers.Max(m => m.Roles.Count);
             for (int i = 0; i < peakNumberOfRoles; i++)
             {
-                foreach (var m in PCs.TeamMembers)
+                foreach (var m in Runners.TeamMembers)
                 {
                     if (m.Roles.ElementAtOrDefault(i) == role) return new TeamMemberAKA(m, role.ToString());
                 }
@@ -129,18 +128,18 @@ namespace Atropos.Communications
         public static TeamMember Sorceror { get { return WhoHasItListedFirst(Role.Sorceror); } }
         public static TeamMember Spy { get { return WhoHasItListedFirst(Role.Spy); } }
 
-        public static Team Hitters { get { return new Team(PCs.TeamMembers.Where(t => t.Roles.Contains(Role.Hitter))) { Name = "Hitters" }; } }
-        public static Team Hackers { get { return new Team(PCs.TeamMembers.Where(t => t.Roles.Contains(Role.Hacker))) { Name = "Hackers" }; } }
-        public static Team Sorcerors { get { return new Team(PCs.TeamMembers.Where(t => t.Roles.Contains(Role.Sorceror))) { Name = "Sorcerors" }; } }
-        public static Team Spies { get { return new Team(PCs.TeamMembers.Where(t => t.Roles.Contains(Role.Spy))) { Name = "Spies" }; } }
+        public static Team Hitters { get { return new Team(Runners.TeamMembers.Where(t => t.Roles.Contains(Role.Hitter))) { Name = "Hitters" }; } }
+        public static Team Hackers { get { return new Team(Runners.TeamMembers.Where(t => t.Roles.Contains(Role.Hacker))) { Name = "Hackers" }; } }
+        public static Team Sorcerors { get { return new Team(Runners.TeamMembers.Where(t => t.Roles.Contains(Role.Sorceror))) { Name = "Sorcerors" }; } }
+        public static Team Spies { get { return new Team(Runners.TeamMembers.Where(t => t.Roles.Contains(Role.Spy))) { Name = "Spies" }; } }
 
-        public static Team ByNames(params string[] names)
+        public static Team ByName(params string[] names)
         {
-            return new Team(All.TeamMembers.Where(t => names.Contains(t.Name)));
+            return new Team(Everybody.TeamMembers.Where(t => names.Contains(t.Name)));
         }
         public static Team ByRoles(params Role[] roles)
         {
-            return new Team(All.TeamMembers.Where(t => roles.Intersect(t.Roles).Count() > 0));
+            return new Team(Everybody.TeamMembers.Where(t => roles.Intersect(t.Roles).Count() > 0));
         }
     }
 }

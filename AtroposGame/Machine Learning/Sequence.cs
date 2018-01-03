@@ -121,13 +121,13 @@ namespace Atropos.Machine_Learning
         public string TrueClassName
         {
             //get { return TrueClassIndex >= 0 ? ClassNames[TrueClassIndex] : "-"; }
-            get { return TrueClassIndex >= 0 ? DataSet.Current.ClassNames.ElementAtOrDefault(TrueClassIndex) : "-"; }
+            get { return TrueClassIndex >= 0 ? DataSet.Current.ActualGestureClasses.ElementAtOrDefault(TrueClassIndex).className : "-"; }
         }
 
         public string RecognizedAsName
         {
             //get { return RecognizedAsIndex >= 0 ? ClassNames[RecognizedAsIndex] : "-"; }
-            get { return RecognizedAsIndex >= 0 ? DataSet.Current.ClassNames.ElementAtOrDefault(RecognizedAsIndex) : "-"; }
+            get { return RecognizedAsIndex >= 0 ? DataSet.Current.ActualGestureClasses.ElementAtOrDefault(RecognizedAsIndex).className : "-"; }
         }
 
 
@@ -330,9 +330,11 @@ namespace Atropos.Machine_Learning
 
             foreach (int i in DisplayedDimensions)
             {
-                var newPaint = new Paint();
-                newPaint.StrokeCap = Paint.Cap.Round;
-                newPaint.StrokeWidth = 1.5f;
+                var newPaint = new Paint
+                {
+                    StrokeCap = Paint.Cap.Round,
+                    StrokeWidth = 1.5f
+                };
                 paints.Add(newPaint);
             }
 

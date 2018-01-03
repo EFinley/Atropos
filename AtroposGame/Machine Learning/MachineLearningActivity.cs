@@ -33,6 +33,7 @@ using Nito.AsyncEx;
 using PerpetualEngine.Storage;
 using MiscUtil;
 using Atropos.DataStructures;
+using Atropos.Machine_Learning.Button_Logic;
 
 namespace Atropos.Machine_Learning
 {
@@ -90,7 +91,8 @@ namespace Atropos.Machine_Learning
         {
             GestureClass SelectedGestureClass { get; }
             ISequence MostRecentSample { get; }
-        } // Mostly a 'marker' interface since the "typeless" MachineLearningActivity is actually the more derived class, instead of the less derived one.
+            void SetUpAdapters(IDataset dataset);
+        } // Mostly a 'marker' interface, used because the "typeless" MachineLearningActivity is in this case the more derived class, instead of the less derived one.
 
         #region Data Members (and tightly linked functions / properties)
         public DataSet<T> Dataset
@@ -121,7 +123,7 @@ namespace Atropos.Machine_Learning
 
         public Classifier Classifier { get; set; }
 
-        protected RadioButton _teachonly, _guessandteach;
+        protected RadioButton _teachonly, _guessandteach, _cuemode;
         protected ImageView _sampleVisualization;
         protected TextView _guessField;
         protected Button _discardSampleBtn, 
@@ -129,31 +131,36 @@ namespace Atropos.Machine_Learning
             _saveDatasetButton, 
             _clearDatasetButton, 
             _computeButton,
-            _addNewClassButton;
+            _addNewClassButton,
+            _gimmeCueButton;
         protected ListView _listView;
-        protected GestureClassListAdapter _listAdapter;
+        protected GestureClassListAdapter<T> _listAdapter;
         protected Spinner _classnameSpinner;
         protected ArrayAdapter<string> _classnameSpinnerAdapter;
         protected EditText _newClassNameField, _datasetNameField;
         protected LinearLayout _latestSampleDisplay;
 
         protected string filepath;
+        protected ButtonStates ButtonStates = new ButtonStates();
 
         public bool TeachOnlyMode
         {
             get
             {
-                if (_teachonly.Checked && !_guessandteach.Checked) return true;
-                else if (!_teachonly.Checked && _guessandteach.Checked) return false;
-                else throw new Exception("Radiobutton issue!  Neither (or both) checked simultaneously.  Halp!"); // Probably no longer needed but may as well stay.
+                //if (_teachonly.Checked && !_guessandteach.Checked) return true;
+                //else if (!_teachonly.Checked && _guessandteach.Checked) return false;
+                //else throw new Exception("Radiobutton issue!  Neither (or both) checked simultaneously.  Halp!"); // Probably no longer needed but may as well stay.
+                return _teachonly.Checked;
             }
         }
 
         protected bool _collectingData = false;
         protected bool _listeningForGesture { get { return SelectedGestureClass != GestureClass.NullGesture
                                                     && !_collectingData; } }
+        protected CuePrompter<T> CuePrompter { get; set; }
 
         protected abstract void ResetStage(string label);
+        private ProgressDialog _progressDialog;
 
         protected void FindAllViews()
         {
@@ -164,6 +171,9 @@ namespace Atropos.Machine_Learning
 
             _teachonly = FindViewById<RadioButton>(Resource.Id.mlrn_trainmode_teachonly);
             _guessandteach = FindViewById<RadioButton>(Resource.Id.mlrn_trainmode_guessandteach);
+            _cuemode = FindViewById<RadioButton>(Resource.Id.mlrn_trainmode_cue);
+            _gimmeCueButton = FindViewById<Button>(Resource.Id.mlrn_cue_button);
+
             _discardSampleBtn = FindViewById<Button>(Resource.Id.mlrn_latest_sample_discard);
             _sampleVisualization = FindViewById<ImageView>(Resource.Id.mlrn_latest_sample_visual);
             _guessField = FindViewById<TextView>(Resource.Id.mlrn_latest_sample_guessfield);
@@ -225,13 +235,19 @@ namespace Atropos.Machine_Learning
             if (keyCode == Keycode.VolumeDown || keyCode == Keycode.VolumeUp)
             {
                 lock (SelectedGestureClass)
-                {
-                    if (_listeningForGesture)
+                {                   
+                    if (CuePrompter?.ListeningForFalseStart ?? false)
+                        {
+                        CuePrompter.DoOnFalseStart();
+                        return true;
+                    }
+                    else if (_listeningForGesture)
                     {
                         _collectingData = true;
                         //Log.Debug("MachineLearning", $"{keyCode} down");
 
                         AssertRecognition();
+                        CuePrompter?.MarkGestureStart();
 
                         CurrentStage.Activate();
                         return true; // Handled it, thanks.
@@ -279,7 +295,7 @@ namespace Atropos.Machine_Learning
 
                         // If right or wrong, tweak the display properties of the sample.  This may depend on TeachMode.
                         DisplaySampleInfo(MostRecentSample);
-                        if (!TeachOnlyMode && MostRecentSample.RecognizedAsIndex >= 0)
+                        if (_guessandteach.Checked && MostRecentSample.RecognizedAsIndex >= 0)
                         {
                             var sc = MostRecentSample.RecognitionScore;
                             var prefix = (sc < 1) ? "Possibly " :
@@ -289,6 +305,10 @@ namespace Atropos.Machine_Learning
                                          (sc < 3) ? "Certainly " :
                                          "A perfect ";
                             Speech.Say(prefix + MostRecentSample.RecognizedAsName);
+                        }
+                        else if (_cuemode.Checked)
+                        {
+                            CuePrompter?.ReactToFinalizedGesture(MostRecentSample);
                         }
                         //});
 
@@ -304,21 +324,9 @@ namespace Atropos.Machine_Learning
             return base.OnKeyUp(keyCode, e);
         }
 
-        protected void AskToDelete(string prompt, string filepath)
+        protected virtual void SetUpButtonClicks()
         {
-            new AlertDialog.Builder(this)
-                .SetMessage(prompt)
-                .SetPositiveButton("Yes", (o, e) =>
-                {
-                    (new File(filepath)).Delete();
-                    Toast.MakeText(this, "Deleted.", ToastLength.Short).Show();
-                })
-                .SetNegativeButton("No", (o, e) => { })
-                .Show();
-        }
-        protected void SetUpButtonClicks()
-        {
-            _loadDatasetButton.Click += async (o, e) =>
+            if (_loadDatasetButton != null) _loadDatasetButton.Click += async (o, e) =>
             {
                 SimpleFileDialog fileDialog = new SimpleFileDialog(this, SimpleFileDialog.FileSelectionMode.FileOpen);
                 filepath = await fileDialog.GetFileOrDirectoryAsync(this.GetExternalFilesDir(null).ToString());
@@ -505,7 +513,7 @@ namespace Atropos.Machine_Learning
                 _listView.RequestLayout();
             };
 
-            _saveDatasetButton.Click += async (o, e) =>
+            if (_saveDatasetButton != null) _saveDatasetButton.Click += async (o, e) =>
             {
                 if (ButtonStates.Save.State != ButtonStates.CanSaveClassifier)
                 {
@@ -562,7 +570,7 @@ namespace Atropos.Machine_Learning
                 }
             };
 
-            _clearDatasetButton.Click += (o, e) =>
+            if (_clearDatasetButton != null) _clearDatasetButton.Click += (o, e) =>
             {
                 if (ButtonStates.Clear.State == ButtonStates.CanClear)
                 {
@@ -595,7 +603,7 @@ namespace Atropos.Machine_Learning
                 ButtonStates.Update(this);
             };
 
-            _computeButton.Click += async (o, e) =>
+            if (_computeButton != null) _computeButton.Click += async (o, e) =>
             {
                 if (ButtonStates.Compute.State != ButtonStates.DoFullReassess)
                 {
@@ -604,9 +612,12 @@ namespace Atropos.Machine_Learning
 
                     // This is the heavy thinking part...
                     ButtonStates.Compute.State = ButtonStates.IsComputing;
+                    ShowProgressIndicator("Calculating", "Please hold for the next available AI...");
                     //await Task.Run(() => Classifier.CreateMachine(Dataset));
                     Classifier.CreateMachine(Dataset);
 
+                    DismissProgressIndicator();
+                    ShowProgressIndicator("Calculating", "Reassessing data set using new AI...");
                     ButtonStates.Compute.State = ButtonStates.IsReassessing;
                     int minSamples = Dataset.MinSamplesInAnyClass();
                     double percentage = (minSamples < 20) ? 100.0 :
@@ -616,22 +627,25 @@ namespace Atropos.Machine_Learning
                     await Classifier.Assess(Dataset, percentage);
 
                     Dataset.TallySequences(true);
+                    DismissProgressIndicator();
                     ButtonStates.Update(this);
                     if (percentage < 100) ButtonStates.Compute.State = ButtonStates.DoFullReassess;
                 }
                 else // Available only immediately following a click of the Compute button as per above; signals a desire to run a *full* reassess
                 {
+                    ShowProgressIndicator("Calculating", "Reassessing all data using new AI...");
                     await Task.Run(() => Classifier.Assess(Dataset, 100.0));
 
                     Dataset.TallySequences(true);
+                    DismissProgressIndicator();
                     ButtonStates.Update(this);
                 }
                 
                 
                 
             };
-            
-            _addNewClassButton.Click +=
+
+            if (_addNewClassButton != null) _addNewClassButton.Click +=
                 (o, e) =>
                 {
                     if (_addNewClassButton.Text != "Remove")
@@ -654,11 +668,12 @@ namespace Atropos.Machine_Learning
                     }
                     else
                     {
-                        var currentClassIndex = SelectedGestureClass.index;
+                        var currentClassIndex = Dataset.Classes.IndexOf(SelectedGestureClass);
 
                         Dataset.RemoveClass(SelectedGestureClass);
 
-                        if (currentClassIndex < Dataset.Classes.Count - 1) SelectedGestureClass = Dataset.Classes[currentClassIndex];
+                        if (currentClassIndex < Dataset.Classes.Count) SelectedGestureClass = Dataset.Classes[currentClassIndex];
+                        else if (currentClassIndex == Dataset.Classes.Count) SelectedGestureClass = Dataset.Classes.Last();
                         else if (Dataset.Classes.Count > 0) SelectedGestureClass = Dataset.Classes[0];
                         else SelectedGestureClass = null;
                     }
@@ -670,128 +685,102 @@ namespace Atropos.Machine_Learning
                     ResetStage($"Learning gesture {identifier}");
 
                     _newClassNameField.Text = null;
+                    _newClassNameField.ClearFocus();
                 };
 
-            _newClassNameField.KeyPress += (object sender, View.KeyEventArgs e) =>
+            if (_newClassNameField != null)
             {
-                e.Handled = false;
-                if (e.Event.Action == KeyEventActions.Down && e.KeyCode == Keycode.Enter && _newClassNameField.Text.Length > 0)
+                _newClassNameField.KeyPress += (object sender, View.KeyEventArgs e) =>
                 {
-                    _addNewClassButton.CallOnClick();
-                }
-            };
+                    e.Handled = false;
+                    if (e.Event.Action == KeyEventActions.Down && e.KeyCode == Keycode.Enter && _newClassNameField.Text.Length > 0)
+                    {
+                        _addNewClassButton.CallOnClick();
+                    }
+                };
 
-            _newClassNameField.TextChanged += (object sender, Android.Text.TextChangedEventArgs e) =>
-            {
-                _addNewClassButton.Text = "Add";
-                _addNewClassButton.Enabled = (_newClassNameField.Text.Length > 0);
-            };
-
-            _datasetNameField.TextChanged += (object sender, Android.Text.TextChangedEventArgs e) =>
-            {
-                if (_datasetNameField.Text.Length > 0) Dataset.Name = e.Text.ToString();
-                else Dataset.Name = null;
-            };
-
-            _datasetNameField.KeyPress += (object sender, View.KeyEventArgs e) =>
-            {
-                e.Handled = false;
-                if (e.Event.Action == KeyEventActions.Down && e.KeyCode == Keycode.Enter && _datasetNameField.Text.Length > 0)
+                _newClassNameField.TextChanged += (object sender, Android.Text.TextChangedEventArgs e) =>
                 {
-                    _newClassNameField.ClearFocus();
-                }
+                    _addNewClassButton.Text = "Add";
+                    _addNewClassButton.Enabled = (_newClassNameField.Text.Length > 0);
+                };
+            }
+
+            if (_datasetNameField != null)
+            {
+                _datasetNameField.TextChanged += (object sender, Android.Text.TextChangedEventArgs e) =>
+                    {
+                        if (_datasetNameField.Text.Length > 0) Dataset.Name = e.Text.ToString();
+                        else Dataset.Name = null;
+                    };
+
+                _datasetNameField.KeyPress += (object sender, View.KeyEventArgs e) =>
+                {
+                    e.Handled = false;
+                    if (e.Event.Action == KeyEventActions.Down && e.KeyCode == Keycode.Enter && _datasetNameField.Text.Length > 0)
+                    {
+                        _newClassNameField.ClearFocus();
+                    }
+                }; 
+            }
+
+            if (_gimmeCueButton != null) _gimmeCueButton.Click += async (o, e) =>
+            {
+                CuePrompter = new CuePrompter<T>(this);
+                await CuePrompter.SetAndProvideCue();
             };
 
-            //FindViewById<RadioGroup>(Resource.Id.mlrn_trainmode_radiobuttons).CheckedChange += (o, e) =>
-            //    { _discardSampleBtn.Text = (TeachOnlyMode) ? "Cancel" : "Submit"; };
+            if (_discardSampleBtn != null) _discardSampleBtn.Click += (o, e) =>
+            {
+                MostRecentSample = null;
+                Dataset?.RemoveSequence();
+            };
 
-            _discardSampleBtn.Click += _discardSampleBtn_Click;
+            if (_guessandteach != null) _guessandteach.CheckedChange += (o, e) => ButtonStates.Update(this);
+            if (_teachonly != null) _teachonly.CheckedChange += (o, e) => ButtonStates.Update(this);
+            if (_cuemode != null) _cuemode.CheckedChange += (o, e) => ButtonStates.Update(this);
 
-            _listView.ItemClick += OnListItemClick;
+            if (_listView != null) _listView.ItemClick += OnListItemClick;
         }
 
-        private void _discardSampleBtn_Click(object sender, EventArgs e)
+        protected void AskToDelete(string prompt, string filepath)
         {
-            MostRecentSample = null;
-            Dataset?.RemoveSequence();
+            new AlertDialog.Builder(this)
+                .SetMessage(prompt)
+                .SetPositiveButton("Yes", (o, e) =>
+                {
+                    (new File(filepath)).Delete();
+                    Toast.MakeText(this, "Deleted.", ToastLength.Short).Show();
+                })
+                .SetNegativeButton("No", (o, e) => { })
+                .Show();
         }
-
-        private void OnClassnameSpinnerChanged(object sender, AdapterView.ItemSelectedEventArgs e)
+        private int lastClassnameSpinnerSelection = -1;
+        protected void OnClassnameSpinnerChanged(object sender, AdapterView.ItemSelectedEventArgs e)
         {
             if (MostRecentSample == null) return;
             if (SpinnerChangeIsSilent) { SpinnerChangeIsSilent = false; return; }
 
-            bool itChanged = (MostRecentSample.TrueClassIndex != e.Position);
+            //bool itChanged = (_teachonly.Checked) 
+            //    ? (MostRecentSample.TrueClassIndex != e.Position)
+            //    : (MostRecentSample.RecognizedAsIndex != e.Position);
+            bool itChanged = (e.Position == lastClassnameSpinnerSelection);
+            lastClassnameSpinnerSelection = e.Position;
             MostRecentSample.TrueClassIndex = e.Position;
             Dataset.TallySequences();
             DisplaySampleInfo(MostRecentSample);
             ButtonStates.Update(this);
-            if (!TeachOnlyMode && itChanged) Speech.Say($"Corrected to {MostRecentSample.TrueClassName}");
+            if (_guessandteach.Checked && itChanged) Speech.Say($"Corrected to {MostRecentSample.TrueClassName}");
         }
 
-        private bool SpinnerChangeIsSilent = false;
-        private void SilentlySetClassnameSpinner(int position)
+        protected bool SpinnerChangeIsSilent = false;
+        protected void SilentlySetClassnameSpinner(int position)
         {
             if (position < 0) return;
-            //_classnameSpinner.ItemSelected -= OnClassnameSpinnerChanged;
             SpinnerChangeIsSilent = true;
             _classnameSpinner.SetSelection(position);
-            //_classnameSpinner.ItemSelected += OnClassnameSpinnerChanged;
-            //SpinnerChangeIsSilent = false;
+            _latestSampleDisplay.RequestLayout();
         }
-
-        //private AlertDialog.Builder createDataSetChooserDialog()
-        //{
-        //    AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
-        //    var _dialogTitleView = new TextView(this);
-        //    _dialogTitleView.LayoutParameters = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.WrapContent);
-
-        //    _dialogTitleView.Gravity = GravityFlags.CenterVertical;
-        //    _dialogTitleView.SetBackgroundColor(Android.Graphics.Color.DarkGray);
-        //    _dialogTitleView.SetTextColor(Android.Graphics.Color.White);
-        //    _dialogTitleView.Text = "Test1";
-
-        //    // Create custom view for AlertDialog title
-        //    LinearLayout titleLayout1 = new LinearLayout(this);
-        //    titleLayout1.Orientation = Android.Widget.Orientation.Vertical;
-        //    titleLayout1.AddView(_dialogTitleView);
-
-        //    /////////////////////////////////////////////////////
-        //    // Create View with folder path and entry text box // 
-        //    /////////////////////////////////////////////////////
-        //    LinearLayout titleLayout = new LinearLayout(this);
-        //    titleLayout.Orientation = Android.Widget.Orientation.Vertical;
-
-        //    var m_titleView = new TextView(this);
-        //    m_titleView.LayoutParameters = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.WrapContent);
-        //    m_titleView.Gravity = GravityFlags.CenterVertical;
-        //    m_titleView.SetBackgroundColor(Android.Graphics.Color.DarkGray);
-        //    m_titleView.SetTextColor(Android.Graphics.Color.White);
-        //    m_titleView.Text = "Test2";
-
-        //    titleLayout.AddView(m_titleView);
-
-        //    //////////////////////////////////////////
-        //    // Set Views and Finish Dialog builder  //
-        //    //////////////////////////////////////////
-        //    dialogBuilder.SetView(titleLayout);
-        //    dialogBuilder.SetCustomTitle(titleLayout1);
-        //    var m_listAdapter = new ArrayAdapter(this, Android.Resource.Drawable.ListSelectorBackground, DataSet<T>.DatasetIndex);
-        //    EventHandler<DialogClickEventArgs> onListItemClick = 
-        //        (object sender, DialogClickEventArgs e) => 
-        //        {
-        //            var selectedSetName = DataSet<T>.DatasetIndex[e.Which];
-        //            Dataset = DataSet<T>.Load<T>(selectedSetName);
-        //        };
-        //    dialogBuilder.SetSingleChoiceItems(m_listAdapter, -1, onListItemClick);
-        //    dialogBuilder.SetCancelable(false);
-        //    return dialogBuilder;
-        //}
-
-        //private void _teachButtons_Click(object sender, EventArgs e)
-        //{
-        //    _submitOrCancelBtn.Text = (TeachOnlyMode) ? "Cancel" : "Submit";
-        //}
 
         public void OnListItemClick(object sender, Android.Widget.AdapterView.ItemClickEventArgs e)
         {
@@ -814,6 +803,17 @@ namespace Atropos.Machine_Learning
                 _addNewClassButton.Enabled = true;
             }
         }
+
+        public void DismissProgressIndicator()
+        {
+            if (_progressDialog != null && _progressDialog.IsShowing)
+                _progressDialog.Dismiss();
+        }
+
+        public void ShowProgressIndicator(string title, string message)
+        {
+            _progressDialog = ProgressDialog.Show(this, title, message, true, true);
+        }
         #endregion
 
         public void SetUpAdapters(IDataset dataSet)
@@ -826,12 +826,12 @@ namespace Atropos.Machine_Learning
             _classnameSpinnerAdapter.AddAll(dataSet.ClassNames);
             _classnameSpinner.Adapter = _classnameSpinnerAdapter;
 
-            _listAdapter = new GestureClassListAdapter(this, dataSet);
+            _listAdapter = new GestureClassListAdapter<T>(this, dataSet);
             _listView.Adapter = _listAdapter;
             _listView.DisableScrolling();
         }
 
-        public void DisplaySampleInfo(ISequence sequence)
+        public virtual void DisplaySampleInfo(ISequence sequence)
         {
             if (sequence == null || (sequence as Sequence<T>).SourcePath.Length < 3) return;
 
@@ -841,7 +841,7 @@ namespace Atropos.Machine_Learning
             // Contents of the text field, and selected item in the spinner, both depend on a number of settings & factors.
 
             // (A) Which mode are we in?
-            if (TeachOnlyMode)
+            if (_teachonly.Checked)
             {
                 SilentlySetClassnameSpinner(sequence.TrueClassIndex); // Does nothing if index < 0 (aka "I dunno"), although how that'd happen is unclear.
 
@@ -869,22 +869,22 @@ namespace Atropos.Machine_Learning
                 }
             }
             // (A') We're in guess-and-teach mode
-            else
+            else if (_guessandteach.Checked)
             {
                 // (B) Did we recognize it as anything at all?
                 if (sequence.RecognizedAsIndex >= 0)
                 {
-                    SilentlySetClassnameSpinner(sequence.RecognizedAsIndex);
-
                     // (C) Have we not told it yet what it really is?
                     if (sequence.TrueClassIndex < 0)
                     {
+                        SilentlySetClassnameSpinner(sequence.RecognizedAsIndex);
                         _guessField.Text = $"Is that a {sequence.RecognizedAsName}?";
                         _guessField.SetTextColor(Android.Graphics.Color.Blue);
                     }
                     // (C') Okay, we've set the spinner (or used another input method like the Submit button) and thus told it what it is.
                     else
                     {
+                        SilentlySetClassnameSpinner(sequence.TrueClassIndex);
                         // (D) Did our guess get it right?  Yup, awesome!
                         if (sequence.RecognizedAsIndex == sequence.TrueClassIndex)
                         {
@@ -906,6 +906,37 @@ namespace Atropos.Machine_Learning
                     _guessField.SetTextColor(Android.Graphics.Color.Gray);
                     SubmitButtonPermitted = false;
                 }
+            }
+            else // (A") We're in cued mode
+            {
+                SilentlySetClassnameSpinner(SelectedGestureClass.index);
+                string formatString;
+
+                // (B) Did the user perform the *correct* gesture?
+                if (sequence.RecognizedAsIndex != SelectedGestureClass.index)
+                {
+                    formatString = $"Not {sequence.RecognizedAsName}, {{0}}!";
+                    _guessField.SetTextColor(Android.Graphics.Color.Red);
+                }
+
+                else if (sequence.RecognitionScore < 1.5)
+                {
+                    formatString = "Sloppy {0}";
+                    _guessField.SetTextColor(Android.Graphics.Color.Red);
+                }
+                else if (sequence.RecognitionScore < 2.25)
+                {
+                    formatString = "Respectable {0}";
+                    _guessField.SetTextColor(Android.Graphics.Color.Magenta);
+                }
+                else
+                {
+                    formatString = "Excellent {0}";
+                    _guessField.SetTextColor(Android.Graphics.Color.Green);
+                }
+
+                _guessField.Text = String.Format(formatString, SelectedGestureClass.className);
+                SubmitButtonPermitted = false;
             }
 
             _latestSampleDisplay.Visibility = ViewStates.Visible;
@@ -943,7 +974,7 @@ namespace Atropos.Machine_Learning
         }
     }
 
-    public class GestureClassListAdapter : BaseAdapter<GestureClass>
+    public class GestureClassListAdapter<T> : BaseAdapter<GestureClass> where T : struct
     {
         private readonly Activity _context;
         private readonly IDataset _dataset;
@@ -986,24 +1017,14 @@ namespace Atropos.Machine_Learning
             GestureClass gC = _items[position];
             if (gC == null) return v;
 
-            var ctx = (MachineLearningActivity)_context;
+            var ctx = (MachineLearningActivity<T>)_context;
             IconField.Alpha = (ctx.SelectedGestureClass.className == gC.className) ?
                               ((ctx.TeachOnlyMode) ? 1.0f : 0.35f) : 0.25f;
             NameField.Text = gC.className;
             VisualizationField.SetImageBitmap(gC.visualization);
-            if (gC.numExamplesSampled == gC.numExamples) // 100% sampling - display actual counts right/wrong
-            {
-                if (gC.numExamples > 0) PercentageField.Text = $"{(100.0 * gC.numExamplesCorrectlyRecognized / gC.numExamples):f0}%";
-                else PercentageField.Text = "0%";
-                DetailsField.Text = $"({gC.numExamplesCorrectlyRecognized} / {gC.numExamples})";
-            }
-            else
-            {
-                if (gC.numExamplesSampled > 0) PercentageField.Text = $"{(100.0 * gC.numExamplesSampledCorrectlyRecognized / gC.numExamplesSampled):f0}%";
-                else PercentageField.Text = "0%";
-                DetailsField.Text = $"({gC.numExamples} @ {100.0 * gC.numExamplesSampled / gC.numExamples}%)";
-            }
-            AddedItemsField.Text = $"+ {gC.numNewExamplesCorrectlyRecognized} / {gC.numNewExamples}";
+            PercentageField.Text = gC.PercentageText;
+            DetailsField.Text = gC.DetailsText;
+            AddedItemsField.Text = gC.AddedItemsText;
 
             return v;
         }

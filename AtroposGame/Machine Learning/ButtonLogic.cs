@@ -33,14 +33,15 @@ using PerpetualEngine.Storage;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-namespace Atropos.Machine_Learning
+namespace Atropos.Machine_Learning.Button_Logic
 {
-    class NamedField
+    public class NamedField
     {
         public NamedField(Activity act, int resID)
         {
             Target = act.FindViewById<TextView>(resID);
-            if (Target == null) throw new Exception($"Unable to find resource {resID}... whassup?");
+            if (Target == null) //throw new Exception($"Unable to find resource {resID}... whassup?");
+                Target = new TextView(act); // Never actually implemented, it still allows us to manipulate it without throwing things.
         }
         public TextView Target; // Button and EditText both derive from TextView, so this covers all three.
         private FieldState _state;
@@ -63,7 +64,7 @@ namespace Atropos.Machine_Learning
         }
     }
 
-    class FieldState
+    public class FieldState
     {
         public const string NoChange = "__NOCHANGE__"; // Lets us set one to Null and actually have it be Null, as compared with "change nothing".
         public string Text = NoChange;
@@ -96,21 +97,24 @@ namespace Atropos.Machine_Learning
         }
     }
 
-    static class ButtonStates
+    // Original version... controller for a standard MachineLearningActivity
+    public class ButtonStates
     {
-        private static Activity parentActivity; // Not currently needed, but if we need RunOnUI permissions, it'll be handy.
+        private Activity parentActivity; // Not currently needed, but if we need RunOnUI permissions, it'll be handy.
 
-        public static NamedField Save;
-        public static NamedField Load;
-        public static NamedField Clear;
-        public static NamedField Compute;
-        public static NamedField DatasetName;
+        public NamedField Save;
+        public NamedField Load;
+        public NamedField Clear;
+        public NamedField Compute;
+        public NamedField DatasetName;
         //public static NamedField AddNewClass;
-        private static ListView _listview;
-        private static RadioButton _guessAndTeach;
-        private static EditText _newClassName;
+        private ListView _listview;
+        private RadioButton _guessAndTeach, _cuemode;
+        private Button _gimmeCue;
+        private CheckBox _repeatCuesCheckbox;
+        private EditText _newClassName;
 
-        public static void AssignTargets(Activity activity)
+        public virtual void AssignTargets(Activity activity)
         {
             parentActivity = activity;
             Save = new NamedField(activity, Resource.Id.mlrn_dataset_save_btn);
@@ -121,6 +125,9 @@ namespace Atropos.Machine_Learning
             //AddNewClass = new NamedField(activity, Resource.Id.mlrn_add_gesture_class_btn);
             _listview = parentActivity.FindViewById<ListView>(Resource.Id.list);
             _guessAndTeach = parentActivity.FindViewById<RadioButton>(Resource.Id.mlrn_trainmode_guessandteach);
+            _cuemode = parentActivity.FindViewById<RadioButton>(Resource.Id.mlrn_trainmode_cue);
+            _gimmeCue = parentActivity.FindViewById<Button>(Resource.Id.mlrn_cue_button);
+            _repeatCuesCheckbox = parentActivity.FindViewById<CheckBox>(Resource.Id.mlrn_cue_repeat_checkbox);
             _newClassName = parentActivity.FindViewById<EditText>(Resource.Id.mlrn_new_gesture_class_namefield);
         }
 
@@ -150,7 +157,7 @@ namespace Atropos.Machine_Learning
         //public static FieldState CanAddNewClass = FieldState.Def("Add", true);
         //public static FieldState RemoveClass = FieldState.Def("Remove", true);
 
-        public static void Update<T>(MachineLearningActivity<T> activity) where T : struct
+        public void Update<T>(MachineLearningActivity<T> activity) where T : struct
         {
             // Silently fail if uninitialized (happens particularly during initialization of properties like Dataset)
             if (Save == null) return;
@@ -184,7 +191,12 @@ namespace Atropos.Machine_Learning
             else
                 Load.State = CannotLoad;
 
-            _guessAndTeach.Enabled = (Classifier != null && Classifier.MachineOnline);
+            if (_guessAndTeach != null) _guessAndTeach.Enabled = (Classifier != null && Classifier.MachineOnline);
+            if (_cuemode != null)
+            {
+                _cuemode.Enabled = (Classifier != null && Classifier.MachineOnline);
+                _gimmeCue.Visibility = _repeatCuesCheckbox.Visibility = (_cuemode.Checked) ? ViewStates.Visible : ViewStates.Gone;
+            }
             _newClassName.Text = _newClassName.Text + ""; // Causes it to reassess its "on text changed" event
 
             // Rapid exit if there is no dataset at all, since the rest of this would be gibberish and throw lots of exceptions.
@@ -286,7 +298,7 @@ namespace Atropos.Machine_Learning
             //    _listview.Invalidate();
             //    parentActivity.FindViewById(Resource.Id.mlrn_latest_sample_display).Invalidate();
             //});
-            ((MachineLearningActivity)parentActivity).SetUpAdapters(Dataset);
+            ((MachineLearningActivity<T>.IMachineLearningActivity)parentActivity).SetUpAdapters(Dataset);
         }
     }
 }

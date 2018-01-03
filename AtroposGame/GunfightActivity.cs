@@ -24,6 +24,8 @@ using Android.Views;
 using Android.Media;
 using Plugin.Vibrate;
 
+using Atropos.Encounters;
+
 namespace Atropos
 {
     /// <summary>
@@ -283,7 +285,7 @@ namespace Atropos
             protected override void interimAction()
             {
                 if (Vector3.Dot(Gravity.Vector, Weapon.vectorPointedForward) > 0.5) return; // Not close enough to vertical, ignore.
-                if (Stillness.StillnessScore > 10 
+                if (Stillness.StillnessScore + Stillness.InstantaneousScore > 15 
                     && !exhaleCueHasBeenProvided 
                     && DateTime.Now > nextReadyTime)
                     //&& Weapon.CurrentAmmoCount > 0)
@@ -365,15 +367,21 @@ namespace Atropos
                         {
                             ShotHitSFX.Play(ResultSFXVolume, useSpeakers: true);
                             // Experimental!!
-                            Atropos.Communications.Runners.MyTeammates.PlaySFX(ShotHitSFX);
+                            Atropos.Communications.HeyYou.MyTeammates.PlaySFX(ShotHitSFX);
                         }
                         else
                         {
                             ShotMissSFX.Play(ResultSFXVolume, useSpeakers: true);
                             // Experimental!!
-                            Atropos.Communications.Runners.MyTeammates.PlaySFX(ShotMissSFX);
+                            Atropos.Communications.HeyYou.MyTeammates.PlaySFX(ShotMissSFX);
                         }
                     }
+
+                    // Testing the new Evasion code here... for now after every shot.
+                    var Incoming = new IncomingRangedAttack();
+                    EvasionMode<Vector3> Evasion = (Res.Random < 0.5) ? new EvasionMode.Dodge() : new EvasionMode.Duck();
+                    var EvasionStage = new IncomingAttackPrepStage<Vector3>(Current, Incoming, Evasion);
+                    EvasionStage.Activate();
                 }
                 catch (Exception)
                 {

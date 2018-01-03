@@ -59,7 +59,7 @@ namespace Atropos.Communications
             }
 
             // Also, add it to the master list under Runners.
-            Runners.All.Members.Add((SenderAndReceiver)target);
+            HeyYou.Everybody.Members.Add((SenderAndReceiver)target);
         }
 
         public static MessageTarget Resolve(string identifier)

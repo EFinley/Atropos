@@ -27,7 +27,7 @@ using Android.Media;
 using Plugin.Vibrate;
 using MiscUtil;
 
-namespace Atropos
+namespace Atropos.Encounters
 {
     //internal static class ElementExtensions
     //{

@@ -35,6 +35,8 @@ namespace Atropos.Machine_Learning
         public List<string> ClassNames { get { return Classes.Select(gc => gc.className).ToList(); } }
         private List<GestureClass> _classes = new List<GestureClass>();
         public List<GestureClass> Classes { get { return _classes; } protected set { _classes = value; } }
+        public List<GestureClass> ActualGestureClasses { get { return _classes.Where(c => c.IsTrainable).ToList(); } }
+        public List<GestureClass> ColourGestureClasses { get { return _classes.Where(c => !c.IsTrainable).ToList(); } }
 
         // Ancillary information
         public const string FileExtension = "dataset";
@@ -142,7 +144,7 @@ namespace Atropos.Machine_Learning
         public override void AddClass(string newClassName)
         {
             if (ClassNames.Contains(newClassName) || String.IsNullOrEmpty(newClassName)) return;
-            AddClass(new GestureClass() { className = newClassName, index = ClassNames.Count });
+            AddClass(new GestureClass() { className = newClassName });
         }
         public void AddClass(GestureClass newClass)
         {
@@ -150,12 +152,13 @@ namespace Atropos.Machine_Learning
             {
                 // Overwrite the existing class by that name with the data in this one
                 int index = Classes.FindIndex(c => c.className == newClass.className);
+                newClass.index = (newClass.IsTrainable) ? Classes[index].index : -1;
                 Classes[index] = newClass;
             }
             else
             {
                 // Add it to the list
-                newClass.index = Classes.Count;
+                newClass.index = (newClass.IsTrainable) ? Classes.Count(c => c.IsTrainable) : -1;
                 Classes.Add(newClass);
             }
 
@@ -173,18 +176,22 @@ namespace Atropos.Machine_Learning
 
             // Have to run through and relabel all our indices...
             int tgtIndex = tgtClass.index;
-            foreach (var seq in Samples.ToArray()) // Make a copy so we don't have issues with removing items midway
+            if (tgtIndex >= 0)
             {
-                if (seq.TrueClassIndex == tgtIndex) Samples.Remove(seq);
-                else
+                foreach (var seq in Samples.ToArray()) // Make a copy so we don't have issues with removing items midway
                 {
-                    if (seq.RecognizedAsIndex == tgtIndex) seq.RecognizedAsIndex = -1; // Un-recognize it.
-                    if (seq.TrueClassIndex > tgtIndex) seq.TrueClassIndex--;
-                    if (seq.RecognizedAsIndex > tgtIndex) seq.RecognizedAsIndex--;
+                    if (seq.TrueClassIndex == tgtIndex) Samples.Remove(seq);
+                    else
+                    {
+                        if (seq.RecognizedAsIndex == tgtIndex) seq.RecognizedAsIndex = -1; // Un-recognize it.
+                        if (seq.TrueClassIndex > tgtIndex) seq.TrueClassIndex--;
+                        if (seq.RecognizedAsIndex > tgtIndex) seq.RecognizedAsIndex--;
+                    }
                 }
+                foreach (var gC in Classes) if (gC.index > tgtIndex) gC.index--;
             }
-            foreach (var gC in Classes) if (gC.index > tgtIndex) gC.index--;
-            Classes.RemoveAt(tgtIndex);
+            
+            Classes.Remove(tgtClass);
             TallySequences(true);
             if (!NameIsUserChosen) RenameTo(AutogenerateName());
         }
@@ -265,22 +272,30 @@ namespace Atropos.Machine_Learning
             //classLabel = classLabel ?? sample.TrueClassName; // Probably unnecessary?  Depends on order of adding new class vs. doing its first gesture.
             AddClass(classLabel); // No-op if it's already present
 
-            //sample.ClassNames = new BindingList<string>(ClassNames);
-
-            Samples.Add(sample as Sequence<T>);
-
-            TallySequences();
-
             if (sample.TrueClassIndex >= 0)
             {
-                //var sampleClass = Classes[sample.TrueClassIndex];
-                //sampleClass.numNewExamples++;
-                //if (sample.TrueClassIndex == sample.RecognizedAsIndex) sampleClass.numNewExamplesCorrectlyRecognized++;
-
                 // SkipBitmap is used to avoid generating a shwack of unnecessary bitmaps during (e.g.) loading a saved dataset.
                 // Other than in that case, the visualization on a GC is that of the most recent sample added to it.
-                if (!skipBitmap) Classes[sample.TrueClassIndex].visualization = sample.Bitmap; 
+                if (!skipBitmap) Classes[sample.TrueClassIndex].visualization = sample.Bitmap;
             }
+
+            // Normally, we keep only (at most) one non-training sample in the sample dictionary at any given time.
+            CleanOutNontrainableSequences();
+
+            // Add this most recent gesture (which might be trainable or non-)
+            Samples.Add(sample as Sequence<T>);
+
+            // Count up the number of samples fitting each group
+            TallySequences();
+        }
+
+        public void CleanOutNontrainableSequences()
+        {
+            // Short-circuit pathway, so we don't regenerate the list each time we merely want to do this as a check.
+            if (!Samples.Any(s => s.TrueClassIndex >= 0 && !Classes[s.TrueClassIndex].IsTrainable)) return;
+
+            // Prune out all non-trainable sequences from our sample list (preparatory to either adding a new sequence, or classifying the dataset, etc).
+            Samples = new BindingList<Sequence<T>>(Samples.Where(s => s.TrueClassIndex < 0 || Classes[s.TrueClassIndex].IsTrainable).ToList());
         }
 
         public override void RemoveSequence(int index = -1)
@@ -370,7 +385,7 @@ namespace Atropos.Machine_Learning
         public override int MinSamplesInAnyClass()
         {
             int min = 0;
-            foreach (string label in ClassNames)
+            foreach (string label in ActualGestureClasses.Select(gC => gC.className))
             {
                 int c = Samples.Count(p => p.TrueClassName == label);
 

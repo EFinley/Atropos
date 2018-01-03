@@ -46,6 +46,12 @@ namespace Atropos
                 }
             }
         }
+        private static List<IActivator> _backgroundStages = new List<IActivator>();
+        // NOTE! Unlike CurrentStage, which auto-deactivates the previous stage, you have to manually make sure to deactivate BackgroundStage members.
+        internal static List<IActivator> BackgroundStages
+        {
+            get { return _backgroundStages; }
+        }
         protected ScreenOffReceiver powerButtonInterceptor;
 
         // Usage: In the derived class, call DoOnResume(stuff) inside your OnResume() call.
@@ -102,8 +108,12 @@ namespace Atropos
             if (_autoRestart)
             {
                 //StopStartables.ResumeAll();
-                if (!CurrentStage?.IsActive ?? false) CurrentStage?.Activate();
+                if (!CurrentStage?.IsActive ?? false) CurrentStage.Activate();
                 //if (CurrentStage?.IsPaused ?? false) CurrentStage?.Resume();
+                foreach (var backStage in BackgroundStages)
+                {
+                    if (!backStage?.IsActive ?? false) backStage.Activate();
+                }
             }
             else
             {
@@ -148,6 +158,7 @@ namespace Atropos
             NeverMindWeAreShuttingDown?.Cancel();
             Res.SFX.StopAll();
             CurrentStage?.Deactivate();
+            foreach (var backstage in BackgroundStages) backstage?.Deactivate();
             InteractionLibrary.Current = null;
             UnregisterReceiver(powerButtonInterceptor);
             //Task.Delay(500).ContinueWith(t => UnregisterReceiver(powerButtonInterceptor));

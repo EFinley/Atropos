@@ -125,7 +125,28 @@
                 android:layout_height="wrap_content"
                 android:text="Guess + Teach"
                 android:enabled="false" />
+            <RadioButton
+                android:id="@+id/mlrn_trainmode_cue"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Cue"
+                android:enabled="false" />
         </RadioGroup>
+        <Button 
+            android:id="@+id/mlrn_cue_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Gimme a cue!" 
+            android:visibility="gone"/>
+        <CheckBox
+            android:id="@+id/mlrn_cue_repeat_checkbox"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:checked="false"
+            android:visibility="gone"
+            android:text="Keep 'em Coming"
+            />
         <LinearLayout
             android:id="@+id/mlrn_latest_sample_display"
             android:orientation="horizontal"

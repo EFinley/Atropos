@@ -12,6 +12,7 @@ using Android.Widget;
 using MiscUtil;
 using Android.Graphics;
 using Atropos.Communications;
+using Atropos.Encounters;
 
 namespace Atropos
 {
@@ -235,7 +236,7 @@ namespace Atropos
             base.OnCreate(savedInstanceState);
 
             SetupButton(Resource.Id.choice_samurai_gun, InteractionLibrary.Gunfight);
-            SetupButton(Resource.Id.choice_samurai_katana, InteractionLibrary.MeleeTeaching, false);
+            SetupButton(Resource.Id.choice_samurai_katana, typeof(Machine_Learning.MeleeAlphaActivity));
         }
     }
 

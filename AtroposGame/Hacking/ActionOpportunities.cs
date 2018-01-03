@@ -132,7 +132,7 @@ namespace Atropos.Hacking
             {
                 selectionIndex = await Classifier.Recognize(MostRecentSample);
             }
-            string selectedOutcomeName = Classifier.Dataset.ClassNames[selectionIndex];
+            string selectedOutcomeName = Classifier.Dataset.ActualGestureClasses.ElementAtOrDefault(selectionIndex).className;
 
             if (selectionIndex == -1 || !OutcomeOptions.ContainsKey(selectedOutcomeName)) return HackOutcome.NoChange;
 
@@ -149,8 +149,7 @@ namespace Atropos.Hacking
         public Dictionary<int, ICEbreaker> SuitableBreakers;
         public ICEbreaker ChosenBreaker;
 
-        private Machine_Learning.Classifier Classifier;
-        //private Atropos.Machine_Learning.PlanarizedGestureProvider Provider;
+        private Classifier Classifier;
 
         public override async Task<IStateChange> Attempt(HackingAttemptState initialState)
         {
