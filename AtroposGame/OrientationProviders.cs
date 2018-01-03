@@ -33,6 +33,7 @@ namespace Atropos
         T Data { get; }
     }
 
+    // Older versions of IProvider<T> whose many buried instances aren't worth updating to (e.g.) IProvider<Vector3> with the required replacement of "Vector" with the less specific "Data".
     public interface IVector3Provider : IProvider
     {
         Vector3 Vector { get; }
@@ -42,29 +43,42 @@ namespace Atropos
         Quaternion Quaternion { get; }
     }
 
-    //public abstract class SensorProvider : Java.Lang.Object, IProvider, ISensorEventListener
     public abstract class SensorProvider : ActivatorBase, IProvider
     {
-        //public static List<string> SensorRegistrationsList = new List<string>();
-        //private string myRegistrationString;
-
         protected object synchronizationToken = new object();
 
         private class SensorListener : Java.Lang.Object, ISensorEventListener
         {
+            private List<SensorProvider> listeners = new List<SensorProvider>();
+            public static Dictionary<SensorType, SensorListener> SensorLibrary = new Dictionary<SensorType, SensorListener>();
             private static SensorManager sensorManager;
             static SensorListener() { sensorManager = (SensorManager)Application.Context.GetSystemService(Context.SensorService); }
-            public SensorListener(SensorType sensortype)
+
+            // Private ctor because if it's already in our library, we just want to reuse the same sensor listener instead of resubscribing to it.
+            private SensorListener(SensorType sensortype)
             {
                 sensorType = sensortype;
                 sensor = sensorManager.GetDefaultSensor(sensorType);
             }
+            // Public factory function which invokes the ctor only if it needs to.
+            public static SensorListener Get(SensorType sensorType)
+            {
+                lock (SensorLibrary)
+                {
+                    if (!SensorLibrary.ContainsKey(sensorType))
+                        SensorLibrary.Add(sensorType, new SensorListener(sensorType));
+                    return SensorLibrary[sensorType]; 
+                }
+            }
 
             public SensorDelay sensorDelay = SensorDelay.Game;
+            public bool StopListeningOnPause = true;
+            private bool listening = false; // Subtly distinct from listeners.Count > 0... because if we pause the app, listening should become false so we know to re-listen when the app resumes, despite neither adding nor removing listeners from the list.
 
             public SensorType sensorType;
             private Sensor sensor;
-            // Not doing anything; required by interface, but irrelevant to us here.
+
+            // Doesn't do anything; required by ISensorEventListener interface, but irrelevant to us here.
             public void OnAccuracyChanged(Sensor sensor, [GeneratedEnum] SensorStatus accuracy) { }
 
             public delegate void JavaStyleEventHandler<T>(T e); // Java lacks the "object sender" convention, apparently.
@@ -78,17 +92,54 @@ namespace Atropos
                 }
             }
 
-            public void StartListening()
+            public void StartListening(SensorProvider provider)
             {
+                lock (SensorLibrary)
+                {
+                    Listen(); // No-op if already doing so.
+                    listeners.Add(provider); 
+                }
+            }
+
+            public void Listen()
+            {
+                if (listening) return;
                 sensorManager.RegisterListener(this, sensor, sensorDelay, maxReportLatencyUs: 50000);
+                listening = true;
                 // The maxReportLatency allows it to batch some reads.  Should help responsiveness (I think).
                 Res.NumSensors++;
             }
 
-            public void StopListening()
+            public void StopListening(SensorProvider provider)
+            {
+                lock (SensorLibrary)
+                {
+                    listeners.Remove(provider);
+                    if (listeners.Count == 0) UnListen();   
+                }              
+            }
+
+            public void UnListen()
             {
                 sensorManager.UnregisterListener(this);
+                listening = false;
                 Res.NumSensors--;
+            }
+        }
+
+        public static void PauseAllListeners()
+        {
+            foreach (var listener in SensorListener.SensorLibrary.Values)
+            {
+                if (listener.StopListeningOnPause) listener.UnListen();
+            }
+        }
+
+        public static void ResumeAllListeners()
+        {
+            foreach (var listener in SensorListener.SensorLibrary.Values)
+            {
+                listener.Listen();
             }
         }
 
@@ -96,22 +147,13 @@ namespace Atropos
         //protected static SensorManager sensorManager;
         //protected static SensorDelay chosenDelay = SensorDelay.Game;
         private SensorListener sensorListener;
+        public bool keepSensorAwake { get { return !sensorListener.StopListeningOnPause; } set { sensorListener.StopListeningOnPause = !value; } }
 
         protected bool hasTakenData = false;
         protected DateTime startTime = DateTime.Now;
         public long nanosecondsElapsed;
         protected long startNanoseconds;
         protected long previousNanoseconds = (long)-5e7; // Fifty milliseconds "ago"
-
-        //private CancellationTokenSource cts;
-        //public CancellationToken StopToken { get { return cts?.Token ?? CancellationToken.None; } }
-        //public void DependsOn(CancellationToken dependency, Activator.Options options = Activator.Options.Default)
-        //{
-        //    cts = CancellationTokenSource.CreateLinkedTokenSource(StopToken, dependency);
-        //    cts.Token.Register(Deactivate);
-        //}
-
-        //public bool IsActive { get { return (cts != null); } }
 
         protected AsyncManualResetEvent dataReadyEvent = new AsyncManualResetEvent(true);
 
@@ -159,7 +201,7 @@ namespace Atropos
         public SensorProvider(SensorType sensorType, CancellationToken? externalStopToken = null, [CallerMemberName] string callerName = "")
         {
             //sensor = sensorManager.GetDefaultSensor(sensorType);
-            sensorListener = new SensorListener(sensorType);
+            sensorListener = SensorListener.Get(sensorType); //new SensorListener(sensorType);
             //Activate(externalStopToken);
             if (externalStopToken != null) DependsOn(externalStopToken.Value);
             this.callerName = callerName;
@@ -180,9 +222,9 @@ namespace Atropos
                 if (sensorListener == null) return;
                 if (IsActive)
                 {
-                    sensorListener.StopListening();
+                    sensorListener.UnListen();
                     sensorListener.sensorDelay = value;
-                    sensorListener.StartListening();
+                    sensorListener.Listen();
                 }
                 else sensorListener.sensorDelay = value;
             }
@@ -202,26 +244,20 @@ namespace Atropos
             }
             base.Activate(externalStopToken);
 
+            sensorListener.StartListening(this);
             sensorListener.SensorChanged += OnSensorChanged;
-            sensorListener.StartListening();
 
             //sensorManager.RegisterListener(this, sensor, chosenDelay, maxReportLatencyUs: 50000);
             //// The maxReportLatency allows it to batch some reads.  Should help responsiveness (I think).
-            //Res.NumSensors++;
-
-            //SensorRegistrationsList.Add($"({this.GetType()}):{sensor.Type.ToString()}");
         }
 
         public override void Deactivate()
         {
-            if (cts == null) return; // ALMOST the same thing as !IsActive, except that it'll allow entrance if cts.CancellationRequested is true (since cts being cancelled will typically result in Deactivate() being called!)
+            if (cts == null) return; // ALMOST the same thing as !IsActive, except that it'll allow us to enter operations here if cts.CancellationRequested is true (since cts being cancelled will typically result in Deactivate() being called!)
             base.Deactivate();
-            sensorListener.StopListening();
             sensorListener.SensorChanged -= OnSensorChanged;
+            sensorListener.StopListening(this);
             //sensorManager.UnregisterListener(this);
-            //Res.NumSensors--;
-            //cts?.Cancel();
-            //cts = null;
         }
 
         protected virtual void TakeTimestamps(SensorEvent e)
@@ -277,86 +313,22 @@ namespace Atropos
         public T Data { get { return default(T); } }
     }
 
-    //public static class SingletonProviders
-    //{
-    //    private class SingleUserProvider : ActivatorBase, IProvider
-    //    {
-    //        public SensorProvider InnerProvider;
-    //        public AsyncManualResetEvent ProceedSignal = new AsyncManualResetEvent();
-
-    //        public override void Activate(CancellationToken? externalStopToken = default(CancellationToken?))
-    //        {
-    //            // Register with the library, let it activate if necessary
-    //            ((IProvider)InnerProvider).Activate(externalStopToken);
-    //        }
-
-    //        public override void Deactivate()
-    //        {
-    //            // Deregister with the library and let it perform deactivation
-    //            ((IProvider)InnerProvider).Deactivate();
-    //        }
-
-    //        public void Proceed()
-    //        {
-    //            ProceedSignal.Set();
-    //            // Reset happens when ALL of the subscribers' signals are set.
-    //        }
-
-    //        #region Implemented through InnerProvider
-    //        public TimeSpan Interval
-    //        {
-    //            get
-    //            {
-    //                return ((IProvider)InnerProvider).Interval;
-    //            }
-    //        }
-
-
-    //        public TimeSpan RunTime
-    //        {
-    //            get
-    //            {
-    //                return ((IProvider)InnerProvider).RunTime;
-    //            }
-    //        }
-
-    //        public DateTime Timestamp
-    //        {
-    //            get
-    //            {
-    //                return ((IProvider)InnerProvider).Timestamp;
-    //            }
-    //        }
-
-    //        public Task WhenDataReady()
-    //        {
-    //            return ((IProvider)InnerProvider).WhenDataReady();
-    //        }
-    //        #endregion
-    //    }
-    //    private static Dictionary<SensorType, List<SingleUserProvider>> AllProviders;
-
-    //    public static IProvider Obtain(SensorType sensorType)
-    //    {
-
-    //    }
-    //}
-
     public abstract class SensorProvider<T> : SensorProvider, IProvider<T> where T:struct
     {
         // Constructor inheritance must be explicit
-        public SensorProvider(SensorType sensorType, CancellationToken? externalStopToken = null, [CallerMemberName] string callerName = "") : base(sensorType, externalStopToken, callerName) { }
+        public SensorProvider(SensorType sensorType, CancellationToken? externalStopToken = null, [CallerMemberName] string callerName = "") 
+            : base(sensorType, externalStopToken, callerName) { }
 
-        // Implementation of implicit typing (so a Vector3Provider can be accepted as a Vector3)
-        protected virtual T toImplicitType()
+        protected virtual T toDataType()
         {
             throw new NotImplementedException("Must override this method in a derived class to use implicit conversion on it.");
         }
+        public T Data { get { return toDataType(); } }
+        // Implementation of implicit typing (so a Vector3Provider can be accepted directly as a Vector3 - sometimes more convenient than referring to 'Data')
         public static implicit operator T(SensorProvider<T> source)
         {
-            return source.toImplicitType();
+            return source.toDataType();
         }
-        public T Data { get { return toImplicitType(); } }
     }
 
     public abstract class MultiSensorProvider : ActivatorBase, IProvider
@@ -365,27 +337,7 @@ namespace Atropos
         protected IProvider keyProvider;
         protected object synchronizationToken = new object();
 
-        //private CancellationTokenSource cts;
-        //private HashSet<CancellationToken> externalTokens = new HashSet<CancellationToken>();
-        //public CancellationToken StopToken { get { return cts?.Token ?? CancellationToken.None; } }
-        //public void DependsOn(CancellationToken dependency, Activator.Options options = Activator.Options.Default)
-        //{
-        //    if (options == Activator.Options.Default)
-        //    {
-        //        externalTokens.Add(dependency);
-        //        if (IsActive) dependency.Register(Deactivate);
-        //    }
-        //    else if (options == Activator.Options.RemoveDependency && externalTokens.Contains(dependency))
-        //    {
-        //        externalTokens.Remove(dependency);
-        //        cts = CancellationTokenSource.CreateLinkedTokenSource(CancellationTokenHelpers.Normalize(externalTokens).Token);
-        //    }
-        //    //cts = CancellationTokenSource.CreateLinkedTokenSource(StopToken, dependency);
-        //    //cts.Token.Register(Deactivate);
-        //}
-
         public TimeSpan Interval { get { return keyProvider?.Interval ?? TimeSpan.FromMilliseconds(20); } }
-        //public bool IsActive { get { return (cts != null); } }
         public TimeSpan RunTime { get { return keyProvider?.RunTime ?? TimeSpan.Zero; } }
         public DateTime Timestamp { get { return keyProvider?.Timestamp ?? DateTime.Now; } }
 
@@ -420,13 +372,13 @@ namespace Atropos
                 else keyProvider = providers[0];
             }
         }
-
+        //// Override in a derived class to insert behaviour here.
         //protected virtual Task DoWhenAllDataIsReadyAsync()
         //{
-        //    //DoWhenAllDataIsReady();
         //    return Task.CompletedTask;
-        //} // Override in a derived class to insert behaviour here.
+        //} 
 
+        // Override in a derived class to insert behaviour here.
         protected virtual void DoWhenAllDataIsReady() { }
 
         private async Task CombinerLoop()
@@ -504,14 +456,12 @@ namespace Atropos
         /**
 	     * The quaternion that holds the current rotation.
 	     */
-        //protected Orientation currentOrientation;
         protected Quaternion currentOrientation;
         protected float[] valuesArray = new float[4];
 
         public OrientationSensorProvider(SensorType sensType, CancellationToken? token = null, [CallerMemberName] string callerName = "") : base(sensType, token, callerName)
         {
             // Initialise with identity
-            //currentOrientation = new Orientation { Frame = ReferenceFrame.WorldSpace };
             currentOrientation = Quaternion.Identity;
         }
 
@@ -525,7 +475,7 @@ namespace Atropos
             protected set { currentOrientation = value; }
         }
 
-        protected override Quaternion toImplicitType()
+        protected override Quaternion toDataType()
         {
             return Quaternion;
         }
@@ -592,7 +542,7 @@ namespace Atropos
         {
             get
             {
-                if (currentVector.LengthSquared() == 0) throw new Exception($"Zero Vector value detected - no sensor would be so loony!");
+                if (currentVector.LengthSquared() == 0) throw new Exception($"True-zero Vector value detected - no sensor would be so exact!");
                 return currentVector;
             }
             protected set {
@@ -600,7 +550,7 @@ namespace Atropos
             }
         }
 
-        protected override Vector3 toImplicitType()
+        protected override Vector3 toDataType()
         {
             return Vector;
         }
@@ -649,7 +599,7 @@ namespace Atropos
             {
                 await orientator.WhenDataReady();
                 var quatStatus = (orientator.Quaternion.IsIdentity) ? "identity" : $"not identity: {orientator.Quaternion.ToEulerAngles():f1}.";
-                Android.Util.Log.Debug("Frame shift setup", $"After {stopW.ElapsedMilliseconds:f1}ms, orientation is {quatStatus}.");
+                Log.Debug("Frame shift setup", $"After {stopW.ElapsedMilliseconds:f1}ms, orientation is {quatStatus}.");
                 orientator.Proceed();
             }
             var result = orientator.Quaternion;
@@ -979,11 +929,11 @@ namespace Atropos
             //
             // Simplifying (1-Q) * A + Q * (A - A_previous) gets us A_effective = A - Q * A_previous.
             //
-            // Arguably, since for a shorter timescale the delta will be comparatively smaller, the exponential term should also be scaled by
-            // the ratio of the actual timestamp difference to the expected one (20ms).  But this works.
+            // Since for a shorter timescale the delta will be comparatively smaller, the exponential term is also scaled by
+            // the ratio of the actual timestamp difference to the expected one (20ms).
             //
             // Experimentally, the accel values returned by this variant go down as far as 0.25m/s2, while on my Nexus 5X the /systematic/ bias in the y-axis
-            // accel value can be as high as 0.65m/s2 (!!!) when the device is being held vertical.
+            // accel value can be as high as 0.65m/s2 (!!!) when the device is being held vertical.  Much better when I'm looking for no-motion!
 
             float RawAccelVsAccelDifferenceSlidingCoefficient 
                 = (float)Math.Exp((-currentVector.LengthSquared() * (currentVector - previousAccelValue).LengthSquared()) * (Interval.TotalMilliseconds / 20.0));

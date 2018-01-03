@@ -104,6 +104,8 @@ namespace Atropos
 
             StartLookingForTagRepeatsAndRemovals();
 
+            SensorProvider.ResumeAllListeners();
+
             _autoRestart = AutoRestart ?? _autoRestart;
             if (_autoRestart)
             {
@@ -156,7 +158,10 @@ namespace Atropos
         {
             if (ReleaseWakelock && (_wakeLock?.IsHeld ?? false)) { Task.Delay(250).ContinueWith((t) => _wakeLock?.Release()); }
             NeverMindWeAreShuttingDown?.Cancel();
+
             Res.SFX.StopAll();
+            SensorProvider.PauseAllListeners();
+
             CurrentStage?.Deactivate();
             foreach (var backstage in BackgroundStages) backstage?.Deactivate();
             InteractionLibrary.Current = null;
