@@ -89,8 +89,9 @@ namespace Atropos
         {
             var layoutpanel = FindViewById<LinearLayout>(Resource.Id.Spell_casting_layoutpane);
 
-            foreach (string spellName in MasterSpellLibrary.spellNames?.DefaultIfEmpty() ?? new string[0])
+            foreach (string spellName in MasterSpellLibrary.spellNames?.DefaultIfEmpty() ?? new List<string>())
             {
+                if (spellName == Spell.None.SpellName) continue;
                 var spell = MasterSpellLibrary.Get(spellName);
                 var spellButton = new Button(this);
                 spellButton.SetText(spellName + " (Retrain)", TextView.BufferType.Normal);
@@ -264,19 +265,22 @@ namespace Atropos
         private void CheckGlyphCount()
         {
             bool oneGlyph = SpellBeingTrained.Glyphs.Count > 0;
-            inscribeButton.Enabled = oneGlyph;
-            undoGlyphButton.Text = (SpellBeingTrained != null) ?
-                                        ((oneGlyph) ? "Undo" : "Delete") :
-                                        ("Undo / Delete");
-            string wasBefore = (SpellBeingRetrained != null) ? $" (was {SpellBeingRetrained.Glyphs.Count})" : "";
-            string isNow = (oneGlyph) ? SpellBeingTrained.Glyphs.Count.ToString() + wasBefore : "None";
-            glyphCountDisplay.Text = $"Glyphs: {isNow}";
+            RunOnUiThread(() =>
+            {
+                inscribeButton.Enabled = oneGlyph;
+                undoGlyphButton.Text = (SpellBeingTrained != null) ?
+                                            ((oneGlyph) ? "Undo" : "Delete") :
+                                            ("Undo / Delete");
+                string wasBefore = (SpellBeingRetrained != null) ? $" (was {SpellBeingRetrained.Glyphs.Count})" : "";
+                string isNow = (oneGlyph) ? SpellBeingTrained.Glyphs.Count.ToString() + wasBefore : "None";
+                glyphCountDisplay.Text = $"Glyphs: {isNow}";
+            });
         }
 
         private string GenerateRandomSpellName()
         {
             string[] Elements = { "Manna", "Power", "Fire", "Ice", "Acid", "Spark", "Toxic", "Chocolate", "Mental", "Shard", "Gravity", "Illusion", "Deception" };
-            string[] SpellTypes = { "Bolt", "Dart", "Lance", "Ball", "Wave", "Blast", "Stream", "Pachinko", "Snooker", "Shield", "Aura", "Vortex", "Sneeze" };
+            string[] SpellTypes = { "Bolt", "Dart", "Lance", "Ball", "Wave", "Blast", "Stream", "Surge", "Field", "Pachinko", "Snooker", "Shield", "Aura", "Vortex", "Sneeze" };
             return Elements.GetRandom() + " " + SpellTypes.GetRandom();
         }
 
@@ -322,6 +326,8 @@ namespace Atropos
             {
                 sayIt = Speech.SayAllOf($"Hold device at each position until you hear the tone.  Take your zero stance to begin.", volume: 0.5);
                 await sayIt;
+                //Speech.Say("Hold device at each position yadda yadda.");
+                await Task.Delay(1000);
             }
 
             protected override bool interimCriterion()
@@ -346,6 +352,7 @@ namespace Atropos
                 SpellBeingTrained.ZeroStance = AttitudeProvider.FrameShift;
 
                 await Speech.SayAllOf("Begin");
+                Speech.Say("Begin");
                 CurrentStage = new GlyphTrainingStage($"Glyph 0", Implement, AttitudeProvider);
             }
         }
@@ -364,12 +371,14 @@ namespace Atropos
                 Implement = Focus;
                 Res.DebuggingSignalFlag = true;
 
+                verbLog("Ctor");
                 Stillness = new StillnessProvider();
-                Stillness.StartDisplayLoop(Current, 750);
+                //Stillness.StartDisplayLoop(Current, 750);
 
                 SetUpProvider(Stillness);
                 Volume = 0.1f;
 
+                verbLog("Averages");
                 AverageAttitude = new AdvancedRollingAverageQuat(timeFrameInPeriods: 15);
                 AttitudeProvider = Provider ?? new GravityOrientationProvider(Implement.FrameShift);
                 AttitudeProvider.Activate();
@@ -377,6 +386,7 @@ namespace Atropos
                 if (Current.SpellBeingTrained.Glyphs.Count == 0) lastOrientation = Quaternion.Identity;
                 else lastOrientation = Current.SpellBeingTrained.Glyphs.Last().Orientation;
 
+                verbLog("Auto-activation");
                 Activate();
             }
 
@@ -423,7 +433,7 @@ namespace Atropos
 
            protected override bool interimCriterion()
             {
-                Stillness.IsItDisplayUpdateTime(); // Updates max and min values.
+                //Stillness.IsItDisplayUpdateTime(); // Updates max and min values.
                 return true;
             }
 
@@ -432,10 +442,10 @@ namespace Atropos
                 Volume = (float)Exp(-(Sqrt((15 - Stillness) / 2) - 0.5));
                 MasterSpellLibrary.SpellFeedbackSFX.SetVolume(Volume);
 
-                if (Stillness.IsItDisplayUpdateTime())
-                {
-                    Stillness.DoDisplayUpdate();
-                }
+                //if (Stillness.IsItDisplayUpdateTime())
+                //{
+                //    Stillness.DoDisplayUpdate();
+                //}
 
                 AverageAttitude.Update(AttitudeProvider);
             }

@@ -1866,8 +1866,8 @@ namespace Atropos
 			// aapt resource value: 0x7f0b0082
 			public const int New_lock_panel = 2131427458;
 			
-			// aapt resource value: 0x7f0b00ef
-			public const int New_spell_panel = 2131427567;
+			// aapt resource value: 0x7f0b00f0
+			public const int New_spell_panel = 2131427568;
 			
 			// aapt resource value: 0x7f0b00ad
 			public const int Set_form_name_button = 2131427501;
@@ -1875,11 +1875,11 @@ namespace Atropos
 			// aapt resource value: 0x7f0b0084
 			public const int Set_lock_name_button = 2131427460;
 			
-			// aapt resource value: 0x7f0b00f1
-			public const int Set_spell_name_button = 2131427569;
+			// aapt resource value: 0x7f0b00f2
+			public const int Set_spell_name_button = 2131427570;
 			
-			// aapt resource value: 0x7f0b00ee
-			public const int Spell_casting_layoutpane = 2131427566;
+			// aapt resource value: 0x7f0b00ef
+			public const int Spell_casting_layoutpane = 2131427567;
 			
 			// aapt resource value: 0x7f0b00e3
 			public const int Toolkit_layoutpane = 2131427555;
@@ -1953,11 +1953,11 @@ namespace Atropos
 			// aapt resource value: 0x7f0b001d
 			public const int always = 2131427357;
 			
-			// aapt resource value: 0x7f0b0117
-			public const int atn_direct_discover = 2131427607;
+			// aapt resource value: 0x7f0b0118
+			public const int atn_direct_discover = 2131427608;
 			
-			// aapt resource value: 0x7f0b0116
-			public const int atn_direct_enable = 2131427606;
+			// aapt resource value: 0x7f0b0117
+			public const int atn_direct_enable = 2131427607;
 			
 			// aapt resource value: 0x7f0b0056
 			public const int bargraph_outer_container = 2131427414;
@@ -1971,8 +1971,8 @@ namespace Atropos
 			// aapt resource value: 0x7f0b0059
 			public const int bargraph_text2 = 2131427417;
 			
-			// aapt resource value: 0x7f0b00fe
-			public const int beginTestButton = 2131427582;
+			// aapt resource value: 0x7f0b00ff
+			public const int beginTestButton = 2131427583;
 			
 			// aapt resource value: 0x7f0b001a
 			public const int beginning = 2131427354;
@@ -1983,11 +1983,14 @@ namespace Atropos
 			// aapt resource value: 0x7f0b0022
 			public const int bottom = 2131427362;
 			
-			// aapt resource value: 0x7f0b0100
-			public const int btn_connect = 2131427584;
-			
 			// aapt resource value: 0x7f0b0101
-			public const int btn_disconnect = 2131427585;
+			public const int btn_connect = 2131427585;
+			
+			// aapt resource value: 0x7f0b00ee
+			public const int btn_delete_user_data = 2131427566;
+			
+			// aapt resource value: 0x7f0b0102
+			public const int btn_disconnect = 2131427586;
 			
 			// aapt resource value: 0x7f0b00ec
 			public const int btn_export_run_data = 2131427564;
@@ -1995,20 +1998,20 @@ namespace Atropos
 			// aapt resource value: 0x7f0b00ed
 			public const int btn_import_run_data = 2131427565;
 			
-			// aapt resource value: 0x7f0b00eb
-			public const int btn_launch_experimental_mode = 2131427563;
+			// aapt resource value: 0x7f0b00e6
+			public const int btn_launch_experimental_mode = 2131427558;
 			
-			// aapt resource value: 0x7f0b0102
-			public const int btn_start_client = 2131427586;
+			// aapt resource value: 0x7f0b0103
+			public const int btn_start_client = 2131427587;
+			
+			// aapt resource value: 0x7f0b00e9
+			public const int btn_train_locks = 2131427561;
 			
 			// aapt resource value: 0x7f0b00e8
-			public const int btn_train_locks = 2131427560;
+			public const int btn_train_melee = 2131427560;
 			
 			// aapt resource value: 0x7f0b00e7
-			public const int btn_train_melee = 2131427559;
-			
-			// aapt resource value: 0x7f0b00e6
-			public const int btn_train_spells = 2131427558;
+			public const int btn_train_spells = 2131427559;
 			
 			// aapt resource value: 0x7f0b00df
 			public const int buttonA = 2131427551;
@@ -2031,11 +2034,11 @@ namespace Atropos
 			// aapt resource value: 0x7f0b006e
 			public const int cancel_btn = 2131427438;
 			
-			// aapt resource value: 0x7f0b00ea
-			public const int chbox_allow_speakers = 2131427562;
+			// aapt resource value: 0x7f0b00eb
+			public const int chbox_allow_speakers = 2131427563;
 			
-			// aapt resource value: 0x7f0b00e9
-			public const int chbox_use_nfc = 2131427561;
+			// aapt resource value: 0x7f0b00ea
+			public const int chbox_use_nfc = 2131427562;
 			
 			// aapt resource value: 0x7f0b003e
 			public const int checkbox = 2131427390;
@@ -2148,17 +2151,17 @@ namespace Atropos
 			// aapt resource value: 0x7f0b002a
 			public const int default_activity_button = 2131427370;
 			
-			// aapt resource value: 0x7f0b0103
-			public const int device_address = 2131427587;
+			// aapt resource value: 0x7f0b0104
+			public const int device_address = 2131427588;
+			
+			// aapt resource value: 0x7f0b0113
+			public const int device_details = 2131427603;
+			
+			// aapt resource value: 0x7f0b0105
+			public const int device_info = 2131427589;
 			
 			// aapt resource value: 0x7f0b0112
-			public const int device_details = 2131427602;
-			
-			// aapt resource value: 0x7f0b0104
-			public const int device_info = 2131427588;
-			
-			// aapt resource value: 0x7f0b0111
-			public const int device_name = 2131427601;
+			public const int device_name = 2131427602;
 			
 			// aapt resource value: 0x7f0b000c
 			public const int disableHome = 2131427340;
@@ -2178,8 +2181,8 @@ namespace Atropos
 			// aapt resource value: 0x7f0b005b
 			public const int display_bypass_information = 2131427419;
 			
-			// aapt resource value: 0x7f0b00fd
-			public const int doMathCheckbox = 2131427581;
+			// aapt resource value: 0x7f0b00fe
+			public const int doMathCheckbox = 2131427582;
 			
 			// aapt resource value: 0x7f0b0049
 			public const int edit_query = 2131427401;
@@ -2208,14 +2211,14 @@ namespace Atropos
 			// aapt resource value: 0x7f0b006c
 			public const int found_tag_header = 2131427436;
 			
-			// aapt resource value: 0x7f0b00f2
-			public const int glyph_count_display = 2131427570;
+			// aapt resource value: 0x7f0b00f3
+			public const int glyph_count_display = 2131427571;
+			
+			// aapt resource value: 0x7f0b0107
+			public const int group_ip = 2131427591;
 			
 			// aapt resource value: 0x7f0b0106
-			public const int group_ip = 2131427590;
-			
-			// aapt resource value: 0x7f0b0105
-			public const int group_owner = 2131427589;
+			public const int group_owner = 2131427590;
 			
 			// aapt resource value: 0x7f0b0080
 			public const int gunfight_bullet_pane = 2131427456;
@@ -2247,8 +2250,8 @@ namespace Atropos
 			// aapt resource value: 0x7f0b00ca
 			public const int info = 2131427530;
 			
-			// aapt resource value: 0x7f0b00f4
-			public const int inscribe_spell_button = 2131427572;
+			// aapt resource value: 0x7f0b00f5
+			public const int inscribe_spell_button = 2131427573;
 			
 			// aapt resource value: 0x7f0b00bc
 			public const int launch_directly_button = 2131427516;
@@ -2280,14 +2283,14 @@ namespace Atropos
 			// aapt resource value: 0x7f0b00c3
 			public const int media_actions = 2131427523;
 			
-			// aapt resource value: 0x7f0b0113
-			public const int menuaction_character = 2131427603;
+			// aapt resource value: 0x7f0b0114
+			public const int menuaction_character = 2131427604;
+			
+			// aapt resource value: 0x7f0b0116
+			public const int menuaction_settings = 2131427606;
 			
 			// aapt resource value: 0x7f0b0115
-			public const int menuaction_settings = 2131427605;
-			
-			// aapt resource value: 0x7f0b0114
-			public const int menuaction_wifi = 2131427604;
+			public const int menuaction_wifi = 2131427605;
 			
 			// aapt resource value: 0x7f0b001c
 			public const int middle = 2131427356;
@@ -2379,11 +2382,11 @@ namespace Atropos
 			// aapt resource value: 0x7f0b0013
 			public const int multiply = 2131427347;
 			
-			// aapt resource value: 0x7f0b0109
-			public const int my_name = 2131427593;
-			
 			// aapt resource value: 0x7f0b010a
-			public const int my_status = 2131427594;
+			public const int my_name = 2131427594;
+			
+			// aapt resource value: 0x7f0b010b
+			public const int my_status = 2131427595;
 			
 			// aapt resource value: 0x7f0b0020
 			public const int never = 2131427360;
@@ -2409,8 +2412,8 @@ namespace Atropos
 			// aapt resource value: 0x7f0b00c5
 			public const int notification_main_column_container = 2131427525;
 			
-			// aapt resource value: 0x7f0b00ff
-			public const int outcomeTextView = 2131427583;
+			// aapt resource value: 0x7f0b0100
+			public const int outcomeTextView = 2131427584;
 			
 			// aapt resource value: 0x7f0b00b3
 			public const int parameterAtextbox = 2131427507;
@@ -2511,11 +2514,11 @@ namespace Atropos
 			// aapt resource value: 0x7f0b00ba
 			public const int select_tag_type_button = 2131427514;
 			
-			// aapt resource value: 0x7f0b010f
-			public const int selected_device_info = 2131427599;
+			// aapt resource value: 0x7f0b0110
+			public const int selected_device_info = 2131427600;
 			
-			// aapt resource value: 0x7f0b010e
-			public const int selected_device_name = 2131427598;
+			// aapt resource value: 0x7f0b010f
+			public const int selected_device_name = 2131427599;
 			
 			// aapt resource value: 0x7f0b003f
 			public const int shortcut = 2131427391;
@@ -2532,29 +2535,29 @@ namespace Atropos
 			// aapt resource value: 0x7f0b002f
 			public const int spacer = 2131427375;
 			
-			// aapt resource value: 0x7f0b00f5
-			public const int spell_feedback_sfx_button = 2131427573;
-			
-			// aapt resource value: 0x7f0b00f0
-			public const int spell_name_textbox = 2131427568;
-			
 			// aapt resource value: 0x7f0b00f6
-			public const int spell_progress_sfx_button = 2131427574;
+			public const int spell_feedback_sfx_button = 2131427574;
+			
+			// aapt resource value: 0x7f0b00f1
+			public const int spell_name_textbox = 2131427569;
 			
 			// aapt resource value: 0x7f0b00f7
-			public const int spell_success_sfx_button = 2131427575;
+			public const int spell_progress_sfx_button = 2131427575;
 			
-			// aapt resource value: 0x7f0b00fb
-			public const int spinnerRefreshRate = 2131427579;
+			// aapt resource value: 0x7f0b00f8
+			public const int spell_success_sfx_button = 2131427576;
 			
 			// aapt resource value: 0x7f0b00fc
-			public const int spinnerRefreshType = 2131427580;
+			public const int spinnerRefreshRate = 2131427580;
 			
-			// aapt resource value: 0x7f0b00f9
-			public const int spinnerTestSound = 2131427577;
+			// aapt resource value: 0x7f0b00fd
+			public const int spinnerRefreshType = 2131427581;
 			
 			// aapt resource value: 0x7f0b00fa
-			public const int spinnerTestSoundFormat = 2131427578;
+			public const int spinnerTestSound = 2131427578;
+			
+			// aapt resource value: 0x7f0b00fb
+			public const int spinnerTestSoundFormat = 2131427579;
 			
 			// aapt resource value: 0x7f0b0007
 			public const int split_action_bar = 2131427335;
@@ -2568,17 +2571,17 @@ namespace Atropos
 			// aapt resource value: 0x7f0b0017
 			public const int src_over = 2131427351;
 			
-			// aapt resource value: 0x7f0b0107
-			public const int status_bar = 2131427591;
+			// aapt resource value: 0x7f0b0108
+			public const int status_bar = 2131427592;
 			
 			// aapt resource value: 0x7f0b00c2
 			public const int status_bar_latest_event_content = 2131427522;
 			
-			// aapt resource value: 0x7f0b0108
-			public const int status_text = 2131427592;
+			// aapt resource value: 0x7f0b0109
+			public const int status_text = 2131427593;
 			
-			// aapt resource value: 0x7f0b00f8
-			public const int stressTitle = 2131427576;
+			// aapt resource value: 0x7f0b00f9
+			public const int stressTitle = 2131427577;
 			
 			// aapt resource value: 0x7f0b00ae
 			public const int stroke_count_display = 2131427502;
@@ -2649,8 +2652,8 @@ namespace Atropos
 			// aapt resource value: 0x7f0b0085
 			public const int tumbler_count_display = 2131427461;
 			
-			// aapt resource value: 0x7f0b00f3
-			public const int undo_glyph_button = 2131427571;
+			// aapt resource value: 0x7f0b00f4
+			public const int undo_glyph_button = 2131427572;
 			
 			// aapt resource value: 0x7f0b0086
 			public const int undo_tumbler_button = 2131427462;
@@ -2670,17 +2673,17 @@ namespace Atropos
 			// aapt resource value: 0x7f0b00e5
 			public const int view2 = 2131427557;
 			
-			// aapt resource value: 0x7f0b0110
-			public const int wifi_frag_detail = 2131427600;
-			
-			// aapt resource value: 0x7f0b010b
-			public const int wifi_frag_list = 2131427595;
-			
-			// aapt resource value: 0x7f0b010d
-			public const int wifi_nopeersfound = 2131427597;
+			// aapt resource value: 0x7f0b0111
+			public const int wifi_frag_detail = 2131427601;
 			
 			// aapt resource value: 0x7f0b010c
-			public const int wifi_peerslist = 2131427596;
+			public const int wifi_frag_list = 2131427596;
+			
+			// aapt resource value: 0x7f0b010e
+			public const int wifi_nopeersfound = 2131427598;
+			
+			// aapt resource value: 0x7f0b010d
+			public const int wifi_peerslist = 2131427597;
 			
 			// aapt resource value: 0x7f0b0021
 			public const int withText = 2131427361;

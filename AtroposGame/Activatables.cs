@@ -120,7 +120,7 @@ namespace Atropos
 
         public void DependsOn(CancellationToken dependency, Activator.Options options)
         {
-            if (options == Activator.Options.Default)
+            if (options == Activator.Options.Default && !externalTokens.Contains(dependency))
             {
                 externalTokens.Add(dependency);
                 if (IsActive) tokenRegistrations.Add(dependency, dependency.Register(Deactivate)); // If already running, don't re-create the CTS, just add this dependency as a stand-alone registration.

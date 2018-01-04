@@ -35,6 +35,29 @@ namespace Atropos
             SetupButton(Resource.Id.btn_launch_experimental_mode, typeof(Atropos.Machine_Learning.MachineLearningActivity));
             SetupButton(Resource.Id.btn_export_run_data, InteractionLibrary.Current, false);
             SetupButton(Resource.Id.btn_import_run_data, InteractionLibrary.Current, false);
+
+            Button deleteData = FindViewById<Button>(Resource.Id.btn_delete_user_data);
+            SetTypeface(deleteData, "FTLTLT.TTF");
+            deleteData.Click += (o, e) =>
+            {
+                string confirmationMessage = "CONFIRM - DELETE ALL SPELLS ETC?";
+
+                if (deleteData.Text != confirmationMessage)
+                {
+                    deleteData.Text = confirmationMessage;
+                    System.Threading.Tasks.Task.Delay(1000)
+                        .ContinueWith(_ => { deleteData.Text = "Delete Stored Data"; });
+                    return;
+                }
+
+                RunOnUiThread(() =>
+                {
+                    Android.Preferences.PreferenceManager.GetDefaultSharedPreferences(Application.Context).Edit().Clear().Apply();
+                    MasterSpellLibrary.LoadAll();
+                    MasterFechtbuch.LoadAll();
+                    //Android.OS.Process.KillProcess(Android.OS.Process.MyPid());
+                });
+            };
         }
     }
 }

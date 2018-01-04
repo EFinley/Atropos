@@ -30,15 +30,11 @@ namespace Atropos
     [Activity(Label = "Atropos", Icon = "@drawable/atropos_sigil", ScreenOrientation = Android.Content.PM.ScreenOrientation.Portrait)]
     public class MainActivity : SelectorActivity
     {
-        //static MainActivity() { layoutID = Resource.Layout.Main; }
         public override int layoutID { get; set; } = Resource.Layout.Main;
 
         protected override void OnCreate(Bundle bundle)
         {
             base.OnCreate(bundle);
-
-            // This line still included, because looking it up proved a right pain in the butt.  To clear the SimpleStorage contents out entirely, this should do:
-            // Android.Preferences.PreferenceManager.GetDefaultSharedPreferences(ApplicationContext).Edit().Clear().Apply();
 
             InitializeAll();
 

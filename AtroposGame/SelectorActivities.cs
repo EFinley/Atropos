@@ -20,10 +20,6 @@ namespace Atropos
     public class SelectorActivity : Activity
     {
         public virtual int layoutID { get; set; }
-        //protected RoleActivity(int layoutID)
-        //{
-        //    this.layoutID = layoutID;
-        //}
         private static int[] EncounterPromptIDs
             = new int[] { Resource.Id.choice_encounter_1, Resource.Id.choice_encounter_2, Resource.Id.choice_encounter_3 };
         private static int[] EncounterPromptTextfieldIDs
@@ -94,22 +90,12 @@ namespace Atropos
                 //    Toast.MakeText(this, Resource.String.popup_placeholder_nfc, ToastLength.Short).Show();
                 //    return true;
                 case Resource.Id.menuaction_wifi:
-                    //Toast.MakeText(this, Resource.String.popup_placeholder_wifi, ToastLength.Short).Show();
                     intent = new Intent(this, typeof(Communications.WiFiDirectActivity));
                     intent.AddFlags(ActivityFlags.SingleTop);
                     intent.AddFlags(ActivityFlags.NewTask);
                     StartActivity(intent);
                     return true;
                 case Resource.Id.menuaction_settings:
-                    //Toast.MakeText(this, Resource.String.popup_placeholder_settings, ToastLength.Short).Show();
-                    //if (hiddenFieldID != -1)
-                    //{
-                    //    var hiddenField = FindViewById(hiddenFieldID);
-                    //    useGMmode = !useGMmode;
-                    //    if (useGMmode) hiddenField.Visibility = ViewStates.Visible;
-                    //    else hiddenField.Visibility = ViewStates.Gone;
-                    //}
-                    //Application.Context.StartActivity()
                     intent = new Intent(this, typeof(SettingsActivity));
                     intent.AddFlags(ActivityFlags.NewTask);
                     intent.AddFlags(ActivityFlags.SingleTop);
@@ -227,8 +213,6 @@ namespace Atropos
     [Activity(Label = "Atropos :: Hitter ::")]
     public class SamuraiActivity : SelectorActivity
     {
-        //public SamuraiActivity() : base(Resource.Layout.Main) { }
-        //static SamuraiActivity() { layoutID = Resource.Layout.Samurai; }
         public override int layoutID { get; set; } = Resource.Layout.Samurai;
 
         protected override void OnCreate(Bundle savedInstanceState)
@@ -243,7 +227,6 @@ namespace Atropos
     [Activity(Label = "Atropos :: Sorceror ::")]
     public class MageActivity : SelectorActivity
     {
-        //static MageActivity() { layoutID = Resource.Layout.Mage; }
         public override int layoutID { get; set; } = Resource.Layout.Mage;
 
         protected override void OnCreate(Bundle savedInstanceState)
@@ -258,7 +241,6 @@ namespace Atropos
     [Activity(Label = "Atropos :: Hacker ::")]
     public class DeckerActivity : SelectorActivity
     {
-        //public DeckerActivity() { layoutID = Resource.Layout.Decker; }
         public override int layoutID { get; set; } = Resource.Layout.Decker;
 
         protected override void OnCreate(Bundle savedInstanceState)
@@ -273,7 +255,6 @@ namespace Atropos
     [Activity(Label = "Atropos :: Spy ::")]
     public class OperativeActivity : SelectorActivity
     {
-        //public OperativeActivity() { layoutID = Resource.Layout.Operative; }
         public override int layoutID { get; set; } = Resource.Layout.Operative;
 
         protected override void OnCreate(Bundle savedInstanceState)
@@ -288,7 +269,6 @@ namespace Atropos
     [Activity]
     public class ToolkitActivity : SelectorActivity
     {
-        //public ToolkitActivity() { layoutID = Resource.Layout.OperativeToolbox; }
         public override int layoutID { get; set; } = Resource.Layout.OperativeToolbox;
 
         protected override void OnCreate(Bundle savedInstanceState)

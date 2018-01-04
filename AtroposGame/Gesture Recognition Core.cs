@@ -45,6 +45,8 @@ namespace Atropos
 
         public IProvider DataProvider { get; set; }
         private bool allowProviderToPersist;
+        private bool verboseLogging = false;
+        protected void verbLog(string message) { if (verboseLogging) Log.Debug($"GestureRecog|VerbLog|{Label}", message); }
 
         public GestureRecognizerStage(string label = "GestureRecog") : base()
         {
@@ -61,9 +63,11 @@ namespace Atropos
         public override async void Activate(CancellationToken? externalToken = null)
         {
             if (DataProvider == null) throw new Exception($"Gesture recog stage {Label} unable to Activate because it has no Provider!");
+            verbLog("Early activation");
             base.Activate(externalToken);
             StopToken.Register(Deactivate);
 
+            verbLog("Provider activation");
             if (!allowProviderToPersist) DataProvider.Activate(StopToken);
             else DataProvider.Activate();
             DataProvider.Proceed();
@@ -71,7 +75,8 @@ namespace Atropos
             prestartAction();
 
             // Now make sure to bounce it off to a background thread to do its work.
-            await Task.Run(ListenForData, StopToken).ConfigureAwait(false); // ConfigureAwait false means we're "surrendering" our connection to the UI thread.  Useful but limiting; we'll need to do things to link back to the UI thread when required.
+            await Task.Run(ListenForData, StopToken)
+                .ConfigureAwait(false); // ConfigureAwait false means we're "surrendering" our connection to the UI thread.  Useful but limiting; we'll need to do things to link back to the UI thread when required.
         }
 
         protected virtual Task NextUpdateAwaiter()
@@ -86,17 +91,20 @@ namespace Atropos
             Log.Info("GestureRecognitionCore", $"Starting gesture stage {Label}.");
 
             // If overridden in a derived class, do this now.
+            verbLog("Starting listen loop");
             startAction();
             await startActionAsync();
 
             while (IsActive)
             {
                 // First, wait for our stream to have data ready
+                verbLog("Awaiting data");
                 await NextUpdateAwaiter();
 
                 // Then check criteria for interim activities
                 if ( (interimCriterion() || await interimCriterionAsync()) && DateTime.Now >= nextInterimTriggerAt)
                 {
+                    verbLog("Interim steps");
                     nextInterimTriggerAt += InterimInterval;
                     interimAction();
                     await interimActionAsync();
@@ -105,6 +113,7 @@ namespace Atropos
                 // Then check criteria both for proceeding and for aborting
                 if (nextStageCriterion() || await nextStageCriterionAsync())
                 {
+                    verbLog("Next stage steps");
                     isMet = true;
                     nextStageAction();
                     await nextStageActionAsync();
@@ -112,6 +121,7 @@ namespace Atropos
                 }
                 else if (abortCriterion() || await abortCriterionAsync())
                 {
+                    verbLog("Abort steps");
                     isMet = false;
                     abortAction();
                     await abortActionAsync();

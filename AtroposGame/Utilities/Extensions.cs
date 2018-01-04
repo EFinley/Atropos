@@ -210,7 +210,7 @@ namespace Atropos
         }
         public static void LaunchAsOrphan(this Task taskToLaunch, CancellationToken token, string label = null)
         {
-            taskToLaunch.ContinueWith(t => Log.Error("OrphanedTask", $"Task [{label}] threw:" + t.Exception.Flatten().ToString()), token, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.FromCurrentSynchronizationContext());
+            taskToLaunch.ContinueWith(t => Log.Error("OrphanedTask", $"Task [{label}] threw:" + t.Exception.Flatten().ToString()), token, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
         }
 
         // When using CancellationTokens to cause "Stop" signals, inside of Task constructions, we do run into TaskCancelledException issues

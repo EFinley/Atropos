@@ -377,11 +377,11 @@ namespace Atropos
                         }
                     }
 
-                    // Testing the new Evasion code here... for now after every shot.
-                    var Incoming = new IncomingRangedAttack();
-                    EvasionMode<Vector3> Evasion = (Res.Random < 0.5) ? new EvasionMode.Dodge() : new EvasionMode.Duck();
-                    var EvasionStage = new IncomingAttackPrepStage<Vector3>(Current, Incoming, Evasion);
-                    EvasionStage.Activate();
+                    //// Testing the new Evasion code here... for now after every shot.
+                    //var Incoming = new IncomingRangedAttack();
+                    //EvasionMode<Vector3> Evasion = (Res.Random < 0.5) ? new EvasionMode.Dodge() : new EvasionMode.Duck();
+                    //var EvasionStage = new IncomingAttackPrepStage<Vector3>(Current, Incoming, Evasion);
+                    //EvasionStage.Activate();
                 }
                 catch (Exception)
                 {

@@ -97,7 +97,7 @@ namespace Atropos
             set { failResultName = MasterSpellLibrary.AddResultFunction(value); failResultFunc = value; }
         }
 
-        public Spell(string name = "NoSpell", Quaternion? zeroStance = null, string castResult = null, string failResult = null)
+        public Spell(string name, Quaternion? zeroStance = null, string castResult = null, string failResult = null)
         {
             SpellName = name;
             Glyphs = new List<Glyph>();
@@ -154,7 +154,7 @@ namespace Atropos
             return resultSpell;
         }
 
-        public static Spell None = new Spell();
+        public static Spell None = new Spell("No Spell");
     }
 
     public static class MasterSpellLibrary
@@ -175,7 +175,7 @@ namespace Atropos
         private const string persistentLibraryName = "MasterSpellLib";
         private const string masterIndexName = "MasterSpellIndex";
         private static SimpleStorage persistentLibrary { get; set; }
-        public static string[] spellNames { get; set; }
+        public static List<string> spellNames { get; set; }
 
         private static Nito.AsyncEx.AsyncManualResetEvent _sfxReadyFlag = new Nito.AsyncEx.AsyncManualResetEvent();
         public static Task GetSFXReadyTask() {
@@ -186,9 +186,9 @@ namespace Atropos
             Res.Mark("LoadAll begins");
 
             persistentLibrary = SimpleStorage.EditGroup(persistentLibraryName);
-            spellNames = persistentLibrary.Get<string[]>(masterIndexName);
-            if (spellNames == null) spellNames = new string[0];
-            if (spellNames.Length == 0) Inscribe(Spell.None); // Weird errors get thrown up with an empty master index.
+            spellNames = persistentLibrary.Get<List<string>>(masterIndexName);
+            if (spellNames == null) spellNames = new List<string>();
+            if (spellNames.Count == 0) Inscribe(Spell.None); // Weird errors get thrown up with an empty master index.
 
             LoadAllSpellSFX(Application.Context);
             SpellFeedbackSFX = SpellSFX[defaultFeedbackSFXName];
@@ -266,21 +266,21 @@ namespace Atropos
             else
             {
                 Log.Error("SpellLibrary", $"Could not find spell '{spellname}' in master library.");
-                return new Spell();
+                return new Spell(spellname);
             }
         }
 
         public static void Inscribe(Spell newspell)
         {
             persistentLibrary.Put(newspell.SpellName, newspell.ToString());
-            if (!spellNames?.Contains(newspell.SpellName) ?? false) spellNames = spellNames.Append(newspell.SpellName).ToArray();
+            if (!spellNames?.Contains(newspell.SpellName) ?? false) spellNames.Add(newspell.SpellName);
             persistentLibrary.Put(masterIndexName, spellNames);
         }
 
         public static void Erase(string spellname)
         {
             persistentLibrary.Delete(spellname);
-            spellNames = spellNames.Where(n => n != spellname).ToArray();
+            spellNames.Remove(spellname);
             persistentLibrary.Put(masterIndexName, spellNames);
         }
 

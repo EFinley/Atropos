@@ -121,6 +121,7 @@ namespace Atropos
 
             public void UnListen()
             {
+                if (!listening) return;
                 sensorManager.UnregisterListener(this);
                 listening = false;
                 Res.NumSensors--;

@@ -16,6 +16,27 @@
         android:layout_height="5dp"
         android:id="@+id/view2"
         android:background="@android:color/holo_blue_light" />
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:background="@android:drawable/btn_default"
+        android:gravity="center_vertical"
+        android:layout_margin="6dp"
+        android:id="@+id/btn_launch_experimental_mode">
+        <ImageView
+            android:src="@drawable/atropos_sigil"
+            android:layout_height="40dp"
+            android:layout_width="40dp"
+            android:scaleType="centerInside" />
+        <TextView
+            android:layout_height="match_parent"
+            android:layout_width="wrap_content"
+            android:text="Machine Learning"
+            android:textSize="22dp"
+            android:layout_margin="6dp"
+            android:textColor="@android:color/holo_blue_dark" />
+    </LinearLayout>
     <Button
         android:text="Train New Spells"
         android:layout_width="wrap_content"
@@ -45,48 +66,38 @@
         android:layout_marginTop="15dp"
         android:id="@+id/chbox_allow_speakers"
         android:checked="true" />
-    <LinearLayout
-        android:orientation="horizontal"
-        android:layout_height="wrap_content"
-        android:layout_width="wrap_content"
-        android:background="@android:drawable/btn_default"
-        android:gravity="center_vertical"
-        android:id="@+id/btn_launch_experimental_mode">
-        <ImageView
-            android:src="@drawable/atropos_sigil"
-            android:layout_height="40dp"
-            android:layout_width="40dp"
-            android:scaleType="centerInside"/>
-        <TextView
-            android:layout_height="match_parent"
-            android:layout_width="wrap_content"
-            android:text="Machine Learning"
-            android:textSize="22dp"
-            android:layout_margin="9dp"
-            android:textColor="@android:color/holo_blue_dark"/>
-    </LinearLayout>
     <TextView
         android:layout_height="wrap_content"
         android:layout_width="wrap_content"
         android:layout_marginTop="25dip"
-        android:text="Run Data: Postcard From the Shadows"/>
+        android:text="Run Data: Postcard From the Shadows" />
     <LinearLayout
         android:orientation="horizontal"
         android:layout_height="wrap_content"
         android:layout_width="match_parent"
         android:gravity="center"
         android:layout_gravity="center_horizontal">
-      <Button
-          android:layout_height="match_parent"
-          android:layout_width="0dip"
-          android:layout_weight="1"
-          android:id="@+id/btn_export_run_data"
-          android:text="Export"/>
-      <Button
-          android:layout_height="match_parent"
-          android:layout_width="0dip"
-          android:layout_weight="1"
-          android:id="@+id/btn_import_run_data"
-          android:text="Import"/>
+        <Button
+            android:layout_height="match_parent"
+            android:layout_width="0dip"
+            android:layout_weight="1"
+            android:id="@+id/btn_export_run_data"
+            android:text="Export" />
+        <Button
+            android:layout_height="match_parent"
+            android:layout_width="0dip"
+            android:layout_weight="1"
+            android:id="@+id/btn_import_run_data"
+            android:text="Import" />
     </LinearLayout>
+    <TextView
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:layout_marginTop="15dip"
+        android:text="Stored User Data" />
+    <Button
+        android:id="@+id/btn_delete_user_data"
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:text="Delete Stored Data" />
 </LinearLayout>

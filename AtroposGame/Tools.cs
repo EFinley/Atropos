@@ -187,6 +187,7 @@ namespace Atropos
 
         public void LearnSpell(Spell newSpell)
         {
+            if (newSpell.SpellName == Spell.None.SpellName) return;
             Spell closestZeroAngleSpell = KnownSpells
                                 .Where(s => s.SpellName != newSpell.SpellName && s.ZeroStance != newSpell.ZeroStance && s.ZeroStance != Quaternion.Identity)
                                 .DefaultIfEmpty()
@@ -221,7 +222,7 @@ namespace Atropos
             Log.Debug("Tools", $"Current master spell list: {MasterSpellLibrary.spellNames.Join()}");
             MasterFocus = new MemorylessFocus("MasterFocus");
             MasterFocus.ZeroOrientation = Quaternion.Identity * 0.9999f; // Makes it no longer "isIdentity" in technical terms.
-            foreach (var spellName in MasterSpellLibrary.spellNames ?? new string[0]) MasterFocus.LearnSpell(MasterSpellLibrary.Get(spellName));
+            foreach (var spellName in MasterSpellLibrary.spellNames ?? new List<string>()) MasterFocus.LearnSpell(MasterSpellLibrary.Get(spellName));
         }
 
         public override string ToString()

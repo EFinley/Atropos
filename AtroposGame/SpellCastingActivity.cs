@@ -73,6 +73,7 @@ namespace Atropos
             {
                 foreach (string spellName in MasterSpellLibrary.spellNames)
                 {
+                    if (spellName == Spell.None.SpellName) continue;
                     ThePlayersFocus.LearnSpell(MasterSpellLibrary.Get(spellName));
                 }
             }
@@ -96,6 +97,7 @@ namespace Atropos
 
             foreach (string spellName in MasterSpellLibrary.spellNames)
             {
+                if (spellName == Spell.None.SpellName) continue;
                 var spell = MasterSpellLibrary.Get(spellName);
                 var spellButton = new Button(this);
                 spellButton.SetText(spellName, TextView.BufferType.Normal);
@@ -251,7 +253,7 @@ namespace Atropos
             protected override bool nextStageCriterion()
             {
                 //if (!FrameShiftFunctions.CheckIsReady(AttitudeProvider)) return false;
-                var leeWay = Stillness.StillnessScore + 2f * Sqrt(Stillness.RunTime.TotalSeconds); // VIDEO way too easy for normal use.
+                var leeWay = Stillness.StillnessScore + 2f * Sqrt(Stillness.RunTime.TotalSeconds);
                 if (SpellsSortedByAngle[0].AngleTo(AttitudeProvider) < 25f + leeWay)
                 {
                     if (SpellsSortedByAngle.Count < 2) return true;
