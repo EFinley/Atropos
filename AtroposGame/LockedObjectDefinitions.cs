@@ -36,11 +36,11 @@ namespace Atropos.Locks
         //public double MaxRotationRate { get; set; } // Only relevant for key locks, not safes
 
         //public Tumbler(Quaternion orientation, double maxRotationRate, double steadinessBase, double orientationSigma)
-        public Tumbler(double angle, int direction)
+        public Tumbler(double angle, int? direction = null)
         {
             //Orientation = orientation;
             Angle = angle;
-            Direction = direction;
+            Direction = Math.Sign(direction ?? angle);
             //MaxRotationRate = maxRotationRate;
             //SteadinessScoreWhenDefined = steadinessBase;
             //OrientationSigma = orientationSigma;
@@ -79,8 +79,10 @@ namespace Atropos.Locks
         }
 
         //public static Tumbler EndOfLock = new Tumbler(Quaternion.Identity, 0.0, 0.0, 0.0);
-        public static Tumbler EndOfLock = new Tumbler(0.0, 1);
-        public static Tumbler None = new Tumbler(0.0, 1);
+        public static Tumbler EndOfLock = new Tumbler(double.NaN, 0); // Functions as a signal; its details are never used.
+        public static Tumbler ResetToZero = new Tumbler(0.0);
+        public static Tumbler PinMoveTarget = new Tumbler(0.0);
+        public static Tumbler None = new Tumbler(0.0);
     }
 
     public class Lock
@@ -108,7 +110,7 @@ namespace Atropos.Locks
         public double AngleMinForLiftingPhase { get; set; } = 20.0;
         public double AngleMaxForLiftingPhase { get; set; } = 40.0;
         public double RotationAccuracyRequired { get; set; } = 5.0; // Degrees
-        public double MaxRotationRateInLiftingPhase { get; set; } = 30.0; // Degrees per second
+        public double MaxRotationRateInLiftingPhase { get; set; } = 50.0; // Degrees per second
 
         public Lock(string name = "NoLock", LType type = LType.Unknown, Quaternion? zeroStance = null, string succResult = null, string failResult = null)
         {
@@ -159,10 +161,11 @@ namespace Atropos.Locks
         public static Lock TestSafe = new Lock("Test Safe", LType.SafeDial);
         static Lock()
         {
-            TestSafe.AddTumbler(new Tumbler(45, 1));
-            TestSafe.AddTumbler(new Tumbler(-30, -1));
-            TestLock.AddTumbler(new Tumbler(80, 1));
-            TestLock.AddTumbler(new Tumbler(-50, -1));
+            TestSafe.AddTumbler(new Tumbler(13 * TestSafe.DegreesBetweenClicks));
+            TestSafe.AddTumbler(new Tumbler(-8 * TestSafe.DegreesBetweenClicks));
+            TestSafe.AddTumbler(new Tumbler(22 * TestSafe.DegreesBetweenClicks));
+            TestLock.AddTumbler(new Tumbler(-45));
+            TestLock.AddTumbler(new Tumbler(60));
         }
     }
 

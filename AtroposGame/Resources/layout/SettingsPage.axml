@@ -38,15 +38,15 @@
             android:textColor="@android:color/holo_blue_dark" />
     </LinearLayout>
     <Button
+        android:text="Developer Hotbutton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/btn_dev_hotbutton" />
+    <Button
         android:text="Train New Spells"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/btn_train_spells" />
-    <Button
-        android:text="Train Melee"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/btn_train_melee" />
     <Button
         android:text="Train Lock/Vault"
         android:layout_width="wrap_content"
@@ -70,7 +70,7 @@
         android:layout_height="wrap_content"
         android:layout_width="wrap_content"
         android:layout_marginTop="25dip"
-        android:text="Run Data: Postcard From the Shadows" />
+        android:text="Scenario Data: Postcard From the Shadows" />
     <LinearLayout
         android:orientation="horizontal"
         android:layout_height="wrap_content"

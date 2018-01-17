@@ -15,18 +15,11 @@
         android:backgroundTint="#00000000"
         android:forceHasOverlappingRendering="true">
         <ImageView
-            android:src="@drawable/safe_dial"
-            android:layout_width="800dip"
-            android:layout_height="800dip"
-            android:id="@+id/safedial_dial"
+            android:src="@drawable/lockpick_splintercell"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scaleType="centerCrop"
             android:elevation="1dip"
-            android:clickable="false" />
-        <ImageView
-            android:src="@drawable/safe_dial_body"
-            android:layout_width="800dip"
-            android:layout_height="800dip"
-            android:id="@+id/safedial_body"
-            android:rotation="0"
             android:clickable="false" />
         <LinearLayout
             android:layout_height="match_parent"
@@ -44,7 +37,7 @@
                 android:gravity="center"
                 android:forceHasOverlappingRendering="true"
                 android:orientation="vertical"
-                android:layout_marginBottom="100dip"
+                android:layout_marginBottom="70dip"
                 android:elevation="2dip">
                 <TextView
                     android:text="00"
@@ -62,7 +55,7 @@
                     android:paddingRight="20dip"
                     android:visibility="gone" />
                 <TextView
-                    android:text="This end up         Hold steady..."
+                    android:text="This side up. Hold steady..."
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:id="@+id/vault_notification"

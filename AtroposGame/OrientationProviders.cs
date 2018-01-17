@@ -292,6 +292,18 @@ namespace Atropos
         // REQUIRED to be implemented by derived classes (since otherwise what's the point?).
         protected abstract void SensorChanged(SensorEvent e);
 
+        public static void EnsureIsReady<T>(IProvider<T> provider)
+        {
+            var wasActive = provider.IsActive;
+            if (!wasActive) provider.Activate();
+            var stopW = new System.Diagnostics.Stopwatch();
+            stopW.Start();
+            var currentValue = provider.Data;
+            while (Operator.Equal<T>(provider.Data, currentValue))
+                provider.WhenDataReady().Wait();
+            Log.Debug("SensorProvider|EnsureIsReady", $"{provider.GetType().Name} ready in {stopW.ElapsedMilliseconds} ms.");
+            if (!wasActive) provider.Deactivate();
+        }
     }
 
     public class NullProvider : IProvider
@@ -755,10 +767,10 @@ namespace Atropos
         public override async Task SetFrameShiftFromCurrent()
         {
             await base.SetFrameShiftFromCurrent();
-            foreach (var cp in CorrectionParameters)
-            {
-                cp.correction *= FrameShift;
-            }
+            //foreach (var cp in CorrectionParameters)
+            //{
+            //    cp.correction *= FrameShift;
+            //}
             //averageGravityVector = new AdvancedRollingAverageVector(timeFrameInPeriods: 5, initialAverage: normalizedGravityVector);
         }
 
@@ -782,6 +794,23 @@ namespace Atropos
         }
 
         public Vector3 Vector { get { return averageGravityVector.Average.Normalize(); } }
+    }
+
+    public class AngleAxisProvider : Vector3Provider
+    {
+        public Vector3 UpDirection, Axis;
+
+        public AngleAxisProvider(Vector3 upDirection, Vector3 axis, CancellationToken? externalToken = null, [CallerMemberName] string callerName = "") 
+            : base(SensorType.Gravity, externalToken, callerName)
+        {
+            UpDirection = upDirection;
+            Axis = axis;
+        }
+
+        private Vector3 gravityInPlane { get { return Vector - Axis * (Axis.Dot(Vector)); } }
+        private int directionSign { get { return Math.Sign(Vector3.Cross(UpDirection, Vector).Dot(Axis)); } }
+
+        public double Angle { get { return directionSign * UpDirection.AngleTo(gravityInPlane); } }
     }
 
     public class ConsistentAxisAngleProvider : GravityOrientationProvider

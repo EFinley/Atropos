@@ -581,7 +581,7 @@ namespace Atropos
         {
             if (stopIfNecessary && IsPlaying)
             {
-                Pause();
+                //Pause();
                 SeekTo(0);
             }
             if (useSpeakers == null || useSpeakers == SpeakerMode || !Res.AllowSpeakerSounds) _play(playVolume, playLooping);
@@ -677,7 +677,7 @@ namespace Atropos
         public virtual async Task PlayFromTo(double startSeconds = 0, double endSeconds = -1, 
             double? playVolume = null, bool? playLooping = null, bool? useSpeakers = null, bool stopIfNecessary = false)
         {
-            if (stopIfNecessary && IsPlaying) Stop();
+            //if (stopIfNecessary && IsPlaying) Stop();
             SeekTo((int)(startSeconds * 1000));
             if (useSpeakers == null || useSpeakers == SpeakerMode) _play(playVolume, playLooping);
             else
@@ -689,12 +689,19 @@ namespace Atropos
             if (endSeconds == -1) return;
             var endMsecs = (int)(endSeconds * 1000);
             //await Task.Delay((int)((endSeconds - startSeconds) * 1000)); // Won't be true if we pause or skip around - but for now I don't intend to.
-            var remainingTime = endMsecs - _effect.CurrentPosition;
-            while (remainingTime > 0)
+            try
             {
-                if (IsPaused) await unPauseSignal.Task;
-                await Task.Delay(remainingTime.Clamp(10, 250));
-                remainingTime = endMsecs - _effect.CurrentPosition;
+                var remainingTime = endMsecs - _effect.CurrentPosition;
+                while (remainingTime > 0)
+                {
+                    if (IsPaused) await unPauseSignal.Task;
+                    await Task.Delay(remainingTime.Clamp(10, 250));
+                    remainingTime = endMsecs - _effect.CurrentPosition;
+                }
+            }
+            catch (AggregateException)
+            {
+                throw;
             }
             Stop();
             OnPlayCompletion(this, EventArgs.Empty);

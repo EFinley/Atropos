@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:minWidth="25px"
+    android:minHeight="25px"
+    android:background="@android:color/transparent"
+    android:id="@+id/main"
+    android:weightSum="1.0">
+  <LinearLayout
+      android:orientation="vertical"
+      android:minWidth="25px"
+      android:minHeight="25px"
+      android:layout_width="fill_parent"
+      android:layout_height="0dip"
+      android:id="@+id/upperlayout"
+      android:background="@android:color/transparent"
+      android:gravity="bottom"
+      android:layout_weight="0.4">
+    <RelativeLayout
+        android:id="@+id/role_choice1"
+        android:layout_width="match_parent"
+        android:layout_height="0dip"
+        android:layout_weight="1"
+        android:minHeight ="100dip"
+        android:gravity="left"
+        android:background="@android:drawable/alert_dark_frame">
+      <ImageView
+          android:id="@+id/role_choice1_image"
+          android:src="@drawable/atropos_sigil"
+          android:layout_height="match_parent"
+          android:layout_width="wrap_content"
+          android:elevation="1dip"
+          android:alpha="0.85"
+          android:layout_marginBottom="20dip"
+          android:layout_marginTop="5dip"
+          android:layout_marginLeft="5dip"
+          android:scaleType="centerInside" />
+      <TextView
+          android:id="@+id/role_choice1_text"
+          android:text="Choice #1"
+          android:layout_height="wrap_content"
+          android:layout_width="match_parent"
+          android:textSize="80dip"
+          android:gravity="right"
+          android:textAlignment="gravity"
+          android:forceHasOverlappingRendering="true"
+          android:layout_alignParentBottom="true"
+          android:layout_marginBottom="15dip"
+          android:layout_marginRight="15dip"
+          android:textColor="@android:color/holo_purple"
+          android:alpha="0.65" />
+    </RelativeLayout>
+    <RelativeLayout
+        android:id="@+id/role_choice2"
+        android:layout_width="match_parent"
+        android:layout_height="0dip"
+        android:layout_weight="1"
+        android:minHeight ="100dip"
+        android:gravity="left"
+        android:visibility="gone"
+        android:background="@android:drawable/alert_dark_frame">
+      <ImageView
+          android:id="@+id/role_choice2_image"
+          android:src="@drawable/atropos_sigil"
+          android:layout_height="match_parent"
+          android:layout_width="wrap_content"
+          android:elevation="1dip"
+          android:alpha="0.85"
+          android:layout_marginBottom="20dip"
+          android:layout_marginTop="5dip"
+          android:layout_marginLeft="5dip"
+          android:scaleType="centerInside" />
+      <TextView
+          android:id="@+id/role_choice2_text"
+          android:text="Choice #2"
+          android:layout_height="wrap_content"
+          android:layout_width="match_parent"
+          android:textSize="80dip"
+          android:gravity="right"
+          android:textAlignment="gravity"
+          android:forceHasOverlappingRendering="true"
+          android:layout_alignParentBottom="true"
+          android:layout_marginBottom="15dip"
+          android:layout_marginRight="15dip"
+          android:textColor="@android:color/holo_purple"
+          android:alpha="0.65" />
+    </RelativeLayout>
+    <RelativeLayout
+        android:id="@+id/role_choice3"
+        android:layout_width="match_parent"
+        android:layout_height="0dip"
+        android:layout_weight="1"
+        android:minHeight ="100dip"
+        android:gravity="left"
+        android:visibility="gone"
+        android:background="@android:drawable/alert_dark_frame">
+      <ImageView
+          android:id="@+id/role_choice3_image"
+          android:src="@drawable/atropos_sigil"
+          android:layout_height="match_parent"
+          android:layout_width="wrap_content"
+          android:elevation="1dip"
+          android:alpha="0.85"
+          android:layout_marginBottom="20dip"
+          android:layout_marginTop="5dip"
+          android:layout_marginLeft="5dip"
+          android:scaleType="centerInside" />
+      <TextView
+          android:id="@+id/role_choice3_text"
+          android:text="Choice #3"
+          android:layout_height="wrap_content"
+          android:layout_width="match_parent"
+          android:textSize="80dip"
+          android:gravity="right"
+          android:textAlignment="gravity"
+          android:forceHasOverlappingRendering="true"
+          android:layout_alignParentBottom="true"
+          android:layout_marginBottom="15dip"
+          android:layout_marginRight="15dip"
+          android:textColor="@android:color/holo_purple"
+          android:alpha="0.65" />
+    </RelativeLayout>
+    <!--<TextView
+        android:text="Place a barcode in the camera viewfinder to scan it.  Barcode will scan Automatically."
+        android:layout_width="wrap_content"
+        android:layout_height="fill_parent"
+        android:id="@+id/textView1"
+        android:gravity="center"
+        android:layout_weight="0"
+        android:layout_marginRight="20dp"
+        android:textSize="12sp"
+        android:layout_marginLeft="5dp"
+        android:background="@android:color/transparent"
+        android:textColor="#ffffffff" />-->
+  </LinearLayout>
+  <RelativeLayout
+      android:layout_width="fill_parent"
+      android:layout_height="0dip"
+      android:id="@+id/qr_active_zone"
+      android:layout_weight="0.25">
+    <ImageButton
+        android:id="@+id/qr_scanbutton"
+        android:src="@drawable/qr_example"
+        android:layout_height="match_parent"
+        android:layout_width="wrap_content"
+        android:scaleType="centerInside"
+        android:elevation="2dip"/>
+    <Button
+        android:text="Lightbulb"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/qr_btn_flashlight"
+        android:layout_marginRight="10dp"
+        android:layout_gravity="bottom"
+        android:layout_marginBottom="10dp"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:elevation="1dip"/>
+  </RelativeLayout>
+  <LinearLayout
+      android:orientation="vertical"
+      android:minWidth="25px"
+      android:minHeight="25px"
+      android:layout_width="fill_parent"
+      android:layout_height="0dip"
+      android:id="@+id/lowerlayout"
+      android:layout_weight="0.35"
+      android:layout_gravity="center">
+    <TextView
+        android:id="@+id/info_runner_name"
+        android:text="Nameless Runner"
+        android:textSize="40dip"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:layout_marginLeft="15dip"/>
+    <TextView
+        android:id="@+id/info_runner_template"
+        android:text="Insert Template Name"
+        android:textSize="20dip"
+        android:layout_marginLeft="15dip"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"/>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginLeft="20dip"
+        android:weightSum="1.0">
+      <TextView
+          android:id="@+id/info_runner_perk1"
+          android:text="Perk #1"
+          android:layout_width="0dip"
+          android:layout_height="wrap_content"
+          android:layout_weight="0.5"
+          android:layout_margin="10dip"/>
+      <TextView
+          android:id="@+id/info_runner_perk2"
+          android:text="Perk #2"
+          android:layout_width="0dip"
+          android:layout_height="wrap_content"
+          android:layout_weight="0.5"
+          android:layout_margin="10dip"/>
+    </LinearLayout>
+    <TextView
+        android:id="@+id/info_status_pane"
+        android:text="Status and Information display"
+        android:layout_height="match_parent"
+        android:layout_width="match_parent"
+        android:layout_margin="15dip"
+        android:background="@android:drawable/dialog_holo_dark_frame"
+      />
+  </LinearLayout>
+</LinearLayout>

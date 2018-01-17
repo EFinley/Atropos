@@ -27,7 +27,7 @@
           android:layout_marginBottom="20dip"
           android:scaleType="fitStart" />
       <TextView
-          android:id="@+id/choice_enounter_1_text"
+          android:id="@+id/choice_encounter_1_text"
           android:layout_height="wrap_content"
           android:layout_width="match_parent"
           android:text="Enter the facility..."
@@ -58,7 +58,7 @@
           android:layout_marginBottom="20dip"
           android:scaleType="fitStart" />
       <TextView
-          android:id="@+id/choice_enounter_2_text"
+          android:id="@+id/choice_encounter_2_text"
           android:layout_height="wrap_content"
           android:layout_width="match_parent"
           android:text="Enter the facility..."
@@ -89,7 +89,7 @@
           android:layout_marginBottom="20dip"
           android:scaleType="fitStart" />
       <TextView
-          android:id="@+id/choice_enounter_3_text"
+          android:id="@+id/choice_encounter_3_text"
           android:layout_height="wrap_content"
           android:layout_width="match_parent"
           android:text="Enter the facility..."

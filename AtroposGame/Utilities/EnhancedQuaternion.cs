@@ -218,6 +218,11 @@ namespace Atropos
             return Vector3.Dot(first, second);
         }
 
+        public static double AngleTo (this Vector3 first, Vector3 second)
+        {
+            return Math.Acos(first.Dot(second) / first.Length() / second.Length()) * radToDeg;
+        }
+
         public static float Component(this Vector3 source, int axisNumber)
         {
             if (axisNumber == 0) return source.X;

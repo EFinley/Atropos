@@ -91,6 +91,11 @@ namespace Atropos
                 DefaultAverage = Operator.Convert<float, T>(0.0f);
                 _magnitudeOf = (f) => Abs(Operator.Convert<T, float>(f));
             }
+            else if (typeof(T) == typeof(double))
+            {
+                DefaultAverage = Operator.Convert<double, T>(0.0);
+                _magnitudeOf = (f) => (float)Abs(Operator.Convert<T, double>(f));
+            }
             else if (typeof(T) == typeof(Vector2))
             {
                 DefaultAverage = Operator.Convert<Vector2, T>(Vector2.Zero);

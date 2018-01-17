@@ -498,9 +498,19 @@ namespace Atropos
             return TimeSpan.FromTicks((long)(start.Ticks / divider));
         }
 
-        public static void Vibration(this Plugin.Vibrate.Abstractions.IVibrate source, int milliseconds)
+        public static void Vibration(this Plugin.Vibrate.Abstractions.IVibrate source, double milliseconds)
         {
             source.Vibration(TimeSpan.FromMilliseconds(milliseconds));
+        }
+
+        public static void Raise<T>(this EventHandler<EventArgs<T>> sourceEvent, object sender, T value)
+        {
+            sourceEvent?.Invoke(sender, new EventArgs<T>(value));
+        }
+
+        public static void Raise<T>(this EventHandler<EventArgs<T>> sourceEvent, T value, [System.Runtime.CompilerServices.CallerMemberName] string callerName = "this")
+        {
+            sourceEvent?.Invoke(callerName, new EventArgs<T>(value));
         }
     }
 
