@@ -16,22 +16,23 @@ using Atropos.Encounters;
 
 using ZXing;
 using ZXing.Mobile;
+using System.Threading.Tasks;
 
 namespace Atropos
 {
+    [Activity]
     public abstract class RoleActivity : Activity
     {
         protected abstract void SetUpButtons();
-        private View ButtonSetupContext;
+        //private View ButtonSetupContext;
 
         private static int[] RoleChoicePromptIDs
-            = new int[] { Resource.Id.role_choice1, Resource.Id.role_choice2, Resource.Id.role_choice3 };
+            = new int[] { Resource.Id.role_interact, Resource.Id.role_choice1, Resource.Id.role_choice2, Resource.Id.role_choice3 };
         private static int[] RoleChoicePromptTextfieldIDs
-            = new int[] { Resource.Id.role_choice1_text, Resource.Id.role_choice2_text, Resource.Id.role_choice3_text };
+            = new int[] { Resource.Id.role_interact_text, Resource.Id.role_choice1_text, Resource.Id.role_choice2_text, Resource.Id.role_choice3_text };
         private static int[] RoleChoicePromptImagefieldIDs
-            = new int[] { Resource.Id.role_choice1_image, Resource.Id.role_choice2_image, Resource.Id.role_choice3_image };
+            = new int[] { Resource.Id.role_interact_image, Resource.Id.role_choice1_image, Resource.Id.role_choice2_image, Resource.Id.role_choice3_image };
         private List<View> RoleChoicePrompts = new List<View>();
-        private List<Action> RoleChoicePromptResponses = new List<Action>();
 
         public static bool UseQRScanner = true;
         private MobileBarcodeScanner scanner;
@@ -41,72 +42,12 @@ namespace Atropos
             base.OnCreate(savedInstanceState);
 
             // Set our view from the layout resource associated with this activity
-            SetContentView(Resource.Layout.QRZXingOverlay);
+            SetContentView(Resource.Layout.RolePage);
 
-            // Set up the Role Choice Prompts
-            //foreach (var PromptID in RoleChoicePromptIDs)
-            //{
-            //    var Prompt = FindViewById<RelativeLayout>(PromptID);
-            //    if (Prompt == null) continue;
-            //    SetTypeface(PromptID, "FTLTLT.TTF");
-            //RoleChoicePrompts.Add(Prompt);
-            //Prompt.Click += async (o, e) =>
-            //{
-            //    int localIndex = RoleChoicePrompts.IndexOf(Prompt);
-            //    var EncElement = Elements.ElementAtOrDefault(localIndex);
-            //    if (EncElement == default(EncounterElement)) { RemoveElement(localIndex); return; }
+            MobileBarcodeScanner.Initialize(Application);
 
-            //    await EncElement.DoElement();
-            //    EncElement.Complete();
-
-            //    if (EncElement.nextElements.Count == 0) RemoveElement(localIndex);
-            //    else
-            //    {
-            //        RemoveElement();
-            //        foreach (EncounterElement nextElem in EncElement.nextElements)
-            //        {
-            //            DisplayElement(nextElem);
-            //        }
-            //    }
-            //};
-            //}
-
-            //// Default to Postcard From The Shadows encounter sequence (during testing, given that there are no others defined)
-            //if (EncounterElement.CurrentElement == null && RoleChoicePrompts.Count > 0) DisplayElement(EncounterElement.SetUpPostcard());
-
-            //if (UseQRScanner)
-            FindViewById(Resource.Id.qr_scanbutton).Click += async (o, e) =>
-            {
-                MobileBarcodeScanner.Initialize(Application);
-                scanner = new MobileBarcodeScanner();
-                scanner.UseCustomOverlay = true;
-
-                var customOverlay = LayoutInflater.FromContext(this).Inflate(Resource.Layout.QRZXingOverlay, FindViewById<LinearLayout>(Resource.Id.main), false);
-                //ButtonSetupContext = customOverlay;
-                //SetUpButtons();
-
-                customOverlay.FindViewById<Button>(Resource.Id.qr_btn_flashlight).Click += (ob, ev) =>
-                {
-                    scanner.ToggleTorch();
-                };
-
-                // Added in this (invoked) version only
-                customOverlay.FindViewById(Resource.Id.qr_scanbutton).Visibility = ViewStates.Gone;
-                customOverlay.FindViewById(Resource.Id.main).SetBackgroundColor(Color.Transparent);
-
-                scanner.CustomOverlay = customOverlay;
-
-                // Added in this (invoked) version only
-                var opts = new MobileBarcodeScanningOptions() { AutoRotate = true, PossibleFormats = new List<BarcodeFormat> { BarcodeFormat.QR_CODE } };
-                var result = await scanner.Scan(opts);
-                HandleScanResult(result);
-            };
-            //else
-            if (true)
-            {
-                ButtonSetupContext = FindViewById(Resource.Id.upperlayout);
-                SetUpButtons();
-            }
+            SetupButton(StartScanning, "Interact", Resource.Drawable.qr_example, Color.DarkCyan);
+            SetUpButtons();
 
             // Feedback on whether our networking info is carrying through changeover...
             if (WiFiMessageCenter.Client != null)
@@ -118,9 +59,6 @@ namespace Atropos
         protected override void OnResume()
         {
             base.OnResume();
-
-            foreach (var view in RoleChoicePrompts)
-                view.Visibility = ViewStates.Visible;
 
             if (UseQRScanner)
             {
@@ -141,7 +79,7 @@ namespace Atropos
         protected override void OnPause()
         {
             base.OnPause();
-            if (UseQRScanner)
+            if (UseQRScanner && scanner != null)
             {
                 if (scanner.IsTorchOn) scanner.ToggleTorch();
                 //scanner.Cancel();
@@ -183,7 +121,32 @@ namespace Atropos
             }
         }
 
-        void HandleScanResult(ZXing.Result result)
+        protected async void StartScanning()
+        {
+            scanner = new MobileBarcodeScanner() { UseCustomOverlay = true };
+
+            var customOverlay = LayoutInflater.FromContext(this).Inflate(Resource.Layout.QRoverlay, null);
+
+            customOverlay.FindViewById<ImageButton>(Resource.Id.qr_flashlight_button).Click += (ob, ev) =>
+            {
+                scanner.ToggleTorch();
+            };
+            customOverlay.FindViewById<ImageButton>(Resource.Id.qr_cancel_button).Click += (ob, ev) =>
+            {
+                scanner.Cancel();
+            };
+            
+            scanner.CustomOverlay = customOverlay;
+
+            var opts = new MobileBarcodeScanningOptions()
+            { AutoRotate = true, PossibleFormats = new List<BarcodeFormat> { BarcodeFormat.QR_CODE } };
+
+            var result = await scanner.Scan(opts);
+
+            HandleScanResult(result);
+        }
+
+        protected void HandleScanResult(ZXing.Result result)
         {
             string msg = "";
 
@@ -195,16 +158,42 @@ namespace Atropos
             this.RunOnUiThread(() => Toast.MakeText(this, msg, ToastLength.Short).Show());
         }
 
-        protected void SetupButton(Type activity, string text, int imageSrc, Color textColour, bool currentlyEnabled = true)
+        protected void SetupButton(Type activity, string text, int imageSrc, Color textColour, bool isImplemented = true)
         {
-            if (ButtonSetupContext == null) throw new Exception("Null context - cannot set up buttons.");
+            SetupButton(() =>
+            {
+                var intent = new Intent(Application.Context, activity);
+                intent.AddFlags(ActivityFlags.SingleTop);
+                intent.AddFlags(ActivityFlags.NewTask);
+                StartActivity(intent);
+            }, 
+            text, imageSrc, textColour, isImplemented);
+        }
+        protected void SetupButton(Action action, string text, int imageSrc, Color textColour, bool isImplemented = true)
+        {
+            //if (ButtonSetupContext == null) throw new Exception("Null context - cannot set up buttons.");
 
-            var i = RoleChoicePrompts.Count;
+            View mainV = null;
+            for (int j = 0; j < RoleChoicePromptIDs.Length; j++)
+            {
+                if (j >= RoleChoicePrompts.Count)
+                {
+                    mainV = FindViewById(RoleChoicePromptIDs[j]);
+                    RoleChoicePrompts.Add(mainV);
+                    break;
+                }
+
+                mainV = RoleChoicePrompts[j];
+                var tV = mainV.FindViewById<TextView>(RoleChoicePromptTextfieldIDs[j]);
+                if (tV.Text == text) break;
+            }
+            if (mainV == null) throw new Exception("Can neither find nor add choice prompt!");
+
+            //var i = RoleChoicePrompts.Count;
+            var i = RoleChoicePrompts.IndexOf(mainV);
             if (i >= RoleChoicePromptIDs.Length) throw new Exception("Unable to add choice prompt - all slots full.");
-
-            View mainV = ButtonSetupContext.FindViewById(RoleChoicePromptIDs[i]);
-            RoleChoicePrompts.Add(mainV);
-            //mainV.Visibility = ViewStates.Visible;
+            
+            mainV.Visibility = ViewStates.Visible;
 
             TextView textV = mainV.FindViewById<TextView>(RoleChoicePromptTextfieldIDs[i]);
             SetTypeface(textV, "FTLTLT.TTF");
@@ -214,14 +203,11 @@ namespace Atropos
             ImageView imgV = mainV.FindViewById<ImageView>(RoleChoicePromptImagefieldIDs[i]);
             imgV.SetImageResource(imageSrc);
 
-            if (currentlyEnabled)
+            if (isImplemented)
             {
                 mainV.Click += (o, e) =>
                 {
-                    var intent = new Intent(Application.Context, activity);
-                    intent.AddFlags(ActivityFlags.SingleTop);
-                    intent.AddFlags(ActivityFlags.NewTask);
-                    Application.Context.StartActivity(intent);
+                    action?.Invoke();
                 }; 
             }
             else
@@ -316,7 +302,7 @@ namespace Atropos
 
         protected override void SetUpButtons()
         {
-            SetupButton(null, "Hack", Resource.Drawable.command_prompt_image, Color.Green, false);
+            SetupButton(() => { }, "Hack", Resource.Drawable.command_prompt_image, Color.Green, false);
             SetupButton(typeof(GunActivityRevised), "Shoot", Resource.Drawable.handgun_image, Color.MediumPurple);
         }
     }

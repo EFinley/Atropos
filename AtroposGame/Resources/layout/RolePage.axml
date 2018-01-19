@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:minWidth="25px"
+    android:minHeight="25px"
+    android:id="@+id/main">
+  <RelativeLayout
+      android:id="@+id/role_interact"
+      android:layout_width="match_parent"
+      android:layout_height="0dip"
+      android:layout_weight="1"
+      android:minHeight="100dip"
+      android:gravity="left"
+      android:background="@android:drawable/alert_dark_frame">
+    <ImageView
+        android:id="@+id/role_interact_image"
+        android:src="@drawable/qr_example"
+        android:layout_height="match_parent"
+        android:layout_width="wrap_content"
+        android:elevation="1dip"
+        android:alpha="0.85"
+        android:layout_marginBottom="20dip"
+        android:layout_marginTop="5dip"
+        android:layout_marginLeft="5dip"
+        android:scaleType="fitStart" />
+    <TextView
+        android:id="@+id/role_interact_text"
+        android:text="Interact"
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:textSize="80dip"
+        android:gravity="right"
+        android:textAlignment="gravity"
+        android:forceHasOverlappingRendering="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="15dip"
+        android:layout_marginRight="15dip"
+        android:textColor="@android:color/holo_blue_dark"
+        android:alpha="0.65" />
+  </RelativeLayout>
+  <RelativeLayout
+      android:id="@+id/role_choice1"
+      android:layout_width="match_parent"
+      android:layout_height="0dip"
+      android:layout_weight="1"
+      android:minHeight="100dip"
+      android:gravity="left"
+      android:background="@android:drawable/alert_dark_frame">
+    <ImageView
+        android:id="@+id/role_choice1_image"
+        android:src="@drawable/atropos_sigil"
+        android:layout_height="match_parent"
+        android:layout_width="wrap_content"
+        android:elevation="1dip"
+        android:alpha="0.85"
+        android:layout_marginBottom="20dip"
+        android:layout_marginTop="5dip"
+        android:layout_marginLeft="5dip"
+        android:scaleType="fitStart" />
+    <TextView
+        android:id="@+id/role_choice1_text"
+        android:text="Choice #1"
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:textSize="80dip"
+        android:gravity="right"
+        android:textAlignment="gravity"
+        android:forceHasOverlappingRendering="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="15dip"
+        android:layout_marginRight="15dip"
+        android:textColor="@android:color/holo_purple"
+        android:alpha="0.65" />
+  </RelativeLayout>
+  <RelativeLayout
+      android:id="@+id/role_choice2"
+      android:layout_width="match_parent"
+      android:layout_height="0dip"
+      android:layout_weight="1"
+      android:minHeight="100dip"
+      android:gravity="left"
+      android:visibility="gone"
+      android:background="@android:drawable/alert_dark_frame">
+    <ImageView
+        android:id="@+id/role_choice2_image"
+        android:src="@drawable/atropos_sigil"
+        android:layout_height="match_parent"
+        android:layout_width="wrap_content"
+        android:elevation="1dip"
+        android:alpha="0.85"
+        android:layout_marginBottom="20dip"
+        android:layout_marginTop="5dip"
+        android:layout_marginLeft="5dip"
+        android:scaleType="fitStart" />
+    <TextView
+        android:id="@+id/role_choice2_text"
+        android:text="Choice #2"
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:textSize="80dip"
+        android:gravity="right"
+        android:textAlignment="gravity"
+        android:forceHasOverlappingRendering="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="15dip"
+        android:layout_marginRight="15dip"
+        android:textColor="@android:color/holo_purple"
+        android:alpha="0.65" />
+  </RelativeLayout>
+  <RelativeLayout
+      android:id="@+id/role_choice3"
+      android:layout_width="match_parent"
+      android:layout_height="0dip"
+      android:layout_weight="1"
+      android:minHeight="100dip"
+      android:gravity="left"
+      android:visibility="gone"
+      android:background="@android:drawable/alert_dark_frame">
+    <ImageView
+        android:id="@+id/role_choice3_image"
+        android:src="@drawable/atropos_sigil"
+        android:layout_height="match_parent"
+        android:layout_width="wrap_content"
+        android:elevation="1dip"
+        android:alpha="0.85"
+        android:layout_marginBottom="20dip"
+        android:layout_marginTop="5dip"
+        android:layout_marginLeft="5dip"
+        android:scaleType="fitStart" />
+    <TextView
+        android:id="@+id/role_choice3_text"
+        android:text="Choice #3"
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:textSize="80dip"
+        android:gravity="right"
+        android:textAlignment="gravity"
+        android:forceHasOverlappingRendering="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="15dip"
+        android:layout_marginRight="15dip"
+        android:textColor="@android:color/holo_purple"
+        android:alpha="0.65" />
+  </RelativeLayout>
+</LinearLayout>

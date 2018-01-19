@@ -1689,169 +1689,184 @@ namespace Atropos
 			public const int ic_action_on_off = 2130837598;
 			
 			// aapt resource value: 0x7f02005f
-			public const int Icon = 2130837599;
+			public const int ic_cancel = 2130837599;
 			
 			// aapt resource value: 0x7f020060
-			public const int katana_image = 2130837600;
+			public const int ic_lightbulb = 2130837600;
 			
 			// aapt resource value: 0x7f020061
-			public const int kill_marks_1 = 2130837601;
+			public const int Icon = 2130837601;
 			
 			// aapt resource value: 0x7f020062
-			public const int kill_marks_10 = 2130837602;
+			public const int katana_image = 2130837602;
 			
 			// aapt resource value: 0x7f020063
-			public const int kill_marks_2 = 2130837603;
+			public const int kill_marks_1 = 2130837603;
 			
 			// aapt resource value: 0x7f020064
-			public const int kill_marks_3 = 2130837604;
+			public const int kill_marks_10 = 2130837604;
 			
 			// aapt resource value: 0x7f020065
-			public const int kill_marks_4 = 2130837605;
+			public const int kill_marks_2 = 2130837605;
 			
 			// aapt resource value: 0x7f020066
-			public const int kill_marks_5 = 2130837606;
+			public const int kill_marks_3 = 2130837606;
 			
 			// aapt resource value: 0x7f020067
-			public const int kill_marks_6 = 2130837607;
+			public const int kill_marks_4 = 2130837607;
 			
 			// aapt resource value: 0x7f020068
-			public const int kill_marks_7 = 2130837608;
+			public const int kill_marks_5 = 2130837608;
 			
 			// aapt resource value: 0x7f020069
-			public const int kill_marks_8 = 2130837609;
+			public const int kill_marks_6 = 2130837609;
 			
 			// aapt resource value: 0x7f02006a
-			public const int kill_marks_9 = 2130837610;
+			public const int kill_marks_7 = 2130837610;
 			
 			// aapt resource value: 0x7f02006b
-			public const int kill_marks_star = 2130837611;
+			public const int kill_marks_8 = 2130837611;
 			
 			// aapt resource value: 0x7f02006c
-			public const int lockpick_splintercell = 2130837612;
+			public const int kill_marks_9 = 2130837612;
 			
 			// aapt resource value: 0x7f02006d
-			public const int lockpicks_image = 2130837613;
+			public const int kill_marks_star = 2130837613;
 			
 			// aapt resource value: 0x7f02006e
-			public const int machine = 2130837614;
+			public const int lockpick_splintercell = 2130837614;
 			
 			// aapt resource value: 0x7f02006f
-			public const int magnifier_image = 2130837615;
+			public const int lockpicks_image = 2130837615;
 			
 			// aapt resource value: 0x7f020070
-			public const int magnifying_glass_image = 2130837616;
+			public const int machine = 2130837616;
 			
 			// aapt resource value: 0x7f020071
-			public const int multimeter_image = 2130837617;
+			public const int magnifier_image = 2130837617;
 			
 			// aapt resource value: 0x7f020072
-			public const int nfc_icon = 2130837618;
+			public const int magnifying_glass_image = 2130837618;
 			
 			// aapt resource value: 0x7f020073
-			public const int notification_action_background = 2130837619;
+			public const int multimeter_image = 2130837619;
 			
 			// aapt resource value: 0x7f020074
-			public const int notification_bg = 2130837620;
+			public const int nfc_icon = 2130837620;
 			
 			// aapt resource value: 0x7f020075
-			public const int notification_bg_low = 2130837621;
+			public const int notification_action_background = 2130837621;
 			
 			// aapt resource value: 0x7f020076
-			public const int notification_bg_low_normal = 2130837622;
+			public const int notification_bg = 2130837622;
 			
 			// aapt resource value: 0x7f020077
-			public const int notification_bg_low_pressed = 2130837623;
+			public const int notification_bg_low = 2130837623;
 			
 			// aapt resource value: 0x7f020078
-			public const int notification_bg_normal = 2130837624;
+			public const int notification_bg_low_normal = 2130837624;
 			
 			// aapt resource value: 0x7f020079
-			public const int notification_bg_normal_pressed = 2130837625;
+			public const int notification_bg_low_pressed = 2130837625;
 			
 			// aapt resource value: 0x7f02007a
-			public const int notification_icon_background = 2130837626;
-			
-			// aapt resource value: 0x7f020094
-			public const int notification_template_icon_bg = 2130837652;
-			
-			// aapt resource value: 0x7f020095
-			public const int notification_template_icon_low_bg = 2130837653;
+			public const int notification_bg_normal = 2130837626;
 			
 			// aapt resource value: 0x7f02007b
-			public const int notification_tile_bg = 2130837627;
+			public const int notification_bg_normal_pressed = 2130837627;
 			
 			// aapt resource value: 0x7f02007c
-			public const int notify_panel_notification_icon_bg = 2130837628;
+			public const int notification_icon_background = 2130837628;
+			
+			// aapt resource value: 0x7f020099
+			public const int notification_template_icon_bg = 2130837657;
+			
+			// aapt resource value: 0x7f02009a
+			public const int notification_template_icon_low_bg = 2130837658;
 			
 			// aapt resource value: 0x7f02007d
-			public const int qr_example = 2130837629;
+			public const int notification_tile_bg = 2130837629;
 			
 			// aapt resource value: 0x7f02007e
-			public const int safe_dial = 2130837630;
+			public const int notify_panel_notification_icon_bg = 2130837630;
 			
 			// aapt resource value: 0x7f02007f
-			public const int safe_dial_body = 2130837631;
+			public const int qr_code_reticle = 2130837631;
 			
 			// aapt resource value: 0x7f020080
-			public const int section_header = 2130837632;
+			public const int qr_code_reticle_with_glow = 2130837632;
 			
 			// aapt resource value: 0x7f020081
-			public const int securitypanel_gray = 2130837633;
+			public const int qr_code_window = 2130837633;
 			
 			// aapt resource value: 0x7f020082
-			public const int securitypanel_overlay_bottom = 2130837634;
+			public const int qr_example = 2130837634;
 			
 			// aapt resource value: 0x7f020083
-			public const int securitypanel_overlay_bottomleft = 2130837635;
+			public const int safe_dial = 2130837635;
 			
 			// aapt resource value: 0x7f020084
-			public const int securitypanel_overlay_center = 2130837636;
+			public const int safe_dial_body = 2130837636;
 			
 			// aapt resource value: 0x7f020085
-			public const int securitypanel_overlay_topleft = 2130837637;
+			public const int section_header = 2130837637;
 			
 			// aapt resource value: 0x7f020086
-			public const int soldering_iron_image = 2130837638;
+			public const int securitypanel_gray = 2130837638;
 			
 			// aapt resource value: 0x7f020087
-			public const int sorcerer_logo = 2130837639;
+			public const int securitypanel_overlay_bottom = 2130837639;
 			
 			// aapt resource value: 0x7f020088
-			public const int spell_casting_image = 2130837640;
+			public const int securitypanel_overlay_bottomleft = 2130837640;
 			
 			// aapt resource value: 0x7f020089
-			public const int spellbook_image = 2130837641;
+			public const int securitypanel_overlay_center = 2130837641;
 			
 			// aapt resource value: 0x7f02008a
-			public const int splash_screen = 2130837642;
+			public const int securitypanel_overlay_topleft = 2130837642;
 			
 			// aapt resource value: 0x7f02008b
-			public const int spy_logo = 2130837643;
+			public const int soldering_iron_image = 2130837643;
 			
 			// aapt resource value: 0x7f02008c
-			public const int sword_image = 2130837644;
+			public const int sorcerer_logo = 2130837644;
 			
 			// aapt resource value: 0x7f02008d
-			public const int team_icon = 2130837645;
+			public const int spell_casting_image = 2130837645;
 			
 			// aapt resource value: 0x7f02008e
-			public const int team_search_icon = 2130837646;
+			public const int spellbook_image = 2130837646;
 			
 			// aapt resource value: 0x7f02008f
-			public const int team_search_icon_2color = 2130837647;
+			public const int splash_screen = 2130837647;
 			
 			// aapt resource value: 0x7f020090
-			public const int toolkit_image = 2130837648;
+			public const int spy_logo = 2130837648;
 			
 			// aapt resource value: 0x7f020091
-			public const int vault_dial_image = 2130837649;
+			public const int sword_image = 2130837649;
 			
 			// aapt resource value: 0x7f020092
-			public const int wifi_icon = 2130837650;
+			public const int team_icon = 2130837650;
 			
 			// aapt resource value: 0x7f020093
-			public const int wire_cutters_image = 2130837651;
+			public const int team_search_icon = 2130837651;
+			
+			// aapt resource value: 0x7f020094
+			public const int team_search_icon_2color = 2130837652;
+			
+			// aapt resource value: 0x7f020095
+			public const int toolkit_image = 2130837653;
+			
+			// aapt resource value: 0x7f020096
+			public const int vault_dial_image = 2130837654;
+			
+			// aapt resource value: 0x7f020097
+			public const int wifi_icon = 2130837655;
+			
+			// aapt resource value: 0x7f020098
+			public const int wire_cutters_image = 2130837656;
 			
 			static Drawable()
 			{
@@ -1881,8 +1896,8 @@ namespace Atropos
 			// aapt resource value: 0x7f0b0084
 			public const int New_lock_panel = 2131427460;
 			
-			// aapt resource value: 0x7f0b0110
-			public const int New_spell_panel = 2131427600;
+			// aapt resource value: 0x7f0b0115
+			public const int New_spell_panel = 2131427605;
 			
 			// aapt resource value: 0x7f0b00af
 			public const int Set_form_name_button = 2131427503;
@@ -1890,14 +1905,14 @@ namespace Atropos
 			// aapt resource value: 0x7f0b0086
 			public const int Set_lock_name_button = 2131427462;
 			
-			// aapt resource value: 0x7f0b0112
-			public const int Set_spell_name_button = 2131427602;
+			// aapt resource value: 0x7f0b0117
+			public const int Set_spell_name_button = 2131427607;
 			
-			// aapt resource value: 0x7f0b010f
-			public const int Spell_casting_layoutpane = 2131427599;
+			// aapt resource value: 0x7f0b0114
+			public const int Spell_casting_layoutpane = 2131427604;
 			
-			// aapt resource value: 0x7f0b0104
-			public const int Toolkit_layoutpane = 2131427588;
+			// aapt resource value: 0x7f0b0109
+			public const int Toolkit_layoutpane = 2131427593;
 			
 			// aapt resource value: 0x7f0b00c2
 			public const int action0 = 2131427522;
@@ -1968,11 +1983,11 @@ namespace Atropos
 			// aapt resource value: 0x7f0b001d
 			public const int always = 2131427357;
 			
-			// aapt resource value: 0x7f0b0139
-			public const int atn_direct_discover = 2131427641;
+			// aapt resource value: 0x7f0b013e
+			public const int atn_direct_discover = 2131427646;
 			
-			// aapt resource value: 0x7f0b0138
-			public const int atn_direct_enable = 2131427640;
+			// aapt resource value: 0x7f0b013d
+			public const int atn_direct_enable = 2131427645;
 			
 			// aapt resource value: 0x7f0b0056
 			public const int bargraph_outer_container = 2131427414;
@@ -1986,8 +2001,8 @@ namespace Atropos
 			// aapt resource value: 0x7f0b0059
 			public const int bargraph_text2 = 2131427417;
 			
-			// aapt resource value: 0x7f0b011f
-			public const int beginTestButton = 2131427615;
+			// aapt resource value: 0x7f0b0124
+			public const int beginTestButton = 2131427620;
 			
 			// aapt resource value: 0x7f0b001a
 			public const int beginning = 2131427354;
@@ -1998,47 +2013,47 @@ namespace Atropos
 			// aapt resource value: 0x7f0b0022
 			public const int bottom = 2131427362;
 			
-			// aapt resource value: 0x7f0b0121
-			public const int btn_connect = 2131427617;
+			// aapt resource value: 0x7f0b0126
+			public const int btn_connect = 2131427622;
 			
-			// aapt resource value: 0x7f0b010e
-			public const int btn_delete_user_data = 2131427598;
-			
-			// aapt resource value: 0x7f0b0107
-			public const int btn_dev_hotbutton = 2131427591;
-			
-			// aapt resource value: 0x7f0b0122
-			public const int btn_disconnect = 2131427618;
+			// aapt resource value: 0x7f0b0113
+			public const int btn_delete_user_data = 2131427603;
 			
 			// aapt resource value: 0x7f0b010c
-			public const int btn_export_run_data = 2131427596;
+			public const int btn_dev_hotbutton = 2131427596;
+			
+			// aapt resource value: 0x7f0b0127
+			public const int btn_disconnect = 2131427623;
+			
+			// aapt resource value: 0x7f0b0111
+			public const int btn_export_run_data = 2131427601;
+			
+			// aapt resource value: 0x7f0b0112
+			public const int btn_import_run_data = 2131427602;
+			
+			// aapt resource value: 0x7f0b010b
+			public const int btn_launch_experimental_mode = 2131427595;
+			
+			// aapt resource value: 0x7f0b0128
+			public const int btn_start_client = 2131427624;
+			
+			// aapt resource value: 0x7f0b010e
+			public const int btn_train_locks = 2131427598;
 			
 			// aapt resource value: 0x7f0b010d
-			public const int btn_import_run_data = 2131427597;
+			public const int btn_train_spells = 2131427597;
+			
+			// aapt resource value: 0x7f0b0105
+			public const int buttonA = 2131427589;
 			
 			// aapt resource value: 0x7f0b0106
-			public const int btn_launch_experimental_mode = 2131427590;
+			public const int buttonB = 2131427590;
 			
-			// aapt resource value: 0x7f0b0123
-			public const int btn_start_client = 2131427619;
-			
-			// aapt resource value: 0x7f0b0109
-			public const int btn_train_locks = 2131427593;
+			// aapt resource value: 0x7f0b0107
+			public const int buttonC = 2131427591;
 			
 			// aapt resource value: 0x7f0b0108
-			public const int btn_train_spells = 2131427592;
-			
-			// aapt resource value: 0x7f0b0100
-			public const int buttonA = 2131427584;
-			
-			// aapt resource value: 0x7f0b0101
-			public const int buttonB = 2131427585;
-			
-			// aapt resource value: 0x7f0b0102
-			public const int buttonC = 2131427586;
-			
-			// aapt resource value: 0x7f0b0103
-			public const int buttonD = 2131427587;
+			public const int buttonD = 2131427592;
 			
 			// aapt resource value: 0x7f0b00e3
 			public const int buttonFragment = 2131427555;
@@ -2058,8 +2073,8 @@ namespace Atropos
 			// aapt resource value: 0x7f0b00e0
 			public const int buttonScanDefaultView = 2131427552;
 			
-			// aapt resource value: 0x7f0b00fb
-			public const int buttonZxingFlash = 2131427579;
+			// aapt resource value: 0x7f0b0100
+			public const int buttonZxingFlash = 2131427584;
 			
 			// aapt resource value: 0x7f0b00c3
 			public const int cancel_action = 2131427523;
@@ -2067,11 +2082,11 @@ namespace Atropos
 			// aapt resource value: 0x7f0b006e
 			public const int cancel_btn = 2131427438;
 			
-			// aapt resource value: 0x7f0b010b
-			public const int chbox_allow_speakers = 2131427595;
+			// aapt resource value: 0x7f0b0110
+			public const int chbox_allow_speakers = 2131427600;
 			
-			// aapt resource value: 0x7f0b010a
-			public const int chbox_use_nfc = 2131427594;
+			// aapt resource value: 0x7f0b010f
+			public const int chbox_use_nfc = 2131427599;
 			
 			// aapt resource value: 0x7f0b003e
 			public const int checkbox = 2131427390;
@@ -2127,11 +2142,11 @@ namespace Atropos
 			// aapt resource value: 0x7f0b00d6
 			public const int choice_operative_toolkit = 2131427542;
 			
-			// aapt resource value: 0x7f0b00fe
-			public const int choice_samurai_gun = 2131427582;
+			// aapt resource value: 0x7f0b0103
+			public const int choice_samurai_gun = 2131427587;
 			
-			// aapt resource value: 0x7f0b00ff
-			public const int choice_samurai_katana = 2131427583;
+			// aapt resource value: 0x7f0b0104
+			public const int choice_samurai_katana = 2131427588;
 			
 			// aapt resource value: 0x7f0b00d9
 			public const int choice_toolkit_bypass = 2131427545;
@@ -2160,8 +2175,8 @@ namespace Atropos
 			// aapt resource value: 0x7f0b001e
 			public const int collapseActionView = 2131427358;
 			
-			// aapt resource value: 0x7f0b0134
-			public const int contentFrame = 2131427636;
+			// aapt resource value: 0x7f0b0139
+			public const int contentFrame = 2131427641;
 			
 			// aapt resource value: 0x7f0b0031
 			public const int contentPanel = 2131427377;
@@ -2187,17 +2202,17 @@ namespace Atropos
 			// aapt resource value: 0x7f0b002a
 			public const int default_activity_button = 2131427370;
 			
-			// aapt resource value: 0x7f0b0124
-			public const int device_address = 2131427620;
+			// aapt resource value: 0x7f0b0129
+			public const int device_address = 2131427625;
 			
-			// aapt resource value: 0x7f0b0133
-			public const int device_details = 2131427635;
+			// aapt resource value: 0x7f0b0138
+			public const int device_details = 2131427640;
 			
-			// aapt resource value: 0x7f0b0125
-			public const int device_info = 2131427621;
+			// aapt resource value: 0x7f0b012a
+			public const int device_info = 2131427626;
 			
-			// aapt resource value: 0x7f0b0132
-			public const int device_name = 2131427634;
+			// aapt resource value: 0x7f0b0137
+			public const int device_name = 2131427639;
 			
 			// aapt resource value: 0x7f0b000c
 			public const int disableHome = 2131427340;
@@ -2217,8 +2232,8 @@ namespace Atropos
 			// aapt resource value: 0x7f0b005b
 			public const int display_bypass_information = 2131427419;
 			
-			// aapt resource value: 0x7f0b011e
-			public const int doMathCheckbox = 2131427614;
+			// aapt resource value: 0x7f0b0123
+			public const int doMathCheckbox = 2131427619;
 			
 			// aapt resource value: 0x7f0b0049
 			public const int edit_query = 2131427401;
@@ -2250,14 +2265,14 @@ namespace Atropos
 			// aapt resource value: 0x7f0b00dd
 			public const int fragment_container = 2131427549;
 			
-			// aapt resource value: 0x7f0b0113
-			public const int glyph_count_display = 2131427603;
+			// aapt resource value: 0x7f0b0118
+			public const int glyph_count_display = 2131427608;
 			
-			// aapt resource value: 0x7f0b0127
-			public const int group_ip = 2131427623;
+			// aapt resource value: 0x7f0b012c
+			public const int group_ip = 2131427628;
 			
-			// aapt resource value: 0x7f0b0126
-			public const int group_owner = 2131427622;
+			// aapt resource value: 0x7f0b012b
+			public const int group_owner = 2131427627;
 			
 			// aapt resource value: 0x7f0b0080
 			public const int gunfight_bullet_pane = 2131427456;
@@ -2289,23 +2304,23 @@ namespace Atropos
 			// aapt resource value: 0x7f0b00cc
 			public const int info = 2131427532;
 			
-			// aapt resource value: 0x7f0b00f4
-			public const int info_runner_name = 2131427572;
-			
 			// aapt resource value: 0x7f0b00f6
-			public const int info_runner_perk1 = 2131427574;
-			
-			// aapt resource value: 0x7f0b00f7
-			public const int info_runner_perk2 = 2131427575;
-			
-			// aapt resource value: 0x7f0b00f5
-			public const int info_runner_template = 2131427573;
+			public const int info_runner_name = 2131427574;
 			
 			// aapt resource value: 0x7f0b00f8
-			public const int info_status_pane = 2131427576;
+			public const int info_runner_perk1 = 2131427576;
 			
-			// aapt resource value: 0x7f0b0115
-			public const int inscribe_spell_button = 2131427605;
+			// aapt resource value: 0x7f0b00f9
+			public const int info_runner_perk2 = 2131427577;
+			
+			// aapt resource value: 0x7f0b00f7
+			public const int info_runner_template = 2131427575;
+			
+			// aapt resource value: 0x7f0b00fa
+			public const int info_status_pane = 2131427578;
+			
+			// aapt resource value: 0x7f0b011a
+			public const int inscribe_spell_button = 2131427610;
 			
 			// aapt resource value: 0x7f0b00be
 			public const int launch_directly_button = 2131427518;
@@ -2319,8 +2334,8 @@ namespace Atropos
 			// aapt resource value: 0x7f0b005a
 			public const int linearLayout1 = 2131427418;
 			
-			// aapt resource value: 0x7f0b00f9
-			public const int linearLayout2 = 2131427577;
+			// aapt resource value: 0x7f0b00fe
+			public const int linearLayout2 = 2131427582;
 			
 			// aapt resource value: 0x7f0b0079
 			public const int list = 2131427449;
@@ -2337,8 +2352,8 @@ namespace Atropos
 			// aapt resource value: 0x7f0b008a
 			public const int lock_type_button = 2131427466;
 			
-			// aapt resource value: 0x7f0b00f3
-			public const int lowerlayout = 2131427571;
+			// aapt resource value: 0x7f0b00f5
+			public const int lowerlayout = 2131427573;
 			
 			// aapt resource value: 0x7f0b00e5
 			public const int main = 2131427557;
@@ -2346,14 +2361,14 @@ namespace Atropos
 			// aapt resource value: 0x7f0b00c5
 			public const int media_actions = 2131427525;
 			
-			// aapt resource value: 0x7f0b0135
-			public const int menuaction_character = 2131427637;
+			// aapt resource value: 0x7f0b013a
+			public const int menuaction_character = 2131427642;
 			
-			// aapt resource value: 0x7f0b0137
-			public const int menuaction_settings = 2131427639;
+			// aapt resource value: 0x7f0b013c
+			public const int menuaction_settings = 2131427644;
 			
-			// aapt resource value: 0x7f0b0136
-			public const int menuaction_wifi = 2131427638;
+			// aapt resource value: 0x7f0b013b
+			public const int menuaction_wifi = 2131427643;
 			
 			// aapt resource value: 0x7f0b001c
 			public const int middle = 2131427356;
@@ -2445,11 +2460,11 @@ namespace Atropos
 			// aapt resource value: 0x7f0b0013
 			public const int multiply = 2131427347;
 			
-			// aapt resource value: 0x7f0b012a
-			public const int my_name = 2131427626;
+			// aapt resource value: 0x7f0b012f
+			public const int my_name = 2131427631;
 			
-			// aapt resource value: 0x7f0b012b
-			public const int my_status = 2131427627;
+			// aapt resource value: 0x7f0b0130
+			public const int my_status = 2131427632;
 			
 			// aapt resource value: 0x7f0b0020
 			public const int never = 2131427360;
@@ -2475,8 +2490,8 @@ namespace Atropos
 			// aapt resource value: 0x7f0b00c7
 			public const int notification_main_column_container = 2131427527;
 			
-			// aapt resource value: 0x7f0b0120
-			public const int outcomeTextView = 2131427616;
+			// aapt resource value: 0x7f0b0125
+			public const int outcomeTextView = 2131427621;
 			
 			// aapt resource value: 0x7f0b00b5
 			public const int parameterAtextbox = 2131427509;
@@ -2502,14 +2517,20 @@ namespace Atropos
 			// aapt resource value: 0x7f0b0006
 			public const int progress_horizontal = 2131427334;
 			
-			// aapt resource value: 0x7f0b00f0
-			public const int qr_active_zone = 2131427568;
-			
 			// aapt resource value: 0x7f0b00f2
-			public const int qr_btn_flashlight = 2131427570;
+			public const int qr_active_zone = 2131427570;
 			
-			// aapt resource value: 0x7f0b00f1
-			public const int qr_scanbutton = 2131427569;
+			// aapt resource value: 0x7f0b00f4
+			public const int qr_btn_flashlight = 2131427572;
+			
+			// aapt resource value: 0x7f0b00e7
+			public const int qr_cancel_button = 2131427559;
+			
+			// aapt resource value: 0x7f0b00e6
+			public const int qr_flashlight_button = 2131427558;
+			
+			// aapt resource value: 0x7f0b00f3
+			public const int qr_scanbutton = 2131427571;
 			
 			// aapt resource value: 0x7f0b0040
 			public const int radio = 2131427392;
@@ -2526,35 +2547,44 @@ namespace Atropos
 			// aapt resource value: 0x7f0b00c9
 			public const int right_side = 2131427529;
 			
-			// aapt resource value: 0x7f0b00e7
-			public const int role_choice1 = 2131427559;
-			
-			// aapt resource value: 0x7f0b00e8
-			public const int role_choice1_image = 2131427560;
-			
 			// aapt resource value: 0x7f0b00e9
-			public const int role_choice1_text = 2131427561;
+			public const int role_choice1 = 2131427561;
 			
 			// aapt resource value: 0x7f0b00ea
-			public const int role_choice2 = 2131427562;
+			public const int role_choice1_image = 2131427562;
 			
 			// aapt resource value: 0x7f0b00eb
-			public const int role_choice2_image = 2131427563;
+			public const int role_choice1_text = 2131427563;
 			
 			// aapt resource value: 0x7f0b00ec
-			public const int role_choice2_text = 2131427564;
+			public const int role_choice2 = 2131427564;
 			
 			// aapt resource value: 0x7f0b00ed
-			public const int role_choice3 = 2131427565;
+			public const int role_choice2_image = 2131427565;
 			
 			// aapt resource value: 0x7f0b00ee
-			public const int role_choice3_image = 2131427566;
+			public const int role_choice2_text = 2131427566;
 			
 			// aapt resource value: 0x7f0b00ef
-			public const int role_choice3_text = 2131427567;
+			public const int role_choice3 = 2131427567;
+			
+			// aapt resource value: 0x7f0b00f0
+			public const int role_choice3_image = 2131427568;
+			
+			// aapt resource value: 0x7f0b00f1
+			public const int role_choice3_text = 2131427569;
 			
 			// aapt resource value: 0x7f0b00a9
 			public const int role_decker = 2131427497;
+			
+			// aapt resource value: 0x7f0b00fb
+			public const int role_interact = 2131427579;
+			
+			// aapt resource value: 0x7f0b00fc
+			public const int role_interact_image = 2131427580;
+			
+			// aapt resource value: 0x7f0b00fd
+			public const int role_interact_text = 2131427581;
 			
 			// aapt resource value: 0x7f0b00aa
 			public const int role_mage = 2131427498;
@@ -2565,11 +2595,11 @@ namespace Atropos
 			// aapt resource value: 0x7f0b00a8
 			public const int role_samurai = 2131427496;
 			
-			// aapt resource value: 0x7f0b00fd
-			public const int safedial_body = 2131427581;
+			// aapt resource value: 0x7f0b0102
+			public const int safedial_body = 2131427586;
 			
-			// aapt resource value: 0x7f0b00fc
-			public const int safedial_dial = 2131427580;
+			// aapt resource value: 0x7f0b0101
+			public const int safedial_dial = 2131427585;
 			
 			// aapt resource value: 0x7f0b0014
 			public const int screen = 2131427348;
@@ -2619,11 +2649,11 @@ namespace Atropos
 			// aapt resource value: 0x7f0b00bc
 			public const int select_tag_type_button = 2131427516;
 			
-			// aapt resource value: 0x7f0b0130
-			public const int selected_device_info = 2131427632;
+			// aapt resource value: 0x7f0b0135
+			public const int selected_device_info = 2131427637;
 			
-			// aapt resource value: 0x7f0b012f
-			public const int selected_device_name = 2131427631;
+			// aapt resource value: 0x7f0b0134
+			public const int selected_device_name = 2131427636;
 			
 			// aapt resource value: 0x7f0b003f
 			public const int shortcut = 2131427391;
@@ -2640,29 +2670,29 @@ namespace Atropos
 			// aapt resource value: 0x7f0b002f
 			public const int spacer = 2131427375;
 			
+			// aapt resource value: 0x7f0b011b
+			public const int spell_feedback_sfx_button = 2131427611;
+			
 			// aapt resource value: 0x7f0b0116
-			public const int spell_feedback_sfx_button = 2131427606;
-			
-			// aapt resource value: 0x7f0b0111
-			public const int spell_name_textbox = 2131427601;
-			
-			// aapt resource value: 0x7f0b0117
-			public const int spell_progress_sfx_button = 2131427607;
-			
-			// aapt resource value: 0x7f0b0118
-			public const int spell_success_sfx_button = 2131427608;
+			public const int spell_name_textbox = 2131427606;
 			
 			// aapt resource value: 0x7f0b011c
-			public const int spinnerRefreshRate = 2131427612;
+			public const int spell_progress_sfx_button = 2131427612;
 			
 			// aapt resource value: 0x7f0b011d
-			public const int spinnerRefreshType = 2131427613;
+			public const int spell_success_sfx_button = 2131427613;
 			
-			// aapt resource value: 0x7f0b011a
-			public const int spinnerTestSound = 2131427610;
+			// aapt resource value: 0x7f0b0121
+			public const int spinnerRefreshRate = 2131427617;
 			
-			// aapt resource value: 0x7f0b011b
-			public const int spinnerTestSoundFormat = 2131427611;
+			// aapt resource value: 0x7f0b0122
+			public const int spinnerRefreshType = 2131427618;
+			
+			// aapt resource value: 0x7f0b011f
+			public const int spinnerTestSound = 2131427615;
+			
+			// aapt resource value: 0x7f0b0120
+			public const int spinnerTestSoundFormat = 2131427616;
 			
 			// aapt resource value: 0x7f0b0007
 			public const int split_action_bar = 2131427335;
@@ -2676,17 +2706,17 @@ namespace Atropos
 			// aapt resource value: 0x7f0b0017
 			public const int src_over = 2131427351;
 			
-			// aapt resource value: 0x7f0b0128
-			public const int status_bar = 2131427624;
+			// aapt resource value: 0x7f0b012d
+			public const int status_bar = 2131427629;
 			
 			// aapt resource value: 0x7f0b00c4
 			public const int status_bar_latest_event_content = 2131427524;
 			
-			// aapt resource value: 0x7f0b0129
-			public const int status_text = 2131427625;
+			// aapt resource value: 0x7f0b012e
+			public const int status_text = 2131427630;
 			
-			// aapt resource value: 0x7f0b0119
-			public const int stressTitle = 2131427609;
+			// aapt resource value: 0x7f0b011e
+			public const int stressTitle = 2131427614;
 			
 			// aapt resource value: 0x7f0b00b0
 			public const int stroke_count_display = 2131427504;
@@ -2727,8 +2757,8 @@ namespace Atropos
 			// aapt resource value: 0x7f0b00de
 			public const int textView2 = 2131427550;
 			
-			// aapt resource value: 0x7f0b00fa
-			public const int textView3 = 2131427578;
+			// aapt resource value: 0x7f0b00ff
+			public const int textView3 = 2131427583;
 			
 			// aapt resource value: 0x7f0b00ca
 			public const int time = 2131427530;
@@ -2763,8 +2793,8 @@ namespace Atropos
 			// aapt resource value: 0x7f0b0087
 			public const int tumbler_count_display = 2131427463;
 			
-			// aapt resource value: 0x7f0b0114
-			public const int undo_glyph_button = 2131427604;
+			// aapt resource value: 0x7f0b0119
+			public const int undo_glyph_button = 2131427609;
 			
 			// aapt resource value: 0x7f0b0088
 			public const int undo_tumbler_button = 2131427464;
@@ -2772,8 +2802,8 @@ namespace Atropos
 			// aapt resource value: 0x7f0b0008
 			public const int up = 2131427336;
 			
-			// aapt resource value: 0x7f0b00e6
-			public const int upperlayout = 2131427558;
+			// aapt resource value: 0x7f0b00e8
+			public const int upperlayout = 2131427560;
 			
 			// aapt resource value: 0x7f0b0012
 			public const int useLogo = 2131427346;
@@ -2784,20 +2814,20 @@ namespace Atropos
 			// aapt resource value: 0x7f0b0082
 			public const int vault_notification = 2131427458;
 			
-			// aapt resource value: 0x7f0b0105
-			public const int view2 = 2131427589;
+			// aapt resource value: 0x7f0b010a
+			public const int view2 = 2131427594;
+			
+			// aapt resource value: 0x7f0b0136
+			public const int wifi_frag_detail = 2131427638;
 			
 			// aapt resource value: 0x7f0b0131
-			public const int wifi_frag_detail = 2131427633;
+			public const int wifi_frag_list = 2131427633;
 			
-			// aapt resource value: 0x7f0b012c
-			public const int wifi_frag_list = 2131427628;
+			// aapt resource value: 0x7f0b0133
+			public const int wifi_nopeersfound = 2131427635;
 			
-			// aapt resource value: 0x7f0b012e
-			public const int wifi_nopeersfound = 2131427630;
-			
-			// aapt resource value: 0x7f0b012d
-			public const int wifi_peerslist = 2131427629;
+			// aapt resource value: 0x7f0b0132
+			public const int wifi_peerslist = 2131427634;
 			
 			// aapt resource value: 0x7f0b0021
 			public const int withText = 2131427361;
@@ -3051,67 +3081,73 @@ namespace Atropos
 			public const int QRMain = 2130903107;
 			
 			// aapt resource value: 0x7f030044
-			public const int QRZXingOverlay = 2130903108;
+			public const int QRoverlay = 2130903108;
 			
 			// aapt resource value: 0x7f030045
-			public const int RoleQROverlay = 2130903109;
+			public const int QRZXingOverlay = 2130903109;
 			
 			// aapt resource value: 0x7f030046
-			public const int Safecrack = 2130903110;
+			public const int RolePage = 2130903110;
 			
 			// aapt resource value: 0x7f030047
-			public const int Samurai = 2130903111;
+			public const int RoleQROverlay = 2130903111;
 			
 			// aapt resource value: 0x7f030048
-			public const int Samurai_old = 2130903112;
+			public const int Safecrack = 2130903112;
 			
 			// aapt resource value: 0x7f030049
-			public const int SecurityPanelManualMode = 2130903113;
+			public const int Samurai = 2130903113;
 			
 			// aapt resource value: 0x7f03004a
-			public const int select_dialog_item_material = 2130903114;
+			public const int Samurai_old = 2130903114;
 			
 			// aapt resource value: 0x7f03004b
-			public const int select_dialog_multichoice_material = 2130903115;
+			public const int SecurityPanelManualMode = 2130903115;
 			
 			// aapt resource value: 0x7f03004c
-			public const int select_dialog_singlechoice_material = 2130903116;
+			public const int select_dialog_item_material = 2130903116;
 			
 			// aapt resource value: 0x7f03004d
-			public const int SettingsPage = 2130903117;
+			public const int select_dialog_multichoice_material = 2130903117;
 			
 			// aapt resource value: 0x7f03004e
-			public const int SpellCasting = 2130903118;
+			public const int select_dialog_singlechoice_material = 2130903118;
 			
 			// aapt resource value: 0x7f03004f
-			public const int SpellTraining = 2130903119;
+			public const int SettingsPage = 2130903119;
 			
 			// aapt resource value: 0x7f030050
-			public const int StressTestLayout = 2130903120;
+			public const int SpellCasting = 2130903120;
 			
 			// aapt resource value: 0x7f030051
-			public const int support_simple_spinner_dropdown_item = 2130903121;
+			public const int SpellTraining = 2130903121;
 			
 			// aapt resource value: 0x7f030052
-			public const int ToolkitUse = 2130903122;
+			public const int StressTestLayout = 2130903122;
 			
 			// aapt resource value: 0x7f030053
-			public const int WiFi_device_detail = 2130903123;
+			public const int support_simple_spinner_dropdown_item = 2130903123;
 			
 			// aapt resource value: 0x7f030054
-			public const int WiFi_device_list = 2130903124;
+			public const int ToolkitUse = 2130903124;
 			
 			// aapt resource value: 0x7f030055
-			public const int WiFi_main = 2130903125;
+			public const int WiFi_device_detail = 2130903125;
 			
 			// aapt resource value: 0x7f030056
-			public const int WiFi_row_devices = 2130903126;
+			public const int WiFi_device_list = 2130903126;
 			
 			// aapt resource value: 0x7f030057
-			public const int zxingscanneractivitylayout = 2130903127;
+			public const int WiFi_main = 2130903127;
 			
 			// aapt resource value: 0x7f030058
-			public const int zxingscannerfragmentlayout = 2130903128;
+			public const int WiFi_row_devices = 2130903128;
+			
+			// aapt resource value: 0x7f030059
+			public const int zxingscanneractivitylayout = 2130903129;
+			
+			// aapt resource value: 0x7f03005a
+			public const int zxingscannerfragmentlayout = 2130903130;
 			
 			static Layout()
 			{
