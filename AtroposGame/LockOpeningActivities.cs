@@ -121,6 +121,7 @@ namespace Atropos.Locks
                     Current.FindViewById(Resource.Id.vault_dial_text).Visibility = ViewStates.Gone;
                 });
 
+                Current.LockBeingOpened.NumberOfAttempts++;
                 if (AutoStart) Activate();
             }
 
@@ -314,7 +315,7 @@ namespace Atropos.Locks
         {
             base.OnCreate(savedInstanceState);
             SetContentView(Resource.Layout.Safecrack);
-            LockBeingOpened = Lock.TestSafe;
+            LockBeingOpened = (Lock.Current != Lock.None) ? Lock.Current : Lock.TestSafe;
         }
 
         protected override void OnResume()
@@ -472,6 +473,7 @@ namespace Atropos.Locks
             {
                 if (Overshot == true) // Need to reset to zero
                 {
+                    if (Current.LockBeingOpened.Tumblers.IndexOf(targetTumbler) > 0) Current.LockBeingOpened.NumberOfAttempts++;
                     CurrentStage = new VaultTumblerFindingStage("Resetting to zero", Kit, Tumbler.ResetToZero, AttitudeProvider);
                 }
                 else if (object.ReferenceEquals(targetTumbler, Tumbler.ResetToZero))
@@ -486,6 +488,7 @@ namespace Atropos.Locks
                 else
                 {
                     await Current.SuccessFX.PlayToCompletion(useSpeakers: true);
+                    Current.LockBeingOpened.AnnounceLockOpened();
                     await Speech.SayAllOf("Lock is open; well done.", useSpeakerMode: false);
                     Current.Finish();
                 }
@@ -607,7 +610,7 @@ namespace Atropos.Locks
         {
             base.OnCreate(savedInstanceState);
             SetContentView(Resource.Layout.Lockpick); // TODO - change this!
-            LockBeingOpened = Lock.TestLock;
+            LockBeingOpened = (Lock.Current != Lock.None) ? Lock.Current : Lock.TestLock;
         }
 
         protected override void OnResume()
@@ -726,7 +729,8 @@ namespace Atropos.Locks
                 {
                     Plugin.Vibrate.CrossVibrate.Current.Vibration(10);
                     Current.TumblerLiftingSFX.Stop();
-                    //Current.TumblerDroppedSFX.Play();
+                    Current.TumblerDroppedSFX.Play();
+                    Current.LockBeingOpened.NumberOfAttempts++;
                     CurrentStage = new LockTumblerFindingStage("Try again from tumbler 0", Kit, Current.LockBeingOpened.Tumblers[0], AttitudeProvider);
                 }
                 else if (tumblerUnderway.NextTumbler != Tumbler.EndOfLock)
@@ -737,6 +741,7 @@ namespace Atropos.Locks
                 else
                 {
                     await Current.SuccessSFX.PlayToCompletion(useSpeakers: true);
+                    Current.LockBeingOpened.AnnounceLockOpened();
                     await Speech.SayAllOf("Lock is open; well done.", useSpeakerMode: false);
                     Current.Finish();
                 }

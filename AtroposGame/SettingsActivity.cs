@@ -26,17 +26,22 @@ namespace Atropos
             base.OnCreate(savedInstanceState);
 
             // Link the checkboxes and buttons and such
-            SetupButton(Resource.Id.btn_dev_hotbutton, typeof(QRMainActivity));
-            SetupButton(Resource.Id.btn_train_spells, InteractionLibrary.SpellTeaching);
-            SetupButton(Resource.Id.btn_train_locks, InteractionLibrary.LockTraining, false);
+            SetupButton(Resource.Id.btn_dev_hotbutton, typeof(FunctionalityTestActivity));
+            SetupButton(Resource.Id.btn_train_spells, typeof(SpellTrainingActivity));
+            SetupButton(Resource.Id.btn_train_locks, () => { }, null, false);
 
             CheckBox allowSpeakers = FindViewById<CheckBox>(Resource.Id.chbox_allow_speakers);
             allowSpeakers.Checked = Res.AllowSpeakerSounds;
             allowSpeakers.Click += (o, e) => { Res.AllowSpeakerSounds = allowSpeakers.Checked; };
 
+
+            CheckBox allowNfc = FindViewById<CheckBox>(Resource.Id.chbox_use_nfc);
+            allowNfc.Checked = Res.AllowNfc;
+            allowNfc.Click += (o, e) => { Res.AllowNfc = allowNfc.Checked; };
+
             SetupButton(Resource.Id.btn_launch_experimental_mode, typeof(Atropos.Machine_Learning.MachineLearningActivity));
-            SetupButton(Resource.Id.btn_export_run_data, InteractionLibrary.Current, false);
-            SetupButton(Resource.Id.btn_import_run_data, InteractionLibrary.Current, false);
+            SetupButton(Resource.Id.btn_export_run_data, () => { }, null, false);
+            SetupButton(Resource.Id.btn_import_run_data, () => { }, null, false);
 
             Button deleteData = FindViewById<Button>(Resource.Id.btn_delete_user_data);
             SetTypeface(deleteData, "FTLTLT.TTF");
@@ -63,18 +68,28 @@ namespace Atropos
         }
     }
 
-    public class SelectorActivity : Activity
+    public class SelectorActivity : Activity, IRelayToasts
     {
         public virtual int layoutID { get; set; }
+        private static SelectorActivity _currentActivity;
+        public static SelectorActivity CurrentActivity
+        {
+            get { return _currentActivity; }
+            set { _currentActivity = value; BaseActivity.CurrentToaster = value; }
+        }
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
 
             SetContentView(layoutID);
+            CurrentActivity = this;
         }
 
-
+        public void RelayToast(string message, ToastLength length = ToastLength.Short)
+        {
+            RunOnUiThread(() => { Toast.MakeText(this, message, length).Show(); });
+        }
 
         public override bool OnCreateOptionsMenu(IMenu menu)
         {
@@ -85,7 +100,6 @@ namespace Atropos
 
         public override bool OnOptionsItemSelected(IMenuItem item)
         {
-            Intent intent;
             switch (item.ItemId)
             {
                 case Resource.Id.menuaction_character:
@@ -95,34 +109,29 @@ namespace Atropos
                 //    Toast.MakeText(this, Resource.String.popup_placeholder_nfc, ToastLength.Short).Show();
                 //    return true;
                 case Resource.Id.menuaction_wifi:
-                    intent = new Intent(this, typeof(Communications.WiFiDirectActivity));
-                    intent.AddFlags(ActivityFlags.SingleTop);
-                    intent.AddFlags(ActivityFlags.NewTask);
-                    StartActivity(intent);
+                    LaunchDirectly(typeof(Communications.WiFiDirectActivity));
                     return true;
                 case Resource.Id.menuaction_settings:
-                    intent = new Intent(this, typeof(SettingsActivity));
-                    intent.AddFlags(ActivityFlags.NewTask);
-                    intent.AddFlags(ActivityFlags.SingleTop);
-                    StartActivity(intent);
+                    LaunchDirectly(typeof(SettingsActivity));
                     return true;
                 default:
                     return base.OnOptionsItemSelected(item);
             }
         }
 
-        protected void SetupButton(int resId, Action action, bool isImplemented = true)
+        protected void SetupButton(int resId, Action action, object extradata = null, bool isImplemented = true)
         {
             View v = FindViewById(resId);
-            SetupButton(v, action, isImplemented);
+            SetupButton(v, action, extradata, isImplemented);
         }
-        protected void SetupButton(View sourceView, Action action, bool isImplemented = true)
+        protected void SetupButton(View sourceView, Action action, object extradata = null, bool isImplemented = true)
         {
             SetTypeface(sourceView, "FTLTLT.TTF");
             if (isImplemented)
             {
                 sourceView.Click += (o, e) =>
                 {
+                    extraData = extradata;
                     action?.Invoke();
                 };
             }
@@ -135,40 +144,40 @@ namespace Atropos
             }
         }
 
-        protected void SetupButton(int resId, Res.InteractionMode mode, bool isImplemented = true)
+        //protected void SetupButton(int resId, Res.InteractionMode mode, object extradata = null, bool isImplemented = true)
+        //{
+        //    View v = FindViewById(resId);
+        //    SetupButton(v, mode, extradata, isImplemented);
+        //}
+        //protected void SetupButton(View sourceView, Res.InteractionMode mode, object extradata = null, bool isImplemented = true)
+        //{
+        //    SetupButton(sourceView, 
+        //        () => 
+        //        {
+        //            //LaunchDirectly(this, new EventArgs<Res.InteractionMode>(mode));
+        //            ActOnFoundTagActivity.LaunchActivity(this, mode, mode.Name + "0000", mode.Directive);
+        //        }, 
+        //        isImplemented);
+        //    //SetTypeface(sourceView, "FTLTLT.TTF");
+        //    //if (isImplemented)
+        //    //{
+        //    //    sourceView.Click += (o, e) =>
+        //    //    {
+        //    //        LaunchDirectly(this, new EventArgs<Res.InteractionMode>(mode));
+        //    //    };
+        //    //}
+        //    //else
+        //    //{
+        //    //    sourceView.Click += (o, e) =>
+        //    //    {
+        //    //        Toast.MakeText(this, Resource.String.popup_option_not_available, ToastLength.Short).Show();
+        //    //    };
+        //    //}
+        //}
+        protected void SetupButton(int resId, Type activity, object extradata = null, bool isImplemented = true)
         {
             View v = FindViewById(resId);
-            SetupButton(v, mode, isImplemented);
-        }
-        protected void SetupButton(View sourceView, Res.InteractionMode mode, bool isImplemented = true)
-        {
-            SetupButton(sourceView, 
-                () => 
-                {
-                    //LaunchDirectly(this, new EventArgs<Res.InteractionMode>(mode));
-                    ActOnFoundTagActivity.LaunchActivity(this, mode, mode.Name + "0000", mode.Directive);
-                }, 
-                isImplemented);
-            //SetTypeface(sourceView, "FTLTLT.TTF");
-            //if (isImplemented)
-            //{
-            //    sourceView.Click += (o, e) =>
-            //    {
-            //        LaunchDirectly(this, new EventArgs<Res.InteractionMode>(mode));
-            //    };
-            //}
-            //else
-            //{
-            //    sourceView.Click += (o, e) =>
-            //    {
-            //        Toast.MakeText(this, Resource.String.popup_option_not_available, ToastLength.Short).Show();
-            //    };
-            //}
-        }
-        protected void SetupButton(int resId, Type activity, bool isImplemented = true)
-        {
-            View v = FindViewById(resId);
-            SetupButton(v, activity, isImplemented);
+            SetupButton(v, activity, extradata, isImplemented);
             //SetTypeface(v, "FTLTLT.TTF");
             //if (isImplemented)
             //{
@@ -188,24 +197,26 @@ namespace Atropos
             //    };
             //}
         }
-        protected void SetupButton(View sourceView, Type activity, bool isImplemented = true)
+        protected void SetupButton(View sourceView, Type activity, object extradata = null, bool isImplemented = true)
         {
             SetupButton(sourceView,
                 () =>
                 {
-                    var intent = new Intent(Application.Context, activity);
-                    intent.AddFlags(ActivityFlags.SingleTop);
-                    intent.AddFlags(ActivityFlags.NewTask);
-                    Application.Context.StartActivity(intent);
+                    LaunchDirectly(activity, extradata);
                 },
+                extradata,
                 isImplemented);
         }
 
-        //protected void LaunchDirectly(object sender, EventArgs<Res.InteractionMode> args)
-        //{
-        //    var selectedMode = args.Value;
-        //    ActOnFoundTagActivity.LaunchActivity(this, selectedMode, selectedMode.Name + "0000", selectedMode.Directive);
-        //}
+        public static object extraData = null;
+        protected void LaunchDirectly(Type activity, object extraData = null)
+        {
+            SelectorActivity.extraData = extraData;
+            var intent = new Intent(Application.Context, activity);
+            intent.AddFlags(ActivityFlags.SingleTop);
+            intent.AddFlags(ActivityFlags.NewTask);
+            Application.Context.StartActivity(intent);
+        }
 
         protected void SetTypeface(int resId, string fontFilename)
         {

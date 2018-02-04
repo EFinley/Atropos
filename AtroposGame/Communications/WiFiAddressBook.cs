@@ -16,6 +16,7 @@ using MiscUtil;
 using Nito.AsyncEx;
 using System.Threading;
 using System.Reflection;
+using Role = Atropos.Characters.Role;
 
 namespace Atropos.Communications
 {

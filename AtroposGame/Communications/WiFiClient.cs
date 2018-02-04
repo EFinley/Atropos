@@ -17,6 +17,7 @@ using Android.Util;
 using Java.Net;
 using System.Threading;
 using MiscUtil;
+using Role = Atropos.Characters.Role;
 
 namespace Atropos.Communications
 {
@@ -188,7 +189,7 @@ namespace Atropos.Communications
             while (!StopToken.IsCancellationRequested)
             {
                 // Get the next message
-                var data = ReadString(inStream, outStream).Split(onNEXT, 3);
+                var data = ReadString(inStream, outStream).Split(onNEXT, 3); // Limiting it to three split pieces means that all the NEXTs inside the message (which is the third piece) remain intact.
                 if (data.Length != 3)
                 {
                     Log.Debug(_tag, $"Data has <3 entries; [0] is {data.ElementAtOrDefault(0)}, [1] is {data.ElementAtOrDefault(1)}, [2] is {data.ElementAtOrDefault(2)}");

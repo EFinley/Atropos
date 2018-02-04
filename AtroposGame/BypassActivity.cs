@@ -22,6 +22,9 @@ using System.Threading;
 using Nito.AsyncEx;
 using Android.Graphics;
 using Android.Views;
+using MiscUtil;
+using ZXing.Mobile;
+using ZXing;
 
 namespace Atropos
 {
@@ -46,6 +49,12 @@ namespace Atropos
 
         private BypassInfoPanel InfoPanel;
         public TextView OutputText;
+
+        public static event EventHandler<EventArgs<string>> OnBypassCompleted;  // <string> simply because it's not worth re-coding Raise() to handle EventArgs without-generic-argument type.
+        public static event EventHandler<EventArgs<string>> OnBypassSuccessful; // ditto
+        public static event EventHandler<EventArgs<string>> OnBypassFailed;     // ditto
+        public static void AnnounceSuccess(string details) { OnBypassSuccessful.Raise(details); }
+        public static void AnnounceFailure(string details) { OnBypassFailed.Raise(details); }
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
@@ -72,13 +81,16 @@ namespace Atropos
                 ThePlayersToolkit = new Toolkit(InteractionLibrary.CurrentSpecificTag);
             }
 
-            Security.Initialize(this);
-            InfoPanel = new BypassInfoPanel(this, Security.Panel);
+            SecurityPanel.Initialize(this);
+            InfoPanel = new BypassInfoPanel(this, SecurityPanel.CurrentPanel);
             SetTypeface(Resource.Id.display_bypass_info_headertext, "FTLTLT.TTF"); 
             CurrentStage = GestureRecognizerStage.NullStage;
 
             WhistleFX = new Effect("Whistle", Resource.Raw._98195_whistling);
             FindViewById(Resource.Id.choice_bypass_examine).CallOnClick();
+
+            OnBypassSuccessful += (o, e) => { OnBypassCompleted.Raise(e.Value); };
+            OnBypassFailed += (o, e) => { OnBypassCompleted.Raise(e.Value); };
         }
 
         protected override void OnResume()
@@ -105,6 +117,33 @@ namespace Atropos
 
             Toast.MakeText(this, "Cracking open the bypass tools.  Select a tool onscreen.  Note, sometimes you'll get further information from repeating a measurement.", ToastLength.Long).Show();
             EnableForegroundDispatch();
+
+            //Task.Delay(50).ContinueWith(_ =>
+            //{
+            //    RunOnUiThread(() => 
+            //    { 
+            //        var SelfView = InfoPanel.SelfView;
+            //        var bmp = BitmapFactory.DecodeResource(Application.Context.Resources, Resource.Drawable.securitypanel_gray);
+            //        var ht = bmp.Height;
+            //        var wd = bmp.Width;
+            //        var lp = SelfView.LayoutParameters;
+            //        var selfWd = SelfView.MeasuredWidth;
+            //        lp.Height = (int)(lp.Width * (double)ht / wd);
+            //        Log.Debug("BypassInfoPanel", $"Ht = {ht}, wd = {wd}, selfWd = {selfWd}");
+            //        //SelfView.Measure(selfWd, (int)((double)selfWd * (double)ht / (double)wd));
+            //        //SelfView.SetMinimumHeight((int)((double)selfWd * (double)ht / (double)wd));
+
+            //        SelfView.LayoutParameters = lp;
+            //        FindViewById(Resource.Id.linearLayout1).RequestLayout();
+            //    });
+            //});
+
+            if (UseQRScanner)
+            {
+                var scanBtn = FindViewById<RelativeLayout>(Resource.Id.choice_bypass_scanQR);
+                scanBtn.Visibility = ViewStates.Visible;
+                scanBtn.Click += (o, e) => { StartScanning(); };
+            }
         }
 
         protected override void OnPause()
@@ -121,11 +160,11 @@ namespace Atropos
             //var buttonC = FindViewById<Button>(Resource.Id.buttonC);
             //var buttonD = FindViewById<Button>(Resource.Id.buttonD);
 
-            var curr = CurrentStage as Toolkit_StageBase;
-            Security.Panel.NodeForTag.Add("buttonA", Security.Panel.Nodes.SingleOrDefault(n => n.Code == "A"));
-            Security.Panel.NodeForTag.Add("buttonB", Security.Panel.Nodes.SingleOrDefault(n => n.Code == "B"));
-            Security.Panel.NodeForTag.Add("buttonC", Security.Panel.Nodes.SingleOrDefault(n => n.Code == "C"));
-            Security.Panel.NodeForTag.Add("buttonD", Security.Panel.Nodes.SingleOrDefault(n => n.Code == "D"));
+            //var curr = CurrentStage as Toolkit_StageBase;
+            //SecurityPanel.CurrentPanel.NodeForTag.Add("buttonA", SecurityPanel.CurrentPanel.Nodes.SingleOrDefault(n => n.Code == "A"));
+            //SecurityPanel.CurrentPanel.NodeForTag.Add("buttonB", SecurityPanel.CurrentPanel.Nodes.SingleOrDefault(n => n.Code == "B"));
+            //SecurityPanel.CurrentPanel.NodeForTag.Add("buttonC", SecurityPanel.CurrentPanel.Nodes.SingleOrDefault(n => n.Code == "C"));
+            //SecurityPanel.CurrentPanel.NodeForTag.Add("buttonD", SecurityPanel.CurrentPanel.Nodes.SingleOrDefault(n => n.Code == "D"));
 
             //buttonA.Click += async (o, e) =>
             //{
@@ -172,38 +211,42 @@ namespace Atropos
             //    };
             //}
 
-            AssignStageToButton(Resource.Id.choice_bypass_multimeter, new Toolkit_MultimeterStage());
-            AssignStageToButton(Resource.Id.choice_bypass_soldering, new Toolkit_SolderingStage());
-            AssignStageToButton(Resource.Id.choice_bypass_examine, new Toolkit_ExamineStage());
-            AssignStageToButton(Resource.Id.choice_bypass_wirecutting, new Toolkit_WirecutterStage());
+            //AssignStageToButton(Resource.Id.choice_bypass_multimeter, new Toolkit_MultimeterStage());
+            //AssignStageToButton(Resource.Id.choice_bypass_soldering, new Toolkit_SolderingStage());
+            //AssignStageToButton(Resource.Id.choice_bypass_examine, new Toolkit_ExamineStage());
+            //AssignStageToButton(Resource.Id.choice_bypass_wirecutting, new Toolkit_WirecutterStage());
 
-            //AssignStageToButton(Resource.Id.choice_bypass_multimeter, () => { InfoPanel.SetUpMeasureMode(); });
-            //AssignStageToButton(Resource.Id.choice_bypass_soldering, () => { InfoPanel.SetUpSolderMode(); });
-            //AssignStageToButton(Resource.Id.choice_bypass_examine, () => { InfoPanel.SetUpExamineMode(); });
-            //AssignStageToButton(Resource.Id.choice_bypass_wirecutting, () => { InfoPanel.SetUpWirecutterMode(); });
+            AssignStageToButton(Resource.Id.choice_bypass_multimeter, () => { InfoPanel.SetUpMeasureMode(); });
+            AssignStageToButton(Resource.Id.choice_bypass_soldering, () => { InfoPanel.SetUpSolderMode(); });
+            AssignStageToButton(Resource.Id.choice_bypass_examine, () => { InfoPanel.SetUpExamineMode(); });
+            AssignStageToButton(Resource.Id.choice_bypass_wirecutting, () => { InfoPanel.SetUpWirecutterMode(); });
         }
 
-        private void AssignStageToButton(int ButtonId, Toolkit_StageBase stageToLaunch)
-        //private void AssignStageToButton(int ButtonId, Action SetButtonResult)
+        //private void AssignStageToButton(int ButtonId, Toolkit_StageBase stageToLaunch)
+        private void AssignStageToButton(int ButtonId, Action SetButtonResult)
         {
             var Btn = FindViewById<RelativeLayout>(ButtonId);
             ToolButtons.Add(Btn);
             SetTypeface(Btn, "FTLTLT.TTF");
             Btn.Click += (o, e) =>
             {
-                if (CurrentStage != GestureRecognizerStage.NullStage) CurrentStage.Deactivate();
-                CurrentStage = stageToLaunch;
-                CurrentStage.Activate();
+                //if (CurrentStage != GestureRecognizerStage.NullStage) CurrentStage.Deactivate();
+                //CurrentStage = stageToLaunch;
+                //CurrentStage.Activate();
                 foreach (RelativeLayout btn in ToolButtons)
                 {
-                    if (btn.Id == ButtonId) btn.Visibility = ViewStates.Gone;
-                    else btn.Visibility = ViewStates.Visible;
+                    //if (btn.Id == ButtonId) btn.Visibility = ViewStates.Gone;
+                    //else btn.Visibility = ViewStates.Visible;
+                    btn.Enabled = (btn.Id != ButtonId);
                 }
-                //SetButtonResult.Invoke();
+
+                InfoPanel.FirstNode = InfoPanel.SecondNode = SecurityPanelNode.Unknown;
+                SetButtonResult.Invoke();
+                InfoPanel.RecognizeNode(SecurityPanelNode.Unknown);
             };
         }
 
-        #region Imported from SelectorActivity
+        #region SetTypeface - imported from SelectorActivity
         protected void SetTypeface(int resId, string fontFilename)
         {
             var tgtView = FindViewById(resId);
@@ -270,9 +313,9 @@ namespace Atropos
         /// <param name="intent">The Intent representing the occurrence of "hey, we spotted an NFC!"</param>
         protected override async void OnNewIntent(Intent intent)
         {
-            // Checks to make sure we're actually in a toolkit mode, and so that we know which one we're in later.
-            var curr = CurrentStage as Toolkit_StageBase;
-            if (curr == null) return;
+            //// Checks to make sure we're actually in a toolkit mode, and so that we know which one we're in later.
+            //var curr = CurrentStage as Toolkit_StageBase;
+            //if (curr == null) return;
 
             var nfcTag = InteractionLibrary.CurrentTagHandle = intent.GetParcelableExtra(NfcAdapter.ExtraTag) as Tag;
 
@@ -290,213 +333,214 @@ namespace Atropos
 
             string s = (Res.InteractionModes.ContainsKey(_nfcTagInteractionMode))
                 ? ", which is in the Mode library." 
-                : (Security.Panel.Nodes.Select(n => n.Code).Contains(_nfcTagInteractionMode))
+                : (SecurityPanel.CurrentPanel.Nodes.Select(n => n.Code).Contains(_nfcTagInteractionMode))
                     ? ", which matches a known security panel node." 
                     : ", which is unknown.";
             Log.Debug("Toolkit Use", $"Found tag #{nfcID}. Defined interaction mode is {_nfcTagInteractionMode}{s}");
 
             if (_nfcTagInteractionMode.Length == 1) // TODO: Make this more official.  But for now, one letter means a hotspot.
             {
-                if (!Security.Panel.NodeForTag.ContainsKey(_nfcTagID))
-                    Security.Panel.NodeForTag.Add(_nfcTagID, Security.Panel.Nodes.SingleOrDefault(n => n.Code == _nfcTagInteractionMode));
-                 
-                await curr.ActOnTag(_nfcTagID);
+                if (!SecurityPanel.CurrentPanel.NodeForTag.ContainsKey(_nfcTagID))
+                    SecurityPanel.CurrentPanel.NodeForTag.Add(_nfcTagID, SecurityPanel.CurrentPanel.Nodes.SingleOrDefault(n => n.Code == _nfcTagInteractionMode));
+
+                //await curr.ActOnTag(_nfcTagID);
+                InfoPanel.RecognizeNode(SecurityPanel.CurrentPanel.NodeForTag[_nfcTagID]);
                 soonestTapAllowed = DateTime.Now + minimumInterval;
             }
         }
 
-        private class Toolkit_StageBase : GestureRecognizerStage
-        {
-            protected StillnessProvider Stillness;
-            public Toolkit_StageBase(string label, bool autoStart = false) : base(label)
-            {
-                Stillness = new StillnessProvider();
-                SetUpProvider(Stillness);
-                Kit = Current.ThePlayersToolkit;
+        //private class Toolkit_StageBase : GestureRecognizerStage
+        //{
+        //    protected StillnessProvider Stillness;
+        //    public Toolkit_StageBase(string label, bool autoStart = false) : base(label)
+        //    {
+        //        Stillness = new StillnessProvider();
+        //        SetUpProvider(Stillness);
+        //        Kit = Current.ThePlayersToolkit;
 
-                if (autoStart) Activate();
-            }
-            public CancellationTokenSource TagRemovalCTS = new CancellationTokenSource();
-            protected Toolkit Kit;
+        //        if (autoStart) Activate();
+        //    }
+        //    public CancellationTokenSource TagRemovalCTS = new CancellationTokenSource();
+        //    protected Toolkit Kit;
 
-            protected string TutorialMessage;
+        //    protected string TutorialMessage;
 
-            protected override async Task startActionAsync()
-            {
-                //CurrentActivity.SetTagRemovalResult(TagRemovalCTS.Cancel, 0.5, 0.1);
-                //await Speech.SayAllOf(TutorialMessage);
-                //ToastMessage(TutorialMessage);
-                if (TutorialMessage != "") Toast.MakeText(Application.Context, TutorialMessage, ToastLength.Long).Show();
-                TutorialMessage = "";
-            }
-            protected override bool interimCriterion()
-            {
-                return true;
-            }
+        //    protected override async Task startActionAsync()
+        //    {
+        //        //CurrentActivity.SetTagRemovalResult(TagRemovalCTS.Cancel, 0.5, 0.1);
+        //        //await Speech.SayAllOf(TutorialMessage);
+        //        //ToastMessage(TutorialMessage);
+        //        if (TutorialMessage != "") Toast.MakeText(Application.Context, TutorialMessage, ToastLength.Long).Show();
+        //        TutorialMessage = "";
+        //    }
+        //    protected override bool interimCriterion()
+        //    {
+        //        return true;
+        //    }
 
-            protected override async Task interimActionAsync()
-            {
-                await Task.Delay(50);
-            }
+        //    protected override async Task interimActionAsync()
+        //    {
+        //        await Task.Delay(50);
+        //    }
 
-            protected bool AwaitingSecondTagOfSequence = false;
-            protected static SecurityPanelNode lastNode;
-            protected virtual async Task ActOnFirstTag(SecurityPanelNode node1)
-                { await Task.CompletedTask; }
-            protected virtual async Task ActOnSecondTag(SecurityPanelNode node2)
-                { await Task.CompletedTask; }
-            public async Task ActOnTag(string tagID)
-            {
-                var node = Security.Panel.NodeForTag[tagID];
-                CurrentActivity.FindViewById<TextView>(Resource.Id.display_bypass_info_headertext).Text = node.Name;
-                if (!AwaitingSecondTagOfSequence)
-                    { await ActOnFirstTag(node); AwaitingSecondTagOfSequence = true; }
-                else
-                    { await ActOnSecondTag(node); AwaitingSecondTagOfSequence = false; }
-                lastNode = node;
+        //    protected bool AwaitingSecondTagOfSequence = false;
+        //    protected static SecurityPanelNode lastNode;
+        //    protected virtual async Task ActOnFirstTag(SecurityPanelNode node1)
+        //        { await Task.CompletedTask; }
+        //    protected virtual async Task ActOnSecondTag(SecurityPanelNode node2)
+        //        { await Task.CompletedTask; }
+        //    public async Task ActOnTag(string tagID)
+        //    {
+        //        var node = SecurityPanel.CurrentPanel.NodeForTag[tagID];
+        //        CurrentActivity.FindViewById<TextView>(Resource.Id.display_bypass_info_headertext).Text = node.Name;
+        //        if (!AwaitingSecondTagOfSequence)
+        //            { await ActOnFirstTag(node); AwaitingSecondTagOfSequence = true; }
+        //        else
+        //            { await ActOnSecondTag(node); AwaitingSecondTagOfSequence = false; }
+        //        lastNode = node;
 
-            }
+        //    }
 
-            protected void ToastMessage(string message)
-            {
-                //if (message != "") Toast.MakeText(Application.Context, message, ToastLength.Short).Show();
-                //if (message != "") (CurrentActivity as BypassActivity)?.OutputText.SetText(message, TextView.BufferType.Normal);
-                if (message != "") (CurrentActivity as BypassActivity).OutputText.Text = message;
-            }
-            //public virtual void DoOnLongHold()
-            //{
-            //    throw new NotImplementedException();
-            //}
-            //public virtual async void ActOnLongHold()
-            //{
-            //    var combinedToken = Nito.AsyncEx.CancellationTokenHelpers.Normalize(StopToken, TagRemovalCTS.Token).Token;
-            //    await Task.Delay(2000, combinedToken)
-            //        .ContinueWith((t) => DoOnLongHold(), TaskContinuationOptions.OnlyOnRanToCompletion);
-            //}
-        }
+        //    protected void ToastMessage(string message)
+        //    {
+        //        //if (message != "") Toast.MakeText(Application.Context, message, ToastLength.Short).Show();
+        //        //if (message != "") (CurrentActivity as BypassActivity)?.OutputText.SetText(message, TextView.BufferType.Normal);
+        //        if (message != "") (CurrentActivity as BypassActivity).OutputText.Text = message;
+        //    }
+        //    //public virtual void DoOnLongHold()
+        //    //{
+        //    //    throw new NotImplementedException();
+        //    //}
+        //    //public virtual async void ActOnLongHold()
+        //    //{
+        //    //    var combinedToken = Nito.AsyncEx.CancellationTokenHelpers.Normalize(StopToken, TagRemovalCTS.Token).Token;
+        //    //    await Task.Delay(2000, combinedToken)
+        //    //        .ContinueWith((t) => DoOnLongHold(), TaskContinuationOptions.OnlyOnRanToCompletion);
+        //    //}
+        //}
 
-        private class Toolkit_ExamineStage : Toolkit_StageBase
-        {
-            public Toolkit_ExamineStage(bool autoStart = false) : base("Examine", autoStart)
-            {
-                TutorialMessage = "Examine tool: basic descriptions.";
-            }
-            public static bool TutorialHasBeenGiven { get; set; } = false;
-            protected override async Task ActOnFirstTag(SecurityPanelNode node)
-            {
-                AwaitingSecondTagOfSequence = false; // Doesn't have 'em.
-                //if (node != lastNode && DateTime.Now > node.ShortExamineGivenAt + TimeSpan.FromSeconds(5))
-                //{
-                //    //await Speech.SayAllOf(node.ShortExamineResult);
-                //    ToastMessage(node.ShortExamineResult);
-                //    node.ShortExamineGivenAt = DateTime.Now;
-                //}
-                //else if (DateTime.Now > node.LongExamineGivenAt + TimeSpan.FromSeconds(5)
-                //    && DateTime.Now > node.ShortExamineGivenAt + TimeSpan.FromSeconds(2))
-                //{
-                //    //await Speech.SayAllOf(node.LongExamineResult);
-                //    ToastMessage(node.LongExamineResult);
-                //    node.LongExamineGivenAt = DateTime.Now;
-                //}
-                ToastMessage(node.Results[node.NumberOfTimesExamined]);
-                node.NumberOfTimesExamined++;
-            }
-        }
+        //private class Toolkit_ExamineStage : Toolkit_StageBase
+        //{
+        //    public Toolkit_ExamineStage(bool autoStart = false) : base("Examine", autoStart)
+        //    {
+        //        TutorialMessage = "Examine tool: basic descriptions.";
+        //    }
+        //    public static bool TutorialHasBeenGiven { get; set; } = false;
+        //    protected override async Task ActOnFirstTag(SecurityPanelNode node)
+        //    {
+        //        AwaitingSecondTagOfSequence = false; // Doesn't have 'em.
+        //        //if (node != lastNode && DateTime.Now > node.ShortExamineGivenAt + TimeSpan.FromSeconds(5))
+        //        //{
+        //        //    //await Speech.SayAllOf(node.ShortExamineResult);
+        //        //    ToastMessage(node.ShortExamineResult);
+        //        //    node.ShortExamineGivenAt = DateTime.Now;
+        //        //}
+        //        //else if (DateTime.Now > node.LongExamineGivenAt + TimeSpan.FromSeconds(5)
+        //        //    && DateTime.Now > node.ShortExamineGivenAt + TimeSpan.FromSeconds(2))
+        //        //{
+        //        //    //await Speech.SayAllOf(node.LongExamineResult);
+        //        //    ToastMessage(node.LongExamineResult);
+        //        //    node.LongExamineGivenAt = DateTime.Now;
+        //        //}
+        //        ToastMessage(node.Results[node.NumberOfTimesExamined]);
+        //        node.NumberOfTimesExamined++;
+        //    }
+        //}
 
-        private class Toolkit_MultimeterStage : Toolkit_StageBase
-        {
-            public Toolkit_MultimeterStage(bool autoStart = false) : base("Multimeter", autoStart)
-            {
-                TutorialMessage = "Multimeter tool: measures what's passing from point A to point B.  Tap them in that order. The opposite order is a different piece of information.";
-            }
-            public static bool TutorialHasBeenGiven { get; set; } = false;
-            private static Effect _measureEffect;
-            public static Effect MeasureEffect
-            {
-                get
-                {
-                    if (_measureEffect == null)
-                    {
-                        _measureEffect = new Effect("Multimeter.Measure", Resource.Raw._37847_infiniteauubergine);
-                    }
-                    return _measureEffect;
-                }
-            }
-            protected override async Task ActOnFirstTag(SecurityPanelNode node)
-            {
-                MeasureEffect.Play(0.2, true);
-                await Task.CompletedTask;
-            }
-            protected override async Task ActOnSecondTag(SecurityPanelNode node2)
-            {
-                MeasureEffect.Stop();
-                var link = Security.Panel.Linkages[lastNode, node2];
-                //if (link.ShortMultimeterGivenAt == null || link.ShortMultimeterGivenAt + TimeSpan.FromSeconds(10) < DateTime.Now)
-                //{
-                //    //await Speech.SayAllOf(link.ShortMultimeterResult);
-                //    ToastMessage(link.ShortMultimeterResult);
-                //    link.ShortMultimeterGivenAt = DateTime.Now;
-                //}
-                //else if (link.LongMultimeterGivenAt + TimeSpan.FromSeconds(10) < DateTime.Now)
-                //{
-                //    //await Speech.SayAllOf(link.LongMultimeterResult);
-                //    ToastMessage(link.LongMultimeterResult);
-                //    link.LongMultimeterGivenAt = DateTime.Now;
-                //}
-                ToastMessage(link.MeasureResults[link.NumberOfTimesMultimetered]);
-                link.NumberOfTimesMultimetered++;
-            }
-        }
+        //private class Toolkit_MultimeterStage : Toolkit_StageBase
+        //{
+        //    public Toolkit_MultimeterStage(bool autoStart = false) : base("Multimeter", autoStart)
+        //    {
+        //        TutorialMessage = "Multimeter tool: measures what's passing from point A to point B.  Tap them in that order. The opposite order is a different piece of information.";
+        //    }
+        //    public static bool TutorialHasBeenGiven { get; set; } = false;
+        //    private static Effect _measureEffect;
+        //    public static Effect MeasureEffect
+        //    {
+        //        get
+        //        {
+        //            if (_measureEffect == null)
+        //            {
+        //                _measureEffect = new Effect("Multimeter.Measure", Resource.Raw._37847_infiniteauubergine);
+        //            }
+        //            return _measureEffect;
+        //        }
+        //    }
+        //    protected override async Task ActOnFirstTag(SecurityPanelNode node)
+        //    {
+        //        MeasureEffect.Play(0.2, true);
+        //        await Task.CompletedTask;
+        //    }
+        //    protected override async Task ActOnSecondTag(SecurityPanelNode node2)
+        //    {
+        //        MeasureEffect.Stop();
+        //        var link = SecurityPanel.CurrentPanel.Linkages[lastNode, node2];
+        //        //if (link.ShortMultimeterGivenAt == null || link.ShortMultimeterGivenAt + TimeSpan.FromSeconds(10) < DateTime.Now)
+        //        //{
+        //        //    //await Speech.SayAllOf(link.ShortMultimeterResult);
+        //        //    ToastMessage(link.ShortMultimeterResult);
+        //        //    link.ShortMultimeterGivenAt = DateTime.Now;
+        //        //}
+        //        //else if (link.LongMultimeterGivenAt + TimeSpan.FromSeconds(10) < DateTime.Now)
+        //        //{
+        //        //    //await Speech.SayAllOf(link.LongMultimeterResult);
+        //        //    ToastMessage(link.LongMultimeterResult);
+        //        //    link.LongMultimeterGivenAt = DateTime.Now;
+        //        //}
+        //        ToastMessage(link.MeasureResults[link.NumberOfTimesMultimetered]);
+        //        link.NumberOfTimesMultimetered++;
+        //    }
+        //}
 
-        private class Toolkit_WirecutterStage : Toolkit_StageBase
-        {
-            public Toolkit_WirecutterStage(bool autoStart = false) : base("WireCutters", autoStart)
-            {
-                TutorialMessage = "Wirecutter tool: Cut the connection from point A to point B.  Hover over them in that order.";
-            }
-            public static bool TutorialHasBeenGiven { get; set; } = false;
-            protected override async Task ActOnFirstTag(SecurityPanelNode node)
-            {
-                await Task.CompletedTask;
-            }
-            protected override async Task ActOnSecondTag(SecurityPanelNode node2)
-            {
-                var link = Security.Panel.Linkages[lastNode, node2];
-                if (!link.IsLinked)
-                {
-                    //await Speech.SayAllOf("Hmmm.  There's no link there to cut.");
-                    ToastMessage("Hmm. There's no link there to cut.");
-                    return;
-                }
-                link.WirecutterResult?.Invoke();
-                link.IsLinked = false;
-            }
-        }
+        //private class Toolkit_WirecutterStage : Toolkit_StageBase
+        //{
+        //    public Toolkit_WirecutterStage(bool autoStart = false) : base("WireCutters", autoStart)
+        //    {
+        //        TutorialMessage = "Wirecutter tool: Cut the connection from point A to point B.  Hover over them in that order.";
+        //    }
+        //    public static bool TutorialHasBeenGiven { get; set; } = false;
+        //    protected override async Task ActOnFirstTag(SecurityPanelNode node)
+        //    {
+        //        await Task.CompletedTask;
+        //    }
+        //    protected override async Task ActOnSecondTag(SecurityPanelNode node2)
+        //    {
+        //        var link = SecurityPanel.CurrentPanel.Linkages[lastNode, node2];
+        //        if (!link.IsLinked)
+        //        {
+        //            //await Speech.SayAllOf("Hmmm.  There's no link there to cut.");
+        //            ToastMessage("Hmm. There's no link there to cut.");
+        //            return;
+        //        }
+        //        link.WirecutterResult?.Invoke();
+        //        link.IsLinked = false;
+        //    }
+        //}
 
-        private class Toolkit_SolderingStage : Toolkit_StageBase
-        {
-            public Toolkit_SolderingStage(bool autoStart = false) : base("Soldering", autoStart)
-            {
-                TutorialMessage = "Soldering Iron: Creates a link from point A to point B.";
-            }
-            public static bool TutorialHasBeenGiven { get; set; } = false;
-            protected override async Task ActOnFirstTag(SecurityPanelNode node)
-            {
-                await Task.CompletedTask;
-            }
-            protected override async Task ActOnSecondTag(SecurityPanelNode node2)
-            {
-                var link = Security.Panel.Linkages[lastNode, node2];
-                if (link.IsLinked)
-                {
-                    //await Speech.SayAllOf("Hmm? There's; already; a link between those nodes.");
-                    ToastMessage("Hmm? There's *already* a link between those nodes.");
-                    return;
-                }
-                link.SolderingResult?.Invoke();
-                link.IsLinked = true;
-            }
-        }
+        //private class Toolkit_SolderingStage : Toolkit_StageBase
+        //{
+        //    public Toolkit_SolderingStage(bool autoStart = false) : base("Soldering", autoStart)
+        //    {
+        //        TutorialMessage = "Soldering Iron: Creates a link from point A to point B.";
+        //    }
+        //    public static bool TutorialHasBeenGiven { get; set; } = false;
+        //    protected override async Task ActOnFirstTag(SecurityPanelNode node)
+        //    {
+        //        await Task.CompletedTask;
+        //    }
+        //    protected override async Task ActOnSecondTag(SecurityPanelNode node2)
+        //    {
+        //        var link = SecurityPanel.CurrentPanel.Linkages[lastNode, node2];
+        //        if (link.IsLinked)
+        //        {
+        //            //await Speech.SayAllOf("Hmm? There's; already; a link between those nodes.");
+        //            ToastMessage("Hmm? There's *already* a link between those nodes.");
+        //            return;
+        //        }
+        //        link.SolderingResult?.Invoke();
+        //        link.IsLinked = true;
+        //    }
+        //}
 
         protected class BypassInfoPanel
         {
@@ -505,18 +549,19 @@ namespace Atropos
             protected ImageView BackgroundImageView, BackgroundOverlay;
             protected TextView HeaderTextView, DetailTextView;
             protected SurfaceView Canvas;
-            protected ImageButton ModalOne, ModalTwo, ModalThree;
+            protected ImageButton InSituMeasure, InSituSolder, InSituWirecut, InSituCancel;
             
             protected string HeaderText { get { return HeaderTextView?.Text; } set { HeaderTextView?.SetText(value, TextView.BufferType.Normal); } }
             protected string DetailText { get { return DetailTextView?.Text; } set { DetailTextView?.SetText(value, TextView.BufferType.Normal); } }
 
-            public Security SecurityPanel;
+            public SecurityPanel SecurityPanel;
             public SecurityPanelNode FirstNode = SecurityPanelNode.Unknown,
                                      SecondNode = SecurityPanelNode.Unknown;
-            public SecurityPanelNodeLink NodeLink;
+            public SecurityPanelNodeLink NodeLink { get; set; }
+            protected SecurityPanelNodeLink GetNodeLink() { return NodeLink; }
             protected bool AllowSecondNode = false;
 
-            public BypassInfoPanel(Activity parent, Security securityPanel)
+            public BypassInfoPanel(Activity parent, SecurityPanel securityPanel)
             {
                 Parent = parent;
                 SecurityPanel = securityPanel;
@@ -527,15 +572,56 @@ namespace Atropos
                 HeaderTextView = SelfView.FindViewById<TextView>(Resource.Id.display_bypass_info_headertext);
                 DetailTextView = SelfView.FindViewById<TextView>(Resource.Id.display_bypass_info_detailtext);
                 //Canvas = SelfView.FindViewById<SurfaceView>(Resource.Id.display_bypass_canvas);
-                //ModalOne = SelfView.FindViewById<ImageButton>(Resource.Id.display_bypass_modalbutton1);
-                //ModalTwo = SelfView.FindViewById<ImageButton>(Resource.Id.display_bypass_modalbutton2);
-                //ModalThree = SelfView.FindViewById<ImageButton>(Resource.Id.display_bypass_modalbutton3);
+                InSituMeasure = SelfView.FindViewById<ImageButton>(Resource.Id.display_bypass_insituMeasure);
+                InSituSolder = SelfView.FindViewById<ImageButton>(Resource.Id.display_bypass_insituSolder);
+                InSituWirecut = SelfView.FindViewById<ImageButton>(Resource.Id.display_bypass_insituWirecut);
+                InSituCancel = SelfView.FindViewById<ImageButton>(Resource.Id.display_bypass_insituCancel);
 
-                if (new View[] { SelfView, BackgroundImageView, HeaderTextView, DetailTextView, Canvas, ModalOne, ModalTwo, ModalThree}
+                //if (new View[] { SelfView, BackgroundImageView, HeaderTextView, DetailTextView, Canvas, ModalOne, ModalTwo, ModalThree}
+                if (new View[] { SelfView, BackgroundImageView, HeaderTextView, DetailTextView, InSituMeasure, InSituSolder, InSituWirecut, InSituCancel }
                         .Any(v => v == null))
                 {
                     Log.Error("Bypass|InfoPanel", "Problem locating all the sub-views needed for the Bypass Info Panel.");
                 }
+
+                InSituCancel.Click += (o, e) => 
+                {
+                    FirstNode = SecondNode = SecurityPanelNode.Unknown;
+                    SetUpExamineMode();
+                    RecognizeNode(SecurityPanelNode.Unknown);
+                };
+                InSituMeasure.Click += (o, e) =>
+                {
+                    var firstNode = FirstNode;
+                    var secondNode = SecondNode;
+                    FirstNode = SecondNode = SecurityPanelNode.Unknown; // Allows it to be assessed anew (as if rescanned under the new mode)
+                    SetUpMeasureMode();
+                    RecognizeNode(firstNode);
+                    Task.Delay(250).Wait();
+                    RecognizeNode(secondNode);
+                };
+                InSituSolder.Click += (o, e) =>
+                {
+                    var firstNode = FirstNode;
+                    var secondNode = SecondNode;
+                    FirstNode = SecondNode = SecurityPanelNode.Unknown; // Allows it to be assessed anew (as if rescanned under the new mode)
+                    SetUpSolderMode();
+                    RecognizeNode(firstNode);
+                    Task.Delay(500).Wait();
+                    RecognizeNode(secondNode);
+                };
+                InSituWirecut.Click += (o, e) =>
+                {
+                    var firstNode = FirstNode;
+                    var secondNode = SecondNode;
+                    FirstNode = SecondNode = SecurityPanelNode.Unknown; // Allows it to be assessed anew (as if rescanned under the new mode)
+                    SetUpWirecutterMode();
+                    RecognizeNode(firstNode);
+                    Task.Delay(500).Wait();
+                    RecognizeNode(secondNode);
+                };
+
+                SetUpExamineMode();
             }
 
             private string _headerFormatString, _headerNullString;
@@ -543,17 +629,28 @@ namespace Atropos
             public string GetHeaderString() {
                 return (FirstNode == SecurityPanelNode.Unknown) 
                     ? _headerNullString 
-                    : String.Format(_headerFormatString, FirstNode.Name, SecondNode.Name, NodeLink.Name); }
+                    //: (SecondNode == SecurityPanelNode.Unknown)
+                    //? String.Format(_headerFormatString, FirstNode.Name, "...") // Unnecessary... the "name" of SecurityPanelNode.Unknown is "..." already.
+                    : String.Format(_headerFormatString, FirstNode.Name, SecondNode.Name); }
             public string GetDetailString() { return _getDetailString?.Invoke(); }
             private Action _resolveFirstNode, _resolveSecondNode;
-            public event EventHandler<MiscUtil.EventArgs<SecurityPanelNode>> OnFirstNode;
-            public event EventHandler<MiscUtil.EventArgs<SecurityPanelNode>> OnSecondNode;
+            public event EventHandler<EventArgs<SecurityPanelNode>> OnFirstNode;
+            public event EventHandler<EventArgs<SecurityPanelNode>> OnSecondNode;
+            private CancellationTokenSource _cts;
 
             public void RecognizeNode(SecurityPanelNode node)
             {
-                BackgroundOverlay.SetImageResource(node.OverlayResourceId);
+                if (node.OverlayResourceId > 0)
+                {
+                    BackgroundOverlay.SetImageResource(node.OverlayResourceId);
+                    BackgroundOverlay.Visibility = ViewStates.Visible;
+                }
+                else
+                {
+                    BackgroundOverlay.Visibility = ViewStates.Invisible;
+                }
                 Action resolveNode;
-                EventHandler<MiscUtil.EventArgs<SecurityPanelNode>> onResolve;
+                EventHandler<EventArgs<SecurityPanelNode>> onResolve;
 
                 if (FirstNode != SecurityPanelNode.Unknown && SecondNode == SecurityPanelNode.Unknown && AllowSecondNode)
                 {
@@ -562,18 +659,24 @@ namespace Atropos
                     resolveNode = _resolveSecondNode;
                     onResolve = OnSecondNode;
                 }
-                else
+                else if (node != SecurityPanelNode.Unknown)
                 {
                     FirstNode = node;
                     SecondNode = SecurityPanelNode.Unknown;
                     resolveNode = _resolveFirstNode;
                     onResolve = OnFirstNode;
                 }
+                else
+                {
+                    resolveNode = null;
+                    onResolve = null;
+                }
 
+                _cts?.Cancel();
                 HeaderText = GetHeaderString();
                 DetailText = GetDetailString();
                 resolveNode?.Invoke();
-                onResolve?.Invoke(this, new MiscUtil.EventArgs<SecurityPanelNode>(node));
+                onResolve?.Invoke(this, new EventArgs<SecurityPanelNode>(node));
             }
 
             public void SetUpExamineMode()
@@ -583,18 +686,36 @@ namespace Atropos
                 _getDetailString = () => { return FirstNode.Results.At(FirstNode.NumberOfTimesExamined); };
                 AllowSecondNode = false;
                 _resolveFirstNode = () => { FirstNode.NumberOfTimesExamined++; };
+                InSituMeasure.Visibility = InSituSolder.Visibility = InSituWirecut.Visibility = InSituCancel.Visibility = ViewStates.Gone;
             }
 
             public void SetUpMeasureMode()
             {
                 _headerFormatString = "Measure from {0} to {1}";
                 _headerNullString = "Measure ... ";
-                _getDetailString = () => { return NodeLink.MeasureResults.At(NodeLink.NumberOfTimesMultimetered); };
+                _getDetailString = () => 
+                {
+                    if (FirstNode == SecurityPanelNode.Unknown || SecondNode == SecurityPanelNode.Unknown) return String.Empty;
+                    //var nodeLink = GetNodeLink();
+                    return NodeLink.MeasureResults.At(NodeLink.NumberOfTimesMultimetered);
+                };
                 AllowSecondNode = true;
                 _resolveFirstNode = () => {
-                    Toolkit_MultimeterStage.MeasureEffect.Play(0.2, true);
+                    //Toolkit_MultimeterStage.MeasureEffect.Play(0.2, true);
+                    _cts = new CancellationTokenSource();
+                    _cts.Token.Register(() => Toolkit.MeasureEffect.Stop());
+                    Toolkit.MeasureEffect.Play(new SoundOptions() { Volume = 0.2, Looping = true, CancelToken = _cts.Token });
+                    InSituSolder.Visibility = InSituWirecut.Visibility = ViewStates.Gone;
                 };
-                _resolveSecondNode = () => { NodeLink.NumberOfTimesMultimetered++; Toolkit_MultimeterStage.MeasureEffect.Stop(); };
+                _resolveSecondNode = () => 
+                {
+                    NodeLink.NumberOfTimesMultimetered++;
+                    //Toolkit_MultimeterStage.MeasureEffect.Stop();
+                    //Toolkit.MeasureEffect.Stop();
+                    InSituSolder.Visibility = InSituWirecut.Visibility = ViewStates.Visible;
+                };
+                InSituMeasure.Visibility = InSituSolder.Visibility = InSituWirecut.Visibility = ViewStates.Gone;
+                InSituCancel.Visibility = ViewStates.Visible;
             }
 
             public void SetUpSolderMode()
@@ -603,13 +724,20 @@ namespace Atropos
                 _headerNullString = "Connect ... ";
                 _getDetailString = () => { return ""; };
                 AllowSecondNode = true;
-                _resolveFirstNode = () => { };
+                _resolveFirstNode = () => 
+                {
+                    InSituMeasure.Visibility = InSituWirecut.Visibility = ViewStates.Gone;
+                };
                 _resolveSecondNode = () =>
                 {
-                    if (NodeLink.IsLinked) DetailText = "(Already connected)";
-                    NodeLink.IsLinked = true;
-                    NodeLink.SolderingResult?.Invoke();
+                    var nodeLink = GetNodeLink();
+                    if (nodeLink.IsLinked) DetailText = "(Already connected)";
+                    nodeLink.IsLinked = true;
+                    nodeLink.SolderingResult?.Invoke();
+                    InSituMeasure.Visibility = InSituWirecut.Visibility = ViewStates.Visible;
                 };
+                InSituMeasure.Visibility = InSituSolder.Visibility = InSituWirecut.Visibility = ViewStates.Gone;
+                InSituCancel.Visibility = ViewStates.Visible;
             }
 
             public void SetUpWirecutterMode()
@@ -618,15 +746,79 @@ namespace Atropos
                 _headerNullString = "Measure ... ";
                 _getDetailString = () => { return ""; };
                 AllowSecondNode = true;
-                _resolveFirstNode = () => { };
+                _resolveFirstNode = () =>
+                {
+                    InSituMeasure.Visibility = InSituSolder.Visibility = ViewStates.Gone;
+                };
                 _resolveSecondNode = () =>
                 {
-                    if (!NodeLink.IsLinked) DetailText = "(Nothing to cut)";
-                    NodeLink.IsLinked = false;
-                    NodeLink.WirecutterResult?.Invoke();
+                    var nodeLink = GetNodeLink();
+                    if (!nodeLink.IsLinked) DetailText = "(Nothing to cut)";
+                    nodeLink.IsLinked = false;
+                    nodeLink.WirecutterResult?.Invoke();
+                    InSituMeasure.Visibility = InSituSolder.Visibility = ViewStates.Visible;
                 };
+                InSituMeasure.Visibility = InSituSolder.Visibility = InSituWirecut.Visibility = ViewStates.Gone;
+                InSituCancel.Visibility = ViewStates.Visible;
             }
         }
 
+        #region QR scanning - taken from RoleActivities.cs
+        public static bool UseQRScanner { get { return !Res.AllowNfc; } }
+        private MobileBarcodeScanner scanner;
+
+        protected async void StartScanning()
+        {
+            scanner = new MobileBarcodeScanner() { UseCustomOverlay = true };
+
+            var customOverlay = LayoutInflater.FromContext(this).Inflate(Resource.Layout.QRoverlay, null);
+
+            customOverlay.FindViewById<ImageButton>(Resource.Id.qr_flashlight_button).Click += (ob, ev) =>
+            {
+                scanner.ToggleTorch();
+            };
+            customOverlay.FindViewById<ImageButton>(Resource.Id.qr_cancel_button).Click += (ob, ev) =>
+            {
+                scanner.Cancel();
+            };
+
+            scanner.CustomOverlay = customOverlay;
+
+            var opts = new MobileBarcodeScanningOptions()
+            { AutoRotate = true, PossibleFormats = new List<BarcodeFormat> { BarcodeFormat.QR_CODE } };
+
+            var result = await scanner.Scan(opts);
+
+            HandleScanResult(result);
+        }
+
+        protected void HandleScanResult(ZXing.Result result)
+        {
+            string msg = "";
+
+            if (result != null && !string.IsNullOrEmpty(result.Text))
+                msg = "Found QR code: " + result.Text;
+            else
+                msg = "Scanning Canceled!";
+
+            this.RunOnUiThread(() => Toast.MakeText(this, msg, ToastLength.Short).Show());
+
+            if (msg != "Scanning Canceled!")
+            {
+                var tagCode = result.Text.Last().ToString();
+                InfoPanel.RecognizeNode(SecurityPanel.CurrentPanel.Nodes.SingleOrDefault(n => n.Code == tagCode));
+            }
+        }
+
+        //public static void RecognizeFakeNFC(string tagCode)
+        //{
+        //    if (BaseActivity.CurrentActivity is BypassActivity CurrentBypass)
+        //    {
+        //        CurrentBypass.InfoPanel.RecognizeNode(SecurityPanel.CurrentPanel.Nodes.SingleOrDefault(n => n.Code == tagCode));
+        //        //CurrentBypass.soonestTapAllowed = DateTime.Now + CurrentBypass.minimumInterval;
+        //    }
+        //    else BaseActivity.CurrentToaster.RelayToast($"FakeNFC \"{tagCode}\" not valid outside of Bypass activity.");
+        //}
+        #endregion
     }
 }

@@ -25,6 +25,7 @@ using Android.Media;
 using Plugin.Vibrate;
 
 using Atropos.Encounters;
+using MiscUtil;
 
 namespace Atropos
 {
@@ -32,9 +33,12 @@ namespace Atropos
     /// This is the activity started when we detect a "gun" NFC tag.
     /// </summary>
     [Activity(ScreenOrientation = Android.Content.PM.ScreenOrientation.Portrait)]
-    public class GunActivityRevised : BaseActivity_Portrait
+    public class GunfightActivity : BaseActivity_Portrait
     {
-        protected static GunActivityRevised Current { get { return (GunActivityRevised)CurrentActivity; } set { CurrentActivity = value; } }
+        protected static GunfightActivity Current { get { return (GunfightActivity)CurrentActivity; } set { CurrentActivity = value; } }
+        public static event EventHandler<EventArgs<double>> OnGunshotFired;
+        public static event EventHandler<EventArgs<double>> OnGunshotHit;
+        public static event EventHandler<EventArgs<double>> OnGunshotMiss;
 
         private Gun ThePlayersGun;
 
@@ -61,7 +65,7 @@ namespace Atropos
         private List<ImageView> bulletList = new List<ImageView>();
         private StillnessProvider stillnessMonitor;
         private bool settingsVolumeTriggerOn = true;
-        private bool useVolumeTrigger { get { return settingsVolumeTriggerOn && InteractionLibrary.Current == InteractionLibrary.Gunfight; } }
+        private bool useVolumeTrigger { get { return settingsVolumeTriggerOn && CurrentActivity is GunfightActivity; } }
 
         public static IEffect ShotHitSFX, ShotMissSFX;
         
@@ -82,7 +86,7 @@ namespace Atropos
 
             // See if the current gun is already in our (local, for now) library, and load it if so.  Otherwise, take us to calibration.
             var gunString = Res.SpecificTags.Get(InteractionLibrary.CurrentSpecificTag);
-            if (gunString != null && InteractionLibrary.Current == InteractionLibrary.Gunfight)
+            if (gunString != null && CurrentActivity is GunfightActivity)
             {
                 ThePlayersGun = Gun.FromString(gunString, InteractionLibrary.CurrentSpecificTag);
             }
@@ -162,6 +166,12 @@ namespace Atropos
 
             //SetTagRemovalResult(Finish, 10, 2);
             //LinkSeekbars();
+
+            OnGunshotFired += (o, e) => 
+            {
+                if (e.Value > 0) OnGunshotHit.Raise(e.Value);
+                else OnGunshotMiss.Raise(-e.Value);
+            };
         }
 
         protected override void OnResume()
@@ -210,9 +220,9 @@ namespace Atropos
         //    {
         //        //if (!useSecondaryDisplay) CurrentActivity.RunOnUiThread(() =>
         //        //        {
-        //        //            ((GunActivityRevised)CurrentActivity).currentSignalsDisplay.Text = message;
+        //        //            ((GunfightActivity)CurrentActivity).currentSignalsDisplay.Text = message;
         //        //        });
-        //        //else CurrentActivity.RunOnUiThread(() => { ((GunActivityRevised)CurrentActivity).bestSignalsDisplay.Text = message; });
+        //        //else CurrentActivity.RunOnUiThread(() => { ((GunfightActivity)CurrentActivity).bestSignalsDisplay.Text = message; });
         //    }
         //    catch (Exception)
         //    {
@@ -377,11 +387,14 @@ namespace Atropos
                         }
                     }
 
-                    //// Testing the new Evasion code here... for now after every shot.
-                    //var Incoming = new IncomingRangedAttack();
-                    //EvasionMode<Vector3> Evasion = (Res.Random < 0.5) ? new EvasionMode.Dodge() : new EvasionMode.Duck();
-                    //var EvasionStage = new IncomingAttackPrepStage<Vector3>(Current, Incoming, Evasion);
-                    //EvasionStage.Activate();
+                    // Testing the new Evasion code here... for now after every third shot.
+                    if (Weapon.CurrentAmmoCount % 3 == 0)
+                    {
+                        var Incoming = new IncomingRangedAttack();
+                        EvasionMode<Vector3> Evasion = (Res.Random < 0.5) ? new EvasionMode.Dodge() : new EvasionMode.Duck();
+                        var EvasionStage = new IncomingAttackPrepStage<Vector3>(Current, Incoming, Evasion);
+                        EvasionStage.Activate(); 
+                    }
                 }
                 catch (Exception)
                 {
@@ -392,11 +405,17 @@ namespace Atropos
 
             public bool DidItHit()
             {
-                if (Vector3.Dot(Gravity.Vector, Weapon.vectorPointedForward) > 0.66) return false; // Not close enough to horizontal, automatic miss.
+                if (Vector3.Dot(Gravity.Vector, Weapon.vectorPointedForward) > 0.66)
+                {
+                    OnGunshotFired.Raise(-10);
+                    return false; // Not close enough to horizontal, automatic miss.
+                }
                 // Placeholder function.  For now, fuck it, treating the Steadiness score as a d20 target number. ;)
                 var TN = Stillness.StillnessScore + Stillness.InstantaneousScore;
                 var dieRoll = random.Next(1, 20);
                 Log.Info("DidItHit", $"Shot results: TN of {TN:f1}, based on cumulative {Stillness.StillnessScore:f1} & instantaneous {Stillness.InstantaneousScore:f1}.  Die roll {dieRoll}.");
+
+                OnGunshotFired.Raise(TN - dieRoll);
                 return dieRoll < TN;
             }
 

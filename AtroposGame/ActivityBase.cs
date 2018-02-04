@@ -24,14 +24,28 @@ namespace Atropos
     /// <summary>
     /// This is the base type which collects all the stuff we need in, essentially, every activity.
     /// </summary>
-    public class BaseActivity : Activity
+    public class BaseActivity : Activity, IRelayToasts
     {
         protected NfcAdapter _nfcAdapter;
         protected PowerManager.WakeLock _wakeLock;
         protected double _wakeLockMinutes = 15.0;
         protected bool _autoRestart = true;
-        internal static BaseActivity CurrentActivity;
-        internal static BaseActivity PreviousActivity;
+
+        private static BaseActivity _currentActivity;
+        private static BaseActivity _previousActivity;
+        private static IRelayToasts _currentToastRelay;
+        internal static BaseActivity CurrentActivity
+        {
+            get { return _currentActivity; }
+            set
+            {
+                _previousActivity = _currentActivity;
+                _currentActivity = value;
+                _currentToastRelay = value;
+            }
+        }
+        internal static BaseActivity PreviousActivity { get { return _previousActivity; } }
+        internal static IRelayToasts CurrentToaster { get { return _currentToastRelay; } set { _currentToastRelay = value; } }
 
         private static IActivator _currentStage;
         internal static IActivator CurrentStage
@@ -89,7 +103,7 @@ namespace Atropos
         private void StartResuming()
         {
             base.OnResume();
-            PreviousActivity = CurrentActivity;
+            //PreviousActivity = CurrentActivity;
             CurrentActivity = this;
             Res.CurrentActivity = this;
         }
@@ -105,6 +119,7 @@ namespace Atropos
             StartLookingForTagRepeatsAndRemovals();
 
             SensorProvider.ResumeAllListeners();
+            //CurrentActivity.HideKeyboard();
 
             _autoRestart = AutoRestart ?? _autoRestart;
             if (_autoRestart)
@@ -350,6 +365,11 @@ namespace Atropos
             }
         }
         #endregion
+
+        public void RelayToast(string message, ToastLength length = ToastLength.Short)
+        {
+            RunOnUiThread(() => { Toast.MakeText(this, message, length).Show(); });
+        }
     }
 
     // Causes the device to (effectively) ignore short presses of the Power button. In theory.
@@ -379,4 +399,5 @@ namespace Atropos
     public abstract class BaseActivity_Landscape : BaseActivity { }
 
     public interface IRelayMessages { void RelayMessage(string message, int RelayTargetId = 1); }
+    public interface IRelayToasts { void RelayToast(string message, ToastLength length = ToastLength.Short); }
 }

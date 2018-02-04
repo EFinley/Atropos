@@ -69,13 +69,11 @@ namespace Atropos
             }
 
             // Debugging purposes - give everybody all the spells.
-            if (ThePlayersFocus.KnownSpells.Count == 0)
+            ThePlayersFocus.KnownSpells.Clear();
+            foreach (string spellName in MasterSpellLibrary.spellNames)
             {
-                foreach (string spellName in MasterSpellLibrary.spellNames)
-                {
-                    if (spellName == Spell.None.SpellName) continue;
-                    ThePlayersFocus.LearnSpell(MasterSpellLibrary.Get(spellName));
-                }
+                if (spellName == Spell.None.SpellName) continue;
+                ThePlayersFocus.LearnSpell(MasterSpellLibrary.Get(spellName));
             }
 
             //CurrentStage = GestureRecognizerStage.NullStage; // Used if we're relying purely on buttons onscreen, as in debugging.
@@ -107,7 +105,8 @@ namespace Atropos
 
                 spellButton.Click += (o, e) =>
                 {
-                    if (SpellBeingCast != null || SpellBeingCast != spell) SpellBeingCast = spell;
+                    //if (SpellBeingCast != null || SpellBeingCast != spell) SpellBeingCast = spell;
+                    if (SpellBeingCast != spell) SpellBeingCast = spell;
                     else return;
                     //CurrentStage = new BeginCastingSpecificSpellStage($"Initiating {spellName}", ThePlayersFocus, true);
                     CurrentStage?.Deactivate();
@@ -116,7 +115,10 @@ namespace Atropos
             }
         }
 
-
+        protected void SetAllSpellButtonsEnabledState(bool enable = true)
+        {
+            foreach (var sp in spellButtons) sp.Enabled = enable;
+        }
 
         public void RelayMessage(string message, int RelayTargetId = 1)
         {
@@ -157,6 +159,7 @@ namespace Atropos
             {
                 sayIt = Speech.SayAllOf($"Casting {Current.SpellBeingCast.SpellName}.  Take your zero stance to begin.");
                 await sayIt;
+                Current.SetAllSpellButtonsEnabledState(false);
             }
 
             protected override bool interimCriterion()
@@ -269,6 +272,7 @@ namespace Atropos
                     foreach (var fx in SpellsSortedByAngle.Select(s => GetFeedbackFX(s))) fx.Deactivate();
 
                     Current.SpellBeingCast = SpellsSortedByAngle[0];
+                    Current.SetAllSpellButtonsEnabledState(false);
 
                     Plugin.Vibrate.CrossVibrate.Current.Vibration(15);
                     Current.SpellBeingCast.Glyphs?[0]?.ProgressSFX?.Play();
@@ -342,7 +346,7 @@ namespace Atropos
             {
                 try
                 {
-                    Log.Info("Casting stages", $"Success on {this.Label}. Angle was {targetGlyph.AngleTo(AttitudeProvider):f2} degrees [spell baseline on this being {targetGlyph.OrientationSigma:f2}], " +
+                    Log.Info("Casting stages", $"Success on {this.Label} at {AttitudeProvider.EulerAngles:f1}. Angle was {targetGlyph.AngleTo(AttitudeProvider):f2} degrees [spell baseline on this being {targetGlyph.OrientationSigma:f2}], " +
                         $"steadiness was {Stillness.StillnessScore:f2} [baseline {targetGlyph.SteadinessScoreWhenDefined:f2}], time was {Stillness.RunTime.TotalSeconds:f2}s [counted as {Math.Sqrt(Stillness.RunTime.TotalSeconds):f2} degrees].");
                     targetGlyph.FeedbackSFX.Stop();
                     await Task.Delay(150);
@@ -358,6 +362,7 @@ namespace Atropos
                         CurrentStage = NullStage;
                         if (Current == null) return;
                         Current.SpellBeingCast = null;
+                        //Current.SetAllSpellButtonsEnabledState(true);
                         Current.Finish();
                     }
                     else

@@ -73,6 +73,12 @@ namespace Atropos
         public static List<IEffect> PersistentSFX = new List<IEffect>(); // TODO - currently this does nothing, should function to keep those effects alive.
         // Also TODO to go with this: set those up to 'duck' properly when other effects are playing.
 
+        private const string allowNfcSetting = "AllowNFC";
+        //private static Persistent<bool> _allowNfc;
+        private static bool _allowNfc;
+        //public static bool AllowNfc { get { return (bool)_allowNfc; } set { _allowNfc = (Persistent<bool>)value; } }
+        public static bool AllowNfc { get { return _allowNfc; } set { _allowNfc = value; } }
+
         public class InteractionMode
         {
             public string Name;

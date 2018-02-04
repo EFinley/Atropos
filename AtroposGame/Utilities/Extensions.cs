@@ -18,6 +18,7 @@ using Nito.AsyncEx;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Collections;
+using Android.Views.InputMethods;
 
 namespace Atropos
 {
@@ -512,6 +513,14 @@ namespace Atropos
         {
             sourceEvent?.Invoke(callerName, new EventArgs<T>(value));
         }
+
+        //public static EventHandler<EventArgs<T>> SubscribeOnce<T>(this EventHandler<EventArgs<T>> sourceEvent, Action handlerAction)
+        //{
+        //    EventHandler<EventArgs<T>> disposableEvent = null;
+        //    disposableEvent = (o, e) => { sourceEvent?.Invoke(o, e); sourceEvent -= disposableEvent; };
+        //    sourceEvent += disposableEvent;
+        //    return disposableEvent;
+        //}
     }
 
     public static class AndroidLayoutUtilExtensions
@@ -538,6 +547,25 @@ namespace Atropos
             listView.LayoutParameters = par;
             listView.RequestLayout();
         }
+
+        public static void HideKeyboard(this Context context)
+        {
+            if (context.GetSystemService(Context.InputMethodService) is InputMethodManager inputMethodManager && context is Activity)
+            {
+                var activity = context as Activity;
+                var token = activity.CurrentFocus?.WindowToken;
+                inputMethodManager.HideSoftInputFromWindow(token, HideSoftInputFlags.None);
+
+                activity.Window.DecorView.ClearFocus();
+            }
+        }
+
+        public static void RotateText(this Activity context, int resID)
+        {
+            View view = context.FindViewById(resID);
+            view.StartAnimation(Android.Views.Animations.AnimationUtils.LoadAnimation(context, Resource.Animation.rotatetext));
+        }
+
     }
 
     public class SimpleCircularList<T> // For very simple jobs; not currently worth looking up a full-featured version of this.

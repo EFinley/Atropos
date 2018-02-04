@@ -33,11 +33,11 @@ namespace Atropos.Communications
         public static IMessageReceiver ReturnAddress;
 
         // Technically this'd happen anyway thanks to the implicit cast, but this way it shows up in Intellisense as the first-and-default option, which it should be.
-        public Message SendMessage(string message)
+        public virtual Message SendMessage(string message)
         {
             return SendMessage((Message)message);
         } 
-        public Message SendMessage(Message message)
+        public virtual Message SendMessage(Message message)
         {
             //message.Send(MessageTarget.ReturnAddress, this);
             WiFiMessageCenter.Client?.SendMessage(Name, message);
@@ -83,6 +83,12 @@ namespace Atropos.Communications
             var serializedForm = Serializer.Serialize<Tdata>(Data);
             SendMessage($"PushData{NEXT}{ToWhat}{NEXT}{typeof(Tdata).FullName}{NEXT}{serializedForm}");
         }
+
+        public virtual void SetScenarioVariable(string variableName, Encounters.Scenario.State toState)
+        {
+            SendMessage($"SetScenarioVar{NEXT}{variableName}{NEXT}{toState.ToString()}");
+        }
+
         public virtual void RequestActivityLaunch<Tactivity, Tdata>(Tdata PassedInfo = default(Tdata)) where Tactivity : Activity
         {
             if (PassedInfo != null && Operator.NotEqual(PassedInfo, default(Tdata)) && !Serializer.Check(PassedInfo))

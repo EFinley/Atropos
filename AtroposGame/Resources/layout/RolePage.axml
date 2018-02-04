@@ -16,7 +16,7 @@
       android:background="@android:drawable/alert_dark_frame">
     <ImageView
         android:id="@+id/role_interact_image"
-        android:src="@drawable/qr_example"
+        android:src="@drawable/qr_example_dark"
         android:layout_height="match_parent"
         android:layout_width="wrap_content"
         android:elevation="1dip"

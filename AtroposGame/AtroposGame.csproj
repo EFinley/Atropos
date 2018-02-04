@@ -158,6 +158,8 @@
     <Compile Include="ActOnFoundTag.cs" />
     <Compile Include="BargraphDisplayActivity.cs" />
     <Compile Include="BypassActivity.cs" />
+    <Compile Include="Characters\Character Sheet Activity.cs" />
+    <Compile Include="Characters\CharacterStats.cs" />
     <Compile Include="Communications\Data Request.cs" />
     <Compile Include="Communications\DeviceDetailFragment - Copy.cs" />
     <Compile Include="Communications\DeviceDetailFragment.cs" />
@@ -179,6 +181,8 @@
     <Compile Include="Data Structures\DatapointT1T2.cs" />
     <Compile Include="Data Structures\IDatapoint.cs" />
     <Compile Include="Encounters\Encounters.cs" />
+    <Compile Include="Encounters\Postcard.cs" />
+    <Compile Include="Encounters\Scenario.cs" />
     <Compile Include="External Code\Ordered Dictionary.cs" />
     <Compile Include="External Code\SimpleFileDialog.cs" />
     <Compile Include="External Code\TimedLock.cs" />
@@ -308,9 +312,11 @@
     <Compile Include="ScoreTracker.cs" />
     <Compile Include="SecurityPanelDefinitions.cs" />
     <Compile Include="RoleActivities.cs" />
+    <Compile Include="TestActivity.cs" />
     <Compile Include="SettingsActivity.cs" />
-    <Compile Include="SFX.cs" />
-    <Compile Include="Speech.cs" />
+    <Compile Include="Sound\SoundOptions.cs" />
+    <Compile Include="Sound\SFX.cs" />
+    <Compile Include="Sound\Speech.cs" />
     <Compile Include="Spell Results.cs" />
     <Compile Include="SpellCastingActivity.cs" />
     <Compile Include="SpellDefinitions.cs" />
@@ -318,11 +324,11 @@
     <Compile Include="SplashActivity.cs" />
     <Compile Include="StillnessMonitor.cs" />
     <Compile Include="StressTestingActivity.cs" />
-    <Compile Include="TextToSpeech\CrossLocale.cs" />
-    <Compile Include="TextToSpeech\CrossTextToSpeech.cs" />
-    <Compile Include="TextToSpeech\ITextToSpeech.cs" />
-    <Compile Include="TextToSpeech\TextToSpeech.cs" />
-    <Compile Include="TextToSpeech\TtsProgressListener.cs" />
+    <Compile Include="Sound\TextToSpeech\CrossLocale.cs" />
+    <Compile Include="Sound\TextToSpeech\CrossTextToSpeech.cs" />
+    <Compile Include="Sound\TextToSpeech\ITextToSpeech.cs" />
+    <Compile Include="Sound\TextToSpeech\TextToSpeech.cs" />
+    <Compile Include="Sound\TextToSpeech\TtsProgressListener.cs" />
     <Compile Include="Tools.cs" />
     <Compile Include="Tutorial Definitions.cs" />
     <Compile Include="Utilities\DictionaryVariants.cs" />
@@ -342,7 +348,9 @@
     <None Include="Properties\AndroidManifest.xml" />
     <None Include="Assets\AboutAssets.txt" />
     <AndroidResource Include="Resources\layout\BarGraphFeedbackDisplay.axml" />
-    <AndroidResource Include="Resources\layout\BypassTools.axml" />
+    <AndroidResource Include="Resources\layout\BypassTools.axml">
+      <SubType>Designer</SubType>
+    </AndroidResource>
     <AndroidResource Include="Resources\layout\Decker.axml" />
     <AndroidResource Include="Resources\layout\DisplayFoundTag.axml" />
     <AndroidResource Include="Resources\layout\ElectronicsTool.axml" />
@@ -367,7 +375,9 @@
       <SubType>Designer</SubType>
     </AndroidResource>
     <AndroidResource Include="Resources\layout\SpellCasting.axml" />
-    <AndroidResource Include="Resources\layout\SpellTraining.axml" />
+    <AndroidResource Include="Resources\layout\SpellTraining.axml">
+      <SubType>Designer</SubType>
+    </AndroidResource>
     <AndroidResource Include="Resources\layout\StressTestLayout.axml" />
     <AndroidResource Include="Resources\layout\ToolkitUse.axml" />
     <AndroidResource Include="Resources\layout\WiFi_main.axml">
@@ -401,6 +411,13 @@
     <AndroidResource Include="Resources\layout\RolePage.axml">
       <SubType>Designer</SubType>
     </AndroidResource>
+    <AndroidResource Include="Resources\layout\CharacterSheet.axml">
+      <SubType>Designer</SubType>
+    </AndroidResource>
+    <AndroidResource Include="Resources\layout\CharacterSheet_templateRepresentation.axml">
+      <SubType>Designer</SubType>
+    </AndroidResource>
+    <AndroidResource Include="Resources\layout\TestSuite.axml" />
   </ItemGroup>
   <ItemGroup>
     <AndroidResource Include="Resources\layout\Main.axml">
@@ -623,6 +640,12 @@
   </ItemGroup>
   <ItemGroup>
     <AndroidResource Include="Resources\drawable\qr_code_window.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\qr_example_dark.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\anim\rotatetext.xml" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets" />
   <Import Project="..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets" Condition="Exists('..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets')" />

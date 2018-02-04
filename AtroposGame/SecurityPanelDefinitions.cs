@@ -12,6 +12,8 @@ using Android.Widget;
 using System.Numerics;
 using PerpetualEngine.Storage;
 using System.Threading.Tasks;
+using Atropos.Encounters;
+using static Atropos.Encounters.Scenario;
 
 namespace Atropos
 {
@@ -25,7 +27,14 @@ namespace Atropos
     {
         public string At(int seekIndex)
         {
-            return this.OrderBy(r => r.index).Last(r => r.index <= seekIndex).result;
+            try
+            {
+                return this.OrderBy(r => r.index).Last(r => r.index <= seekIndex).result;
+            }
+            catch (System.InvalidOperationException)
+            {
+                return String.Empty;
+            }   
         }
 
         public void Add(int index, string result)
@@ -70,13 +79,27 @@ namespace Atropos
         {
             Name = name;
             Code = code;
-            if (Security.Panel == null)
-                Security.Panel?.Nodes?.Add(this);
+            if (SecurityPanel.CurrentPanel == null)
+                SecurityPanel.CurrentPanel?.Nodes?.Add(this);
             OverlayResourceId = overlayID;
             Results = new DetailList();
         }
 
         public static SecurityPanelNode Unknown = new SecurityPanelNode("...", null, -1);
+
+        public static bool operator==(SecurityPanelNode node1, SecurityPanelNode node2) { return node1.Code == node2.Code; }
+        public static bool operator!=(SecurityPanelNode node1, SecurityPanelNode node2) { return node1.Code != node2.Code; }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is SecurityPanelNode objNode) return objNode == this;
+            else return object.ReferenceEquals(obj, this);
+        }
+
+        public override int GetHashCode()
+        {
+            return Code.GetHashCode();
+        }
     }
 
     public class SecurityPanelNodeLink
@@ -109,45 +132,66 @@ namespace Atropos
             IsLinked = isLinked;
             StartNode.LinksOut.Add(EndNode, this);
             EndNode.LinksIn.Add(StartNode, this);
-            Security.Panel.Links.Add(this);
-            Security.Panel.Linkages.Add(StartNode, EndNode, this);
+            SecurityPanel.CurrentPanel.Links.Add(this);
+            SecurityPanel.CurrentPanel.Linkages.Add(StartNode, EndNode, this);
             MeasureResults = new DetailList();
         }
     }
 
-    public class Security
+    public class SecurityPanel
     {
+        public int PictureResourceID = Resource.Drawable.securitypanel_gray;
         public List<SecurityPanelNode> Nodes = new List<SecurityPanelNode>();
         public List<SecurityPanelNodeLink> Links = new List<SecurityPanelNodeLink>();
         public DoubleDictionary<SecurityPanelNode, SecurityPanelNode, SecurityPanelNodeLink> Linkages
             = new DoubleDictionary<SecurityPanelNode, SecurityPanelNode, SecurityPanelNodeLink>();
         public Dictionary<string, SecurityPanelNode> NodeForTag = new Dictionary<string, SecurityPanelNode>();
 
-        public bool MainBoltsAreEngaged = true;
-        public bool SecondaryBoltsAreEngaged = false;
-        public bool AlarmHasBeenRaised = false;
-        public bool SuspiciousInfoHasBeenSent = false;
+        private bool _mainBoltsAreEngaged = true;
+        public bool MainBoltsAreEngaged
+        {
+            get { return _mainBoltsAreEngaged; }
+            set { if (!value && !SecondaryBoltsAreEngaged) Current["securityDoorUnlock"] = State.Success; _mainBoltsAreEngaged = value; }
+        }
+        private bool _secondaryBoltsAreEngaged = false;
+        public bool SecondaryBoltsAreEngaged
+        {
+            get { return _secondaryBoltsAreEngaged; }
+            set { if (value) Current["securityDoorUnlock"] = State.Failed; _secondaryBoltsAreEngaged = value; }
+        }
+        private bool _alarmHasBeenRaised = false;
+        public bool AlarmHasBeenRaised
+        {
+            get { return _alarmHasBeenRaised; }
+            set { _alarmHasBeenRaised = value; if (value) Current["alarmSetOff"] = State.True; }
+        }
+        private bool _suspiciousInfoHasBeenSent = false;
+        public bool SuspiciousInfoHasBeenSent
+        {
+            get { return _suspiciousInfoHasBeenSent; }
+            set { _suspiciousInfoHasBeenSent = value; if (value) Current["sysopSuspects"] = State.True; }
+        }
 
         public IEffect AlarmFX, BoltsClosingFX, BoltsOpeningFX, SparksFX;
 
-        private static Security _panel = new Security();
-        public static Security Panel
+        private static SecurityPanel _panel = new SecurityPanel();
+        public static SecurityPanel CurrentPanel
         {
-            get { if (_panel != null) return _panel; else _panel = new Security(); return _panel; }
+            get { if (_panel != null) return _panel; else _panel = new SecurityPanel(); return _panel; }
             set { _panel = value; }
         }
         //static Security() { Initialize(); }
 
         public static void Initialize(BypassActivity parentActivity)
         {
-            if (Panel == null) Panel = new Security();
-            Panel.CurrentActivity = parentActivity;
-            Panel.SetUpSecurity();
+            if (CurrentPanel == null) CurrentPanel = new SecurityPanel();
+            CurrentPanel.CurrentActivity = parentActivity;
+            CurrentPanel.SetUpSecurity();
 
-            Panel.AlarmFX = new Effect("SecurityPanel.Alarm", Resource.Raw._169206_security_voice_activating_alarm);
-            Panel.BoltsClosingFX = new Effect("SecurityPanel.BoltsClosing", Resource.Raw._110538_bolt_closing);
-            Panel.BoltsOpeningFX = new Effect("SecurityPanel.BoltsOpening", Resource.Raw._213996_bolt_opening);
-            Panel.SparksFX = new Effect("SecurityPanel.Sparks", Resource.Raw._277314_electricArc);
+            CurrentPanel.AlarmFX = new Effect("SecurityPanel.Alarm", Resource.Raw._169206_security_voice_activating_alarm);
+            CurrentPanel.BoltsClosingFX = new Effect("SecurityPanel.BoltsClosing", Resource.Raw._110538_bolt_closing);
+            CurrentPanel.BoltsOpeningFX = new Effect("SecurityPanel.BoltsOpening", Resource.Raw._213996_bolt_opening);
+            CurrentPanel.SparksFX = new Effect("SecurityPanel.Sparks", Resource.Raw._277314_electricArc);
         }
 
         private static Action Say(string phrase)
@@ -170,7 +214,7 @@ namespace Atropos
             return () => { sfx.PlayToCompletion(null, true); };
         }
 
-        public Security() { }
+        public SecurityPanel() { }
 
         protected BypassActivity CurrentActivity { get; set; }
         protected virtual void RelayMessage(string message)

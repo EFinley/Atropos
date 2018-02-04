@@ -21,8 +21,15 @@ using System.Threading.Tasks;
 namespace Atropos
 {
     [Activity]
-    public abstract class RoleActivity : Activity
+    public abstract class RoleActivity : Activity, IRelayToasts
     {
+        private static RoleActivity _currentActivity;
+        public static RoleActivity CurrentActivity
+        {
+            get { return _currentActivity; }
+            set { _currentActivity = value; BaseActivity.CurrentToaster = value; }
+        }
+
         protected abstract void SetUpButtons();
         //private View ButtonSetupContext;
 
@@ -43,10 +50,11 @@ namespace Atropos
 
             // Set our view from the layout resource associated with this activity
             SetContentView(Resource.Layout.RolePage);
+            CurrentActivity = this;
 
             MobileBarcodeScanner.Initialize(Application);
 
-            SetupButton(StartScanning, "Interact", Resource.Drawable.qr_example, Color.DarkCyan);
+            SetupButton(StartScanning, "Interact", Resource.Drawable.qr_example_dark, Color.DodgerBlue);
             SetUpButtons();
 
             // Feedback on whether our networking info is carrying through changeover...
@@ -121,6 +129,11 @@ namespace Atropos
             }
         }
 
+        public void RelayToast(string message, ToastLength length = ToastLength.Short)
+        {
+            RunOnUiThread(() => { Toast.MakeText(this, message, length).Show(); });
+        }
+
         protected async void StartScanning()
         {
             scanner = new MobileBarcodeScanner() { UseCustomOverlay = true };
@@ -151,11 +164,14 @@ namespace Atropos
             string msg = "";
 
             if (result != null && !string.IsNullOrEmpty(result.Text))
-                msg = "Found Barcode: " + result.Text;
+                msg = "Found QR code: " + result.Text;
             else
                 msg = "Scanning Canceled!";
 
             this.RunOnUiThread(() => Toast.MakeText(this, msg, ToastLength.Short).Show());
+
+            if (msg != "Scanning Canceled!")
+                Scenario.Current?.ExecuteQR(result.Text).LaunchAsOrphan(result.Text);
         }
 
         protected void SetupButton(Type activity, string text, int imageSrc, Color textColour, bool isImplemented = true)
@@ -278,7 +294,7 @@ namespace Atropos
 
         protected override void SetUpButtons()
         {
-            SetupButton(typeof(GunActivityRevised), "Shoot", Resource.Drawable.assault_shotgun_image, Color.MediumPurple);
+            SetupButton(typeof(GunfightActivity), "Shoot", Resource.Drawable.assault_shotgun_image, Color.MediumPurple);
             SetupButton(typeof(Machine_Learning.MeleeAlphaActivity), "Melee", Resource.Drawable.katana_image, Color.Red);
         }
     }
@@ -290,8 +306,8 @@ namespace Atropos
 
         protected override void SetUpButtons()
         {
-            SetupButton(typeof(SpellCastingActivity), "Cast", Resource.Drawable.spell_casting_image, Color.Blue);
-            SetupButton(typeof(GunActivityRevised), "Shoot", Resource.Drawable.handgun_image, Color.MediumPurple);
+            SetupButton(typeof(SpellCastingActivity), "Cast", Resource.Drawable.spell_casting_image, Color.BlueViolet);
+            SetupButton(typeof(GunfightActivity), "Shoot", Resource.Drawable.handgun_image, Color.MediumPurple);
         }
     }
 
@@ -303,7 +319,7 @@ namespace Atropos
         protected override void SetUpButtons()
         {
             SetupButton(() => { }, "Hack", Resource.Drawable.command_prompt_image, Color.Green, false);
-            SetupButton(typeof(GunActivityRevised), "Shoot", Resource.Drawable.handgun_image, Color.MediumPurple);
+            SetupButton(typeof(GunfightActivity), "Shoot", Resource.Drawable.handgun_image, Color.MediumPurple);
         }
     }
 
@@ -315,7 +331,7 @@ namespace Atropos
         protected override void SetUpButtons()
         {
             SetupButton(typeof(ToolkitActivity), "Tools", Resource.Drawable.toolkit_image, Color.Silver);
-            SetupButton(typeof(GunActivityRevised), "Shoot", Resource.Drawable.handgun_image, Color.MediumPurple);
+            SetupButton(typeof(GunfightActivity), "Shoot", Resource.Drawable.handgun_image, Color.MediumPurple);
         }
     }
 

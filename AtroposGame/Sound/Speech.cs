@@ -117,32 +117,49 @@ namespace Atropos
         }
 
         private string[] againPrompts = new string[] { "Again", "As before", "Once more", "Same again", "Ditto", "Like before", "Same instructions" };
-        public Task SayNow(string content, stringOrID[] parameters = null, bool queue = false, CrossLocale? crossLocale = null, double? pitch = 1.0, double? speakRate = 1.0, double? volume = 1.0)
+        private Dictionary<Task, CancellationTokenSource> UtteranceCancellers = new Dictionary<Task, CancellationTokenSource>();
+
+        public Task SayNow(string content, stringOrID[] parameters = null, bool queue = false, CrossLocale? crossLocale = null, double? pitch = 1.0, double? speakRate = 1.0, double? volume = 1.0, CancellationToken? cancelToken = null)
         {
             RecentUtterances = RecentUtterances.Where(u => u.timeOfUttering > DateTime.Now - SuppressUtteranceInterval).ToList();
             if (RecentUtterances.Count(u => u.content == content) > 0)
                 content = againPrompts.GetRandom();
 
             //return Speak(utteranceContent, crossLocale, (float?)pitch, (float?)speakRate, (float?)volume);
-            var ret = Speak(content, crossLocale, (float?)pitch, (float?)speakRate, (float?)volume);
+            //var cts = new CancellationTokenSource();
+            var ret = Speak(content, crossLocale, (float?)pitch, (float?)speakRate, (float?)volume, cancelToken);
             //return Task.WhenAny(ret, Task.Delay(200 * utteranceContent.Length));
             //return pollForCompletion();
+            
             return ret;
         }
 
         public static void Say(string content, stringOrID[] parameters = null, 
             bool queue = false, CrossLocale? crossLocale = null, double? pitch = 1.0, 
             double? speakRate = 1.0, double? volume = 1.0, 
-            Action doOnStart = null, bool? useSpeakerMode = null)
+            Action doOnStart = null, bool? useSpeakerMode = null,
+            CancellationToken? cancelToken = null)
         {
-            SayAllOf(content, parameters, queue, crossLocale, pitch, speakRate, volume, doOnStart, useSpeakerMode)
+            SayAllOf(content, parameters, queue, crossLocale, pitch, speakRate, volume, doOnStart, useSpeakerMode, cancelToken)
                 .LaunchAsOrphan($"Speech: {content}");
+        }
+
+        public static void Say(string content, SoundOptions options)
+        {
+            Say(content, null, false, null,
+                options.Pitch ?? 1.0,
+                options.Speed ?? 1.0,
+                options.Volume ?? 1.0,
+                null,
+                options.UseSpeakers,
+                options.CancelToken);
         }
 
         public static async Task SayAllOf(string content, stringOrID[] parameters = null,
             bool queue = false, CrossLocale? crossLocale = null, double? pitch = 1.0,
             double? speakRate = 1.0, double? volume = 1.0,
-            Action doOnStart = null, bool? useSpeakerMode = null)
+            Action doOnStart = null, bool? useSpeakerMode = null,
+            CancellationToken? cancelToken = null)
         {
             bool previousSpeakerMode = Res.Speech.SpeakerMode;
 
@@ -155,8 +172,19 @@ namespace Atropos
                 await Res.Speech.listener.ListenForStart();
                 doOnStart();
             }).LaunchAsOrphan("DoOnStart listener");
-            await Res.Speech.SayNow(content, parameters, queue, crossLocale, pitch, speakRate, volume);
+            await Res.Speech.SayNow(content, parameters, queue, crossLocale, pitch, speakRate, volume, cancelToken);
             Res.Speech.SpeakerMode = previousSpeakerMode;
+        }
+
+        public static async Task SayAllOf(string content, SoundOptions options)
+        {
+            await SayAllOf(content, null, false, null,
+                options.Pitch ?? 1.0,
+                options.Speed ?? 1.0,
+                options.Volume ?? 1.0,
+                null,
+                options.UseSpeakers,
+                options.CancelToken);
         }
     }
 }

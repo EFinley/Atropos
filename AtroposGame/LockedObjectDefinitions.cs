@@ -20,7 +20,7 @@ using PerpetualEngine.Storage;
 using Android.Media;
 using System.Numerics;
 using Vector3 = System.Numerics.Vector3;
-
+using MiscUtil;
 
 namespace Atropos.Locks
 {
@@ -87,6 +87,8 @@ namespace Atropos.Locks
 
     public class Lock
     {
+        public static Lock Current { get; set; } = None;
+
         public enum LType
         {
             Unknown,
@@ -102,6 +104,10 @@ namespace Atropos.Locks
 
         public double OffAxisMaxDuringFindingPhase { get; set; } = 45.0;
         public double OffHorizontalMaxDuringFindingPhase { get; set; } = 30.0;
+
+        public int NumberOfAttempts { get; set; } = 0;
+        public event EventHandler<EventArgs<int>> OnLockOpened;
+        public void AnnounceLockOpened() { OnLockOpened.Raise(NumberOfAttempts); }
 
         // Relevant only for safes
         public double DegreesBetweenClicks { get; set; } = 3.6; 
@@ -157,6 +163,7 @@ namespace Atropos.Locks
         }
 
         public static Lock None = new Lock();
+        public static Lock Special = new Lock();
         public static Lock TestLock = new Lock("Test Lock", LType.KeyLock);
         public static Lock TestSafe = new Lock("Test Safe", LType.SafeDial);
         static Lock()
@@ -166,6 +173,26 @@ namespace Atropos.Locks
             TestSafe.AddTumbler(new Tumbler(22 * TestSafe.DegreesBetweenClicks));
             TestLock.AddTumbler(new Tumbler(-45));
             TestLock.AddTumbler(new Tumbler(60));
+        }
+
+        public static Lock SafeByCombination(string name, params int[] combination)
+        {
+            var result = new Lock(name, LType.SafeDial);
+            foreach (var digit in combination)
+            {
+                result.AddTumbler(new Tumbler(digit * result.DegreesBetweenClicks));
+            }
+            return result;
+        }
+
+        public static Lock LockByAngles(string name, params double[] tumblerAngles)
+        {
+            var result = new Lock(name, LType.KeyLock);
+            foreach (var angle in tumblerAngles)
+            {
+                result.AddTumbler(new Tumbler(angle));
+            }
+            return result;
         }
     }
 

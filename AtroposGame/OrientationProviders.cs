@@ -58,6 +58,8 @@ namespace Atropos
             private SensorListener(SensorType sensortype)
             {
                 sensorType = sensortype;
+                var sList = sensorManager.GetSensorList(sensortype);
+                var dList = sensorManager.GetDynamicSensorList(sensortype);
                 sensor = sensorManager.GetDefaultSensor(sensorType);
             }
             // Public factory function which invokes the ctor only if it needs to.

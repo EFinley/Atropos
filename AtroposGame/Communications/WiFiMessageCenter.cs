@@ -35,7 +35,7 @@ namespace Atropos.Communications
         {
             OnReceiveMessage?.Invoke(Client, messageEventArgs);
             var doThis = ParseMessageToAction(messageEventArgs.Value);
-            doThis?.Invoke(BaseActivity.CurrentActivity);
+            doThis?.Invoke(BaseActivity.CurrentActivity); // Note - nothing (currently) actually *uses* the argument of doThis; passing it the current activity is basically a placeholder here.
         }
         public static Action<object> ParseMessageToAction(Message message)
         {
@@ -88,6 +88,20 @@ namespace Atropos.Communications
                 return (o) =>
                 {
                     Client.SendMessage( message.From, DataLibrarian.FetchRequestedData(message, o) );
+                };
+            }
+            else if (substrings[0] == "SetScenarioVar")
+            {
+                return (o) =>
+                {
+                    var variableName = substrings[1];
+                    var toState = (Encounters.Scenario.State)Enum.Parse(typeof(Encounters.Scenario.State), substrings[2]);
+                    if (Encounters.Scenario.Current == null || !Encounters.Scenario.Current.Variables.ContainsKey(variableName))
+                    {
+                        BaseActivity.CurrentToaster.RelayToast($"Unable to set scenario variable '{variableName}' to {toState} as requested by {message.From}.", ToastLength.Long);
+                        return;
+                    }
+                    Encounters.Scenario.Current.SetVariable(variableName, toState, false); // Subtlety: If we accessed it via Current[variableName] it would trigger the accessor, which would trigger a re-broadcast of the set request...
                 };
             }
             // Etc. etc. for the other types of message.  Still to do: PushData, ...?

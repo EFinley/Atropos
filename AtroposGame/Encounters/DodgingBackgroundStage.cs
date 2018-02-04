@@ -22,13 +22,13 @@ using MiscUtil;
 
 namespace Atropos.Encounters
 {
-    public class ZAccelerometerProvider : MultiSensorProvider<Vector3>, IVector3Provider
+    public class GravAxisAccelerometerProvider : MultiSensorProvider<Vector3>, IVector3Provider
     {
         protected IVector3Provider linearAccelProvider, gravProvider;
         public Vector3 Vector { get { return (linearAccelProvider.Vector.Dot(gravityDirection) * gravityDirection); } }
         public Vector3 gravityDirection { get { return gravProvider.Vector.Normalize(); } }
 
-        public ZAccelerometerProvider() : base(new Vector3Provider(SensorType.LinearAcceleration), new Vector3Provider(SensorType.Gravity))
+        public GravAxisAccelerometerProvider() : base(new Vector3Provider(SensorType.LinearAcceleration), new Vector3Provider(SensorType.Gravity))
         {
             linearAccelProvider = (IVector3Provider)providers[0];
             gravProvider = (IVector3Provider)providers[1];
@@ -45,18 +45,22 @@ namespace Atropos.Encounters
         public TimeSpan AcquisitionTime;
         public double UnmodifiedHitChance, BaseZScore;
         public double DodgeCompensationBonus;
-        //public IEffect AttackSFX, HitSFX, MissSFX;
+        public IEffect AttackSFX, HitSFX, MissSFX;
+        public string AttackSpeech, HitSpeech, MissSpeech;
         public event EventHandler<EventArgs<double>> OnIncomingHit;
         public event EventHandler<EventArgs<double>> OnIncomingMiss;
 
         public IncomingRangedAttack()
         {
             // Set a bunch of default values; override in object initializer (or elsewhere) if desired.
-            //AttackSFX = new Effect("Incoming.Gunshot", Resource.Raw.gunshot_4);
-            //HitSFX = new Effect("Incoming.Hit", Resource.Raw._44430_vocalized_ow);
-            //MissSFX = new Effect("Incoming.Miss", Resource.Raw._96632_ricochet_metal4);
+            AttackSFX = new Effect("Incoming.Gunshot", Resource.Raw.gunshot_4);
+            HitSFX = new Effect("Incoming.Hit", Resource.Raw._44430_vocalized_ow);
+            MissSFX = new Effect("Incoming.Miss", Resource.Raw._96632_ricochet_metal4);
+            AttackSpeech = "";
+            HitSpeech = "Fall down.  You have been shot and injured.";
+            MissSpeech = "";
 
-            AcquisitionTime = TimeSpan.FromSeconds(0.75).MultipliedBy(Res.GetRandomCoefficient(1.0, 0.25));
+            AcquisitionTime = TimeSpan.FromSeconds(1.5).MultipliedBy(Res.GetRandomCoefficient(1.0, 0.25));
             UnmodifiedHitChance = 0.75; // Defined as "the chance of hitting if you don't dodge at all within the time allowed."
             BaseZScore = Accord.Math.Special.Ierf(UnmodifiedHitChance);
             DodgeCompensationBonus = 0.0; // Percentage above/below 100%, defined as "the factor by which, compared to a normal shooter, he requires a superior dodge to avoid."  Exactly what this means varies by EvasionMode.
@@ -64,16 +68,18 @@ namespace Atropos.Encounters
 
         public virtual async Task IncomingAttackHitResults(double? AimScore = null)
         {
-            //await HitSFX.PlayToCompletion();
+            await HitSFX.PlayToCompletion();
             OnIncomingHit?.Invoke(this, new EventArgs<double>(AimScore ?? 0.0));
             await Task.Delay(300);
-            await Speech.SayAllOf("You have been shot and injured.  Fall down now.");
+            await Speech.SayAllOf(HitSpeech);
         }
 
         public virtual async Task IncomingAttackMissResults(double? AimScore = null)
         {
-            //await MissSFX.PlayToCompletion();
+            await MissSFX.PlayToCompletion();
             OnIncomingMiss?.Invoke(this, new EventArgs<double>(AimScore ?? 0.0));
+            await Task.Delay(300);
+            await Speech.SayAllOf(MissSpeech);
         }
     }
 
@@ -108,7 +114,10 @@ namespace Atropos.Encounters
             public override double AssessShot(SmoothedList<float> distancesDodged, List<TimeSpan> timestamps, IncomingRangedAttack incoming)
             {
                 var effectiveDodge = distancesDodged.Last() / DistanceForOneSigma / (1.0 + 0.01 * incoming.DodgeCompensationBonus);
-                return incoming.BaseZScore - effectiveDodge - Accord.Statistics.Distributions.Univariate.NormalDistribution.Random();
+                var bellCurveDieRoll = Accord.Statistics.Distributions.Univariate.NormalDistribution.Random();
+                var resultScore = incoming.BaseZScore - effectiveDodge - bellCurveDieRoll;
+                Log.Debug("Evasion|AssessShot", $"Resolved an evasion attempt with a {((resultScore > 0) ? "hit" : "miss")} ({resultScore:f2}) based on an EffectiveDodge of {effectiveDodge:f2} and a random dodge of {bellCurveDieRoll:f2}.");
+                return resultScore;
             }
 
             public override float ProcessData(IProvider<Vector3> provider)
@@ -137,7 +146,7 @@ namespace Atropos.Encounters
             public override double DistanceForOneSigma { get; } = 0.3;
             public override IProvider<Vector3> CreateProvider(params object[] args)
             {
-                return new ZAccelerometerProvider();
+                return new GravAxisAccelerometerProvider();
             }
         }
         #endregion
@@ -247,11 +256,12 @@ namespace Atropos.Encounters
         {
             Speech.Say(Evasion.Prompt);
             Stopwatch.Start();
-            //Task.Delay(Incoming.AcquisitionTime.DividedBy(3))
-            //    .ContinueWith(_ =>
-            //    {
-            //        Incoming.AttackSFX.Play();
-            //    });
+            Task.Delay(Incoming.AcquisitionTime.DividedBy(3))
+                .ContinueWith(_ =>
+                {
+                    Incoming.AttackSFX.Play();
+                    Speech.Say(Incoming.AttackSpeech);
+                });
         }
 
         protected override bool nextStageCriterion()

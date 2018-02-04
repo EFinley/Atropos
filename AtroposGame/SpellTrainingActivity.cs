@@ -88,12 +88,15 @@ namespace Atropos
         private void SetUpSpellButtons()
         {
             var layoutpanel = FindViewById<LinearLayout>(Resource.Id.Spell_casting_layoutpane);
+            foreach (var spB in spellButtons) spB.Visibility = ViewStates.Gone;
+            spellButtons.Clear();
 
             foreach (string spellName in MasterSpellLibrary.spellNames?.DefaultIfEmpty() ?? new List<string>())
             {
                 if (spellName == Spell.None.SpellName) continue;
                 var spell = MasterSpellLibrary.Get(spellName);
                 var spellButton = new Button(this);
+                spellButtons.Add(spellButton);
                 spellButton.SetText(spellName + " (Retrain)", TextView.BufferType.Normal);
                 spellButton.SetPadding(20,20,20,20);
                 layoutpanel.AddView(spellButton);
@@ -140,19 +143,21 @@ namespace Atropos
                     {
                         MasterSpellLibrary.Erase(SpellBeingRetrained.SpellName);
                         ThePlayersFocus.ForgetSpell(SpellBeingRetrained.SpellName);
-                        await Speech.SayAllOf($"Deleting {SpellBeingRetrained.SpellName} from the master library.");
                         CurrentStage.Deactivate();
+                        await Speech.SayAllOf($"Deleting {SpellBeingRetrained.SpellName} from the master library.");
                         CurrentStage = GestureRecognizerStage.NullStage;
+                        //SetUpSpellButtons();
                         Current.Finish();
                         return;
                     }
                 }
                 SpellBeingRetrained = null;
                 if (spellNameTextbox.Text.Length == 0) spellNameTextbox.Text = GenerateRandomSpellName();
+                Current.HideKeyboard();
                 await Task.Delay(100); // Let the screen update.
                 SpellBeingTrained = new Spell(spellNameTextbox.Text);
                 foreach (Button btn in spellButtons) btn.Visibility = ViewStates.Gone;
-                spellNameTextbox.Focusable = false;
+                //spellNameTextbox.Focusable = false;
                 CheckGlyphCount();
                 await Speech.SayAllOf($"Training {SpellBeingTrained.SpellName}.");
                 CurrentStage = new Spell_Training_TutorialStage($"Init training for {SpellBeingTrained.SpellName}", ThePlayersFocus, true);
@@ -171,6 +176,7 @@ namespace Atropos
                     SpellBeingTrained = null;
                     CurrentStage.Deactivate();
                     CurrentStage = GestureRecognizerStage.NullStage;
+                    SetUpSpellButtons();
                     await Speech.SayAllOf("Aborting spell training.");
                 }
                 else
@@ -267,7 +273,7 @@ namespace Atropos
             bool oneGlyph = SpellBeingTrained.Glyphs.Count > 0;
             RunOnUiThread(() =>
             {
-                inscribeButton.Enabled = oneGlyph;
+                inscribeButton.Enabled = undoGlyphButton.Enabled = oneGlyph;
                 undoGlyphButton.Text = (SpellBeingTrained != null) ?
                                             ((oneGlyph) ? "Undo" : "Delete") :
                                             ("Undo / Delete");
@@ -324,7 +330,10 @@ namespace Atropos
 
             protected override async void startAction()
             {
-                sayIt = Speech.SayAllOf($"Hold device at each position until you hear the tone.  Take your zero stance to begin.", volume: 0.5);
+                var _cts = new System.Threading.CancellationTokenSource();
+                sayIt = Speech.SayAllOf($"Hold device at each position until you hear the tone.  Take your zero stance to begin.", 
+                    volume: 0.5, cancelToken: _cts.Token); // : StopToken
+                _cts.CancelAfter(750);
                 await sayIt;
                 //Speech.Say("Hold device at each position yadda yadda.");
                 await Task.Delay(1000);
@@ -351,8 +360,10 @@ namespace Atropos
                 await AttitudeProvider.SetFrameShiftFromCurrent();
                 SpellBeingTrained.ZeroStance = AttitudeProvider.FrameShift;
 
+                Log.Debug("SpellTraining", $"Zero stance assigned at {SpellBeingTrained.ZeroStance.ToEulerAngles():f1}.");
+
                 await Speech.SayAllOf("Begin");
-                Speech.Say("Begin");
+                //Speech.Say("Begin");
                 CurrentStage = new GlyphTrainingStage($"Glyph 0", Implement, AttitudeProvider);
             }
         }
@@ -362,7 +373,8 @@ namespace Atropos
             private Focus Implement;
             public StillnessProvider Stillness;
             private float Volume;
-            private AdvancedRollingAverageQuat AverageAttitude;
+            //private AdvancedRollingAverageQuat AverageAttitude;
+            private RollingAverage<Quaternion> AverageAttitude;
             private OrientationSensorProvider AttitudeProvider;
             private Quaternion lastOrientation;
 
@@ -379,7 +391,8 @@ namespace Atropos
                 Volume = 0.1f;
 
                 verbLog("Averages");
-                AverageAttitude = new AdvancedRollingAverageQuat(timeFrameInPeriods: 15);
+                //AverageAttitude = new AdvancedRollingAverageQuat(timeFrameInPeriods: 15);
+                AverageAttitude = new RollingAverage<Quaternion>(timeFrameInPeriods: 10);
                 AttitudeProvider = Provider ?? new GravityOrientationProvider(Implement.FrameShift);
                 AttitudeProvider.Activate();
 
@@ -393,6 +406,7 @@ namespace Atropos
             protected override void startAction()
             {
                 MasterSpellLibrary.SpellFeedbackSFX.Play(Volume, true);
+                StopToken.Register(() => MasterSpellLibrary.SpellFeedbackSFX.Stop());
             }
 
             protected override bool nextStageCriterion()
@@ -403,7 +417,8 @@ namespace Atropos
                 // hasn't come back and set it to something nonzero - then we are not allowed to proceed regardless.
                 if (Stillness.StillnessScore + Math.Sqrt(Stillness.RunTime.TotalSeconds) > 4f)
                 {
-                    return (AttitudeProvider.Quaternion.AngleTo(lastOrientation) > 30.0f); // Done as a separate clause for debugging reasons only.
+                    return (AverageAttitude.Average.AngleTo(lastOrientation) > 30.0f) // Done as a separate clause for debugging reasons only.
+                        && (AverageAttitude.Average.AngleTo(AttitudeProvider.Quaternion) < 5.0f);
                 }
                 return false;
             }
@@ -416,12 +431,14 @@ namespace Atropos
                     MasterSpellLibrary.SpellProgressSFX.Play();
                     await Task.Delay(1000); // Give a moment to get ready.
                     
-                    Current.SpellBeingTrained.AddGlyph(new Glyph(AverageAttitude, Stillness.StillnessScore, AverageAttitude.StdDev));
+                    //Current.SpellBeingTrained.AddGlyph(new Glyph(AverageAttitude, Stillness.StillnessScore, AverageAttitude.StdDev));
+                    Current.SpellBeingTrained.AddGlyph(new Glyph(AverageAttitude, Stillness.StillnessScore, 0));
                     Current.CheckGlyphCount();
 
-                    var EulerAngles = AverageAttitude.ToEulerAngles();
+                    var EulerAngles = AverageAttitude.Average.ToEulerAngles();
                     //Log.Debug("SpellTraining", $"Saved glyph at yaw {EulerAngles.X:f2}, pitch {EulerAngles.Y}, and roll {EulerAngles.Z} from zero stance.");
-                    Log.Debug("SpellTraining", $"Saved {((GestureRecognizerStage)CurrentStage).Label} at {EulerAngles:f1} from zero stance.  That's {AverageAttitude.AngleTo(lastOrientation):f0} degrees from the last one.  Baselines are {Stillness.StillnessScore:f2} for stillness, {AverageAttitude.StdDev:f2} for orientation.");
+                    //Log.Debug("SpellTraining", $"Saved {((GestureRecognizerStage)CurrentStage).Label} at {EulerAngles:f1} from zero stance.  That's {AverageAttitude.Average.AngleTo(lastOrientation):f0} degrees from the last one.  Baselines are {Stillness.StillnessScore:f2} for stillness, {AverageAttitude.StdDev:f2} for orientation.");
+                    Log.Debug("SpellTraining", $"Saved {((GestureRecognizerStage)CurrentStage).Label} at {EulerAngles:f1} from zero stance.  That's {AverageAttitude.Average.AngleTo(lastOrientation):f0} degrees from the last one.  Baseline is {Stillness.StillnessScore:f2} for stillness.");
                     CurrentStage = new GlyphTrainingStage($"Glyph {Current.SpellBeingTrained.Glyphs.Count}", Implement, AttitudeProvider);
                 }
                 catch (Exception e)
@@ -437,6 +454,7 @@ namespace Atropos
                 return true;
             }
 
+            protected DateTime nextDisplayUpdateAt = DateTime.Now;
             protected override void interimAction()
             {
                 Volume = (float)Exp(-(Sqrt((15 - Stillness) / 2) - 0.5));
@@ -448,6 +466,11 @@ namespace Atropos
                 //}
 
                 AverageAttitude.Update(AttitudeProvider);
+                if (DateTime.Now > nextDisplayUpdateAt)
+                {
+                    nextDisplayUpdateAt = DateTime.Now + TimeSpan.FromMilliseconds(250);
+                    Current.RunOnUiThread(() => { Current.currentSignalsDisplay.Text = $"At {AttitudeProvider.Quaternion.ToEulerAngles():f1} (\u0394 {AverageAttitude.Average.AngleTo(AttitudeProvider.Quaternion):f1})"; });
+                }
             }
         }
 

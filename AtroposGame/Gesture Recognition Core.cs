@@ -86,50 +86,59 @@ namespace Atropos
 
         protected async Task ListenForData()
         {
-            isMet = false;
-            startTime = nextInterimTriggerAt = DateTime.Now;
-            Log.Info("GestureRecognitionCore", $"Starting gesture stage {Label}.");
-
-            // If overridden in a derived class, do this now.
-            verbLog("Starting listen loop");
-            startAction();
-            await startActionAsync();
-
-            while (IsActive)
+            try
             {
-                // First, wait for our stream to have data ready
-                verbLog("Awaiting data");
-                await NextUpdateAwaiter();
+                isMet = false;
+                startTime = nextInterimTriggerAt = DateTime.Now;
+                Log.Info("GestureRecognitionCore", $"Starting gesture stage {Label}.");
 
-                // Then check criteria for interim activities
-                if ( (interimCriterion() || await interimCriterionAsync()) && DateTime.Now >= nextInterimTriggerAt)
-                {
-                    verbLog("Interim steps");
-                    nextInterimTriggerAt += InterimInterval;
-                    interimAction();
-                    await interimActionAsync();
-                }
+                // If overridden in a derived class, do this now.
+                verbLog("Starting listen loop");
+                startAction();
+                await startActionAsync();
 
-                // Then check criteria both for proceeding and for aborting
-                if (nextStageCriterion() || await nextStageCriterionAsync())
+                while (IsActive)
                 {
-                    verbLog("Next stage steps");
-                    isMet = true;
-                    nextStageAction();
-                    await nextStageActionAsync();
-                    Deactivate();
-                }
-                else if (abortCriterion() || await abortCriterionAsync())
-                {
-                    verbLog("Abort steps");
-                    isMet = false;
-                    abortAction();
-                    await abortActionAsync();
-                    Deactivate();
-                }
+                    // First, wait for our stream to have data ready
+                    verbLog("Awaiting data");
+                    await NextUpdateAwaiter();
 
-                // Finally, give the high sign that we're ready to receive data again anytime.
-                DataProvider.Proceed();
+                    // Then check criteria for interim activities
+                    if ((interimCriterion() || await interimCriterionAsync())
+                        && DateTime.Now >= nextInterimTriggerAt
+                        && IsActive)
+                    {
+                        verbLog("Interim steps");
+                        nextInterimTriggerAt += InterimInterval;
+                        interimAction();
+                        await interimActionAsync();
+                    }
+
+                    // Then check criteria both for proceeding and for aborting
+                    if ((nextStageCriterion() || await nextStageCriterionAsync()) && IsActive)
+                    {
+                        verbLog("Next stage steps");
+                        isMet = true;
+                        nextStageAction();
+                        await nextStageActionAsync();
+                        Deactivate();
+                    }
+                    else if ((abortCriterion() || await abortCriterionAsync()) && IsActive)
+                    {
+                        verbLog("Abort steps");
+                        isMet = false;
+                        abortAction();
+                        await abortActionAsync();
+                        Deactivate();
+                    }
+
+                    // Finally, give the high sign that we're ready to receive data again anytime.
+                    DataProvider.Proceed();
+                }
+            }
+            catch (Exception)
+            {
+                throw;
             }
         }
 
@@ -155,10 +164,9 @@ namespace Atropos
             return false;
         }
 
-        protected virtual async Task<bool> nextStageCriterionAsync()
+        protected virtual Task<bool> nextStageCriterionAsync()
         {
-            await Task.CompletedTask;
-            return false;
+            return Task.FromResult(false);
         }
 
         protected virtual void nextStageAction()
@@ -179,10 +187,9 @@ namespace Atropos
             return false;
         }
 
-        protected virtual async Task<bool> abortCriterionAsync()
+        protected virtual Task<bool> abortCriterionAsync()
         {
-            await Task.CompletedTask;
-            return false;
+            return Task.FromResult(false);
         }
 
         protected virtual void abortAction()
@@ -201,10 +208,9 @@ namespace Atropos
             return false;
         }
 
-        protected virtual async Task<bool> interimCriterionAsync()
+        protected virtual Task<bool> interimCriterionAsync()
         {
-            await Task.CompletedTask;
-            return false;
+            return Task.FromResult(false);
         }
 
         protected virtual void interimAction()

@@ -153,8 +153,11 @@ namespace Atropos
         bool IsPlaying { get; }
         bool IsPaused { get; }
         void Play(double? playVolume = null, bool? playLooping = null, bool? useSpeakers = null, bool stopIfNecessary = false);
+        void Play(SoundOptions options);
         Task PlayToCompletion(double? playVolume = null, bool? useSpeakers = null);
+        Task PlayToCompletion(SoundOptions options);
         Task PlayFromTo(double startSeconds = 0, double endSeconds = -1, double? playVolume = null, bool? playLooping = null, bool? useSpeakers = null, bool stopIfNecessary = false);
+        Task PlayFromTo(double startSeconds, double endSeconds, SoundOptions options = null);
         void Pause();
         void Stop();
         Task WhenFinishedPlaying { get; }
@@ -245,6 +248,11 @@ namespace Atropos
             _selectedEffect.Play(playVolume, playLooping, useSpeakers, stopIfNecessary);
         }
 
+        public virtual void Play(SoundOptions options)
+        {
+            Play(options.Volume, options.Looping, options.UseSpeakers);
+        }
+
         public EventHandler<MediaPlayer.ErrorEventArgs> PlaySubstitute;
 
         public Task PlayToCompletion(double? playVolume = null, bool? useSpeakers = null)
@@ -253,6 +261,10 @@ namespace Atropos
             Play(playVolume, false, useSpeakers);
             return WhenFinishedPlaying;
         }
+        public Task PlayToCompletion(SoundOptions options)
+        {
+            return PlayToCompletion(options.Volume, options.UseSpeakers);
+        }
 
         public async Task PlayFromTo(double startSeconds = 0, double endSeconds = -1,
             double? playVolume = null, bool? playLooping = null, bool? useSpeakers = null, bool stopIfNecessary = false)
@@ -260,6 +272,10 @@ namespace Atropos
             _selectedEffect = _selectedEffect ?? SelectRandomEffect();
             await _selectedEffect.PlayFromTo(startSeconds, endSeconds, playVolume, playLooping, useSpeakers, stopIfNecessary);
             _selectedEffect = null;
+        }
+        public virtual async Task PlayFromTo(double startSeconds, double endSeconds, SoundOptions options)
+        {
+            await PlayFromTo(startSeconds, endSeconds, options.Volume, options.Looping, options.UseSpeakers);
         }
 
         public IEffect SelectRandomEffect(IEffect exceptThisOne = null)
@@ -593,6 +609,12 @@ namespace Atropos
             }
         }
 
+        public virtual void Play(SoundOptions options)
+        {
+            Activate(options.CancelToken ?? CancellationToken.None);
+            Play(options.Volume, options.Looping, options.UseSpeakers);
+        }
+
         public virtual void _play(double? playVolume = null, bool? playLooping = null)
         {
             try
@@ -707,6 +729,11 @@ namespace Atropos
             OnPlayCompletion(this, EventArgs.Empty);
         }
 
+        public virtual async Task PlayFromTo(double startSeconds, double endSeconds, SoundOptions options)
+        {
+            await PlayFromTo(startSeconds, endSeconds, options.Volume, options.Looping, options.UseSpeakers);
+        }
+
         protected int _seekLocation = 0;
         public int CurrentLocation { get { return _effect?.CurrentPosition ?? _seekLocation; } }
 
@@ -747,6 +774,10 @@ namespace Atropos
         {
             Play(playVolume, false, useSpeakers);
             return endOfPlaybackSignal.Task.SwallowCancellations();
+        }
+        public Task PlayToCompletion(SoundOptions options)
+        {
+            return PlayToCompletion(options.Volume, options.UseSpeakers);
         }
         public Task WhenFinishedPlaying
         {

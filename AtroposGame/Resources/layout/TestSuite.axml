@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+       android:orientation="vertical"
+       android:layout_width="match_parent"
+       android:layout_height="match_parent">
+  <TextView
+      android:text="Functionality Testing"
+      android:textAppearance="?android:attr/textAppearanceLarge"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:id="@+id/title"
+      android:gravity="center"
+      android:layout_marginLeft="5dp" />
+  <View
+      android:layout_width="match_parent"
+      android:layout_height="5dp"
+      android:background="@android:color/holo_blue_light" />
+  <Spinner
+      android:id="@+id/spinner"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_margin="15dp"
+      android:textAlignment="center"/>
+  <View
+      android:layout_width="match_parent"
+      android:layout_height="2dp"
+      android:background="@android:color/holo_blue_light" />
+  <ListView
+      android:id="@+id/list"
+      android:layout_width="match_parent"
+      android:layout_height="0dp"
+      android:layout_weight="2"
+      android:layout_marginLeft="15dp"
+      android:cacheColorHint="#FFDAFF7F" />
+  <View
+      android:layout_width="match_parent"
+      android:layout_height="5dp"
+      android:background="@android:color/holo_blue_light" />
+  <TextView
+      android:layout_width="match_parent"
+      android:layout_height="0dp"
+      android:layout_weight="1"
+      android:id="@+id/info"
+      android:layout_marginLeft="5dp" 
+      android:background="@android:drawable/alert_dark_frame"/>
+  <LinearLayout
+      android:orientation="horizontal"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:gravity="center">
+    <Button
+        android:text="Stop"
+        android:id="@+id/stop_btn"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:layout_margin="5dp" 
+        android:enabled="false"/>
+    <Button
+        android:text="Problem"
+        android:id="@+id/problem_btn"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:layout_margin="5dp" />
+  </LinearLayout>
+</LinearLayout>

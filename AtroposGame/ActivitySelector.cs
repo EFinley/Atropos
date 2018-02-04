@@ -38,8 +38,8 @@ namespace Atropos
 
         public static void InitializeAll()
         {
-            Gunfight = Res.DefineInteractionMode("gunfight", "Fire Gun", new GunActivityRevised());
-            GunCalibration = Res.DefineInteractionMode("calibGun", "Calibrate Gun", new GunActivityRevised(), (stringOrID)Resource.String.directive_calibrate_gun);
+            Gunfight = Res.DefineInteractionMode("gunfight", "Fire Gun", new GunfightActivity());
+            GunCalibration = Res.DefineInteractionMode("calibGun", "Calibrate Gun", new GunfightActivity(), (stringOrID)Resource.String.directive_calibrate_gun);
             //Res.InteractionModes.Remove("calibGun"); // We want it to exist, yes, but not to show up in the list when we run through it later.  This does that.
             SpellTeaching = Res.DefineInteractionMode("spellTeaching", "Train Spell", new SpellTrainingActivity());
             SpellCasting = Res.DefineInteractionMode("spellCasting", "Cast Spell", new SpellCastingActivity());

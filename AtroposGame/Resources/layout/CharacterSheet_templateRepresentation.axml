@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:background="?android:attr/activatedBackgroundIndicator"
+    android:orientation="vertical"
+    android:padding="6dip">
+  <TextView
+      android:id="@+id/charsheet_template_nameField"
+      android:layout_width="wrap_content"
+      android:layout_height="match_parent"
+      android:textSize="25dp"
+      android:ellipsize="end"
+      android:textAlignment="textStart"
+      android:layout_margin="5dip"
+      android:singleLine="true" />
+  <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:orientation="horizontal">
+    <TextView
+        android:id="@+id/charsheet_template_perkField1"
+        android:layout_width="0dip"
+        android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dip"
+        android:background="@android:drawable/alert_dark_frame" />
+    <TextView
+        android:id="@+id/charsheet_template_perkField2"
+        android:layout_width="0dip"
+        android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dip"
+        android:background="@android:drawable/alert_dark_frame" />
+  </LinearLayout>
+</LinearLayout>

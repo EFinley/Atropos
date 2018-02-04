@@ -397,57 +397,79 @@ namespace Atropos
 
     public class Toolkit : Tool
     {
-        public enum Function
-        {
-            Examine,
-            Multimeter,
-            Wirecutter,
-            Solderer,
-            Lockpicks,
-            Safecracking,
-            ReturnToStart
-        }
-        // Note - Length variable has to be manually updated if you add/remove items to the above list, AFAIK!
-        public static int FunctionListLength = 6;
-        public static Dictionary<Function, Res.InteractionMode> InteractionModes
-            = new Dictionary<Function, Res.InteractionMode>()
-            {
-                { Function.Examine, InteractionLibrary.SecurityPanel },
-                { Function.Multimeter, InteractionLibrary.SecurityPanel },
-                { Function.Wirecutter, InteractionLibrary.SecurityPanel },
-                { Function.Solderer, InteractionLibrary.SecurityPanel },
-                { Function.Lockpicks, InteractionLibrary.LockPicking },
-                { Function.Safecracking, InteractionLibrary.SafeCracking }
-            };
+        //public enum Function
+        //{
+        //    Examine,
+        //    Multimeter,
+        //    Wirecutter,
+        //    Solderer,
+        //    Lockpicks,
+        //    Safecracking,
+        //    ReturnToStart
+        //}
+        //// Note - Length variable has to be manually updated if you add/remove items to the above list, AFAIK!
+        //public static int FunctionListLength = 6;
+        //public static Dictionary<Function, Res.InteractionMode> InteractionModes
+        //    = new Dictionary<Function, Res.InteractionMode>()
+        //    {
+        //        { Function.Examine, InteractionLibrary.SecurityPanel },
+        //        { Function.Multimeter, InteractionLibrary.SecurityPanel },
+        //        { Function.Wirecutter, InteractionLibrary.SecurityPanel },
+        //        { Function.Solderer, InteractionLibrary.SecurityPanel },
+        //        { Function.Lockpicks, InteractionLibrary.LockPicking },
+        //        { Function.Safecracking, InteractionLibrary.SafeCracking }
+        //    };
         // TODO - Turn this into a full-fledged ToolkitDefinitions file like for spells and so forth.
         
-        public Function currentFunction { get; set; }
-        public void NextFunction(bool verbalCue = true)
-        {
-            currentFunction++;
-            if (currentFunction == Function.ReturnToStart) currentFunction = Function.Examine;
-            var optionWords = new string[] { "Picking", "Trying", "Selecting", "Maybe", "Perhaps", "Let's try", "Opting for" };
-            if (verbalCue) Speech.Say($"{optionWords.GetRandom()} {currentFunction}");
-        }
+        //public Function currentFunction { get; set; }
+        //public void NextFunction(bool verbalCue = true)
+        //{
+        //    currentFunction++;
+        //    if (currentFunction == Function.ReturnToStart) currentFunction = Function.Examine;
+        //    var optionWords = new string[] { "Picking", "Trying", "Selecting", "Maybe", "Perhaps", "Let's try", "Opting for" };
+        //    if (verbalCue) Speech.Say($"{optionWords.GetRandom()} {currentFunction}");
+        //}
 
         public double ExamineSpeedMultiplier = 1.0;
         public double MultimeterSpeedMultiplier = 1.0;
         public double WireCutterSpeedMultiplier = 1.0; // These speeds are dependent on the specific linkage you're attacking.
         public double SolderingSpeedMultiplier = 1.0;
 
-        public Toolkit(string tagID = null, Function curFunc = Function.Examine) : base(tagID)
+        private static Effect _measureEffect;
+        public static Effect MeasureEffect
         {
-            currentFunction = curFunc;
+            get
+            {
+                if (_measureEffect == null)
+                {
+                    _measureEffect = new Effect("Multimeter.Measure", Resource.Raw._37847_infiniteauubergine);
+                }
+                return _measureEffect;
+            }
+        }
+
+        //public Toolkit(string tagID = null, Function curFunc = Function.Examine) : base(tagID)
+        public Toolkit(string tagID = null) : base(tagID)
+        {
+            //currentFunction = curFunc;
         }
 
         public override string ToString()
         {
-            return $"Toolkit|{currentFunction}";
+            //return $"Toolkit|{currentFunction}";
+            return $"Toolkit|{ExamineSpeedMultiplier}|{MultimeterSpeedMultiplier}|{WireCutterSpeedMultiplier}|{SolderingSpeedMultiplier}";
         }
         public static Toolkit FromString(string tkString, string tagID)
         {
             var tk = tkString.Split('|');
-            return new Toolkit(tagID, (Function)Enum.Parse(typeof(Function), tk[1]));
+            //return new Toolkit(tagID, (Function)Enum.Parse(typeof(Function), tk[1]));
+            return new Toolkit(tagID)
+            {
+                ExamineSpeedMultiplier = double.Parse(tk[1]),
+                MultimeterSpeedMultiplier = double.Parse(tk[2]),
+                WireCutterSpeedMultiplier = double.Parse(tk[3]),
+                SolderingSpeedMultiplier = double.Parse(tk[4])
+            };
         }
     }
 
