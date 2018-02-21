@@ -56,10 +56,11 @@ namespace Atropos.Machine_Learning
             ListeningForFalseStart = true;
             Current.FindViewById<Button>(Resource.Id.mlrn_cue_button).Enabled = false;
 
-            var milliSecDelay = millisecondTimeBase * (0.75 + 0.5 * Res.Random);
+            var milliSecDelay = millisecondTimeBase * Res.GetRandomCoefficient(0.5);
             await Task.Delay((int)milliSecDelay);
 
-            await Speech.SayAllOf(gestureClass.className, speakRate: 2.0);
+            //await Speech.SayAllOf(gestureClass.className, speakRate: 2.0);
+            Speech.Say(gestureClass.className, speakRate: 2.0);
             //await Task.Delay(400);
             //cueEffect.Play();
 

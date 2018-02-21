@@ -19,6 +19,8 @@ using System.Threading;
 using MiscUtil;
 using Role = Atropos.Characters.Role;
 
+using Android.Gms.Nearby;
+
 namespace Atropos.Communications
 {
     public class WifiClient : WifiCore
@@ -59,6 +61,7 @@ namespace Atropos.Communications
             {
                 inStream?.Dispose();
                 outStream?.Dispose();
+                Log.Debug(_tag, "CTS token fired.");
             });
         }
 
@@ -79,12 +82,10 @@ namespace Atropos.Communications
                         OnConnectionSuccess?.Invoke(this, EventArgs.Empty);
                         IsConnected = true;
 
-                        myAddress = socket.LocalAddress.CanonicalHostName;
+                        myAddress = socket.InetAddress.CanonicalHostName;
                         myName = asWhatName;
                         myRole = asWhatRole;
                         //Addresses.Add(myName, myAddress);
-
-                        var tm = new TeamMember();
 
                         AddressBook.Add(new TeamMember()
                         {
@@ -228,11 +229,14 @@ namespace Atropos.Communications
                         Roles = new List<Role>() { (Role)Enum.Parse(typeof(Role), respRole) }, // Turns the string "Hitter" into Role.Hitter, etc.
                         IPaddress = sender
                     });
+                    WiFiDirectActivity.Current.RefreshDetails();
                 }
                 else if (message.StartsWith(ACK)) 
                 {
                     if (DoACK) // Serving as a proxy for "should I send that to the output window?" as well as "should I send out ACKs myself?"
-                        Log.Debug(_tag, $"ACKback: {Readable(message)}");
+                    {
+                        //Log.Debug(_tag, $"ACKback: {Readable(message)}");
+                    }
                 }
 
                 // If it doesn't fall into one of our special cases, handle it as a normal message.

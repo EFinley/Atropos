@@ -65,25 +65,28 @@ namespace Atropos.Encounters
                         }
                     }
                 })
-            .OnQR("Stairwell Hacking", async () =>
-            {
-                await Speech.SayAllOf("You start hacking the system.  Mime some icon dragging.");
-                await Task.Delay(1000);
-                await Speech.SayAllOf("Now some typing.");
-                await Task.Delay(750);
-                await Speech.SayAllOf("Frantic typing.");
-                await Task.Delay(1250);
-                await Speech.SayAllOf("You're through the ice.  You seem to be logged in to some kind of automated minigun, covering a corridor nearby.  Probably the one right behind this door.  Drag a few icons around while you figure out what you can do here.  Oh, and if you haven't already done so, you might consider telling your team. Or not.");
-                await Task.Delay(1250);
-                await Speech.SayAllOf("Okay, you found a way to put it into a maintenance lock down state, which should keep it from firing, but not trigger the alarm.");
-                await Task.Delay(250);
-                await Speech.SayAllOf("Locking it down.");
-                await Task.Delay(450);
-                await Speech.SayAllOf("Almost there.");
-                await Task.Delay(250);
-                await Speech.SayAllOf("Done.");
-                Current["sentryGunDeactivate"] = State.Success;
-            })
+            .OnQR_DependingOn("Stairwell Hacking", UserRole)
+                .IfItIs(State.Hacker).Then(async () =>
+                {
+                    await Speech.SayAllOf("You start hacking the system.  Mime some icon dragging.");
+                    await Task.Delay(1000);
+                    await Speech.SayAllOf("Now some typing.");
+                    await Task.Delay(750);
+                    await Speech.SayAllOf("Frantic typing.");
+                    await Task.Delay(1250);
+                    await Speech.SayAllOf("You're through the ice.  You seem to be logged in to some kind of automated minigun, covering a corridor nearby.  Probably the one right behind this door.  Drag a few icons around while you figure out what you can do here.  Oh, and if you haven't already done so, you might consider telling your team. Or not.");
+                    await Task.Delay(1250);
+                    await Speech.SayAllOf("Okay, you found a way to put it into a maintenance lock down state, which should keep it from firing, but not trigger the alarm.");
+                    await Task.Delay(250);
+                    await Speech.SayAllOf("Locking it down.");
+                    await Task.Delay(450);
+                    await Speech.SayAllOf("Almost there.");
+                    await Task.Delay(250);
+                    await Speech.SayAllOf("Done.");
+                    Current["sentryGunDeactivate"] = State.Success;
+                })
+                .Otherwise().Then("Gotta be a hacker. Duh.")
+                .End_DependingOn()
             .OnQR("Security Panel", () =>
             {
                 if (RoleActivity.CurrentActivity.GetType() == typeof(ToolkitActivity))
@@ -99,12 +102,16 @@ namespace Atropos.Encounters
             //.OnQR("FakeNFC_C", () => BypassActivity.RecognizeFakeNFC("C"))
             //.OnQR("FakeNFC_D", () => BypassActivity.RecognizeFakeNFC("D"))
             #endregion
-            .OnQR("Sentry Gun", "This is an Ares Matator-Six class autonomous sentry cannon.  Scary fucker.  Do not taunt.")
+            .OnQR("Sentry Gun", "This is an Ares Ultimatum-Six autonomous sentry cannon.  Scary fucker.  Do not taunt.")
             .OnQR("Ladder", "Yes, this is just a ladder.  It's in-game if you want it.")
-            .OnQR("Corridor Astral", async () =>
-            {
+            .OnQR_DependingOn("Corridor Astral", UserRole)
+                .IfItIs(State.Sorceror).Then(async () =>
+                {
+                    await Speech.SayAllOf("You open your inner eye to the swirling currents of astral space, and see a few watcher spirits cruising about.  You'll want to get your spirit ward up before the party proceeds any further.");
 
-            })
+                })
+                .Otherwise().Then("Gotta be a hacker. Duh.")
+                .End_DependingOn()
             .OnQR("Door Studio A", "This is the studio Vanessa is shooting in.  You really don't want to risk her wrath.  Trust me.")
             .OnQR_Locked("Door Studio B", Lock.LockByAngles("Studio B", 20, -30, -40))
                 .IfItIs(State.Locked).Then("All's quiet on the other side, but the door is locked.")

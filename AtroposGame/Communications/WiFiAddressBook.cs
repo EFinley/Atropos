@@ -53,6 +53,7 @@ namespace Atropos.Communications
             }
             else
             {
+                Targets.Add(target);
                 Names.Add(target.Name);
                 if (target is TeamMember) Roles.Add( (target as TeamMember).Roles.ToArray());
                 else Roles.Add(new Role[] { Role.Any });

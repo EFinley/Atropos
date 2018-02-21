@@ -566,6 +566,13 @@ namespace Atropos
             view.StartAnimation(Android.Views.Animations.AnimationUtils.LoadAnimation(context, Resource.Animation.rotatetext));
         }
 
+        public static void tintMenuIcon(this IMenuItem item, Context context, Android.Graphics.Color color)
+        {
+            var wrapDrawable = Android.Support.V4.Graphics.Drawable.DrawableCompat.Wrap(item.Icon);
+            Android.Support.V4.Graphics.Drawable.DrawableCompat.SetTint(wrapDrawable, color);
+            item.SetIcon(wrapDrawable);
+        }
+
     }
 
     public class SimpleCircularList<T> // For very simple jobs; not currently worth looking up a full-featured version of this.

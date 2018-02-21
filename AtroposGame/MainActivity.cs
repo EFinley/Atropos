@@ -25,6 +25,7 @@ using PerpetualEngine.Storage;
 using Android.Hardware;
 using MiscUtil;
 using Atropos.Characters;
+using System.Threading.Tasks;
 
 namespace Atropos
 {
@@ -36,6 +37,41 @@ namespace Atropos
         protected override void OnCreate(Bundle bundle)
         {
             base.OnCreate(bundle);
+            //try
+            //{
+            //    //throw new Java.Lang.OutOfMemoryError();
+            //    FindViewById<ImageView>(Resource.Id.role_samurai).SetImageResource(Resource.Drawable.hitter_logo);
+            //    Task.Delay(100).Wait();
+            //    FindViewById<ImageView>(Resource.Id.role_decker).SetImageResource(Resource.Drawable.hacker_logo);
+            //    Task.Delay(100).Wait();
+            //    FindViewById<ImageView>(Resource.Id.role_mage).SetImageResource(Resource.Drawable.sorcerer_logo);
+            //    Task.Delay(100).Wait();
+            //    FindViewById<ImageView>(Resource.Id.role_operative).SetImageResource(Resource.Drawable.spy_logo);
+            //}
+            //catch (Java.Lang.OutOfMemoryError)
+            //{
+            //    FindViewById<ImageView>(Resource.Id.role_samurai).SetImageResource(Resource.Drawable.hitter_logo_small);
+            //    FindViewById<ImageView>(Resource.Id.role_decker).SetImageResource(Resource.Drawable.hacker_logo_small);
+            //    FindViewById<ImageView>(Resource.Id.role_mage).SetImageResource(Resource.Drawable.sorcerer_logo_small);
+            //    Task.Delay(100).Wait();
+            //    FindViewById<ImageView>(Resource.Id.role_operative).SetImageResource(Resource.Drawable.spy_logo_small);
+            //}
+            //FindViewById<ImageView>(Resource.Id.role_samurai).SetImageResource(Resource.Drawable.hitter_logo);
+            //Task.Delay(1000)
+            //    .ContinueWith(_ => FindViewById<ImageView>(Resource.Id.role_decker).SetImageResource(Resource.Drawable.hacker_logo))
+            //    .ContinueWith(_ => Task.Delay(1000).Wait())
+            //    .ContinueWith(_ => FindViewById<ImageView>(Resource.Id.role_mage).SetImageResource(Resource.Drawable.sorcerer_logo))
+            //    .ContinueWith(_ => Task.Delay(1000).Wait())
+            //    .ContinueWith(_ => FindViewById<ImageView>(Resource.Id.role_operative).SetImageResource(Resource.Drawable.spy_logo))
+            //    .ContinueWith(_ => Task.Delay(1000).Wait())
+            //    .ContinueWith(_ => FindViewById<ImageView>(Resource.Id.role_mage).SetImageResource(Resource.Drawable.sorcerer_logo_small))
+            //    .ContinueWith(_ => Task.Delay(1000).Wait())
+            //    .ContinueWith(_ => FindViewById<ImageView>(Resource.Id.role_operative).SetImageResource(Resource.Drawable.spy_logo_small));
+            InitImageButton(Resource.Id.role_samurai, Resource.Drawable.hitter_logo, Resource.Drawable.hitter_logo_small);
+            InitImageButton(Resource.Id.role_decker, Resource.Drawable.hacker_logo, Resource.Drawable.hacker_logo_small);
+            InitImageButton(Resource.Id.role_mage, Resource.Drawable.sorcerer_logo, Resource.Drawable.sorcerer_logo_small);
+            InitImageButton(Resource.Id.role_operative, Resource.Drawable.spy_logo, Resource.Drawable.spy_logo_small);
+
 
             InitializeAll();
 
@@ -86,12 +122,41 @@ namespace Atropos
         {
             base.OnResume();
             //Res.SFX.ResumeAll();
+
+            //FindViewById<ImageView>(Resource.Id.role_samurai).SetImageResource(Resource.Drawable.hitter_logo);
+            //Task.Delay(1000).Wait();
+            //FindViewById<ImageView>(Resource.Id.role_decker).SetImageResource(Resource.Drawable.hacker_logo);
+            //Task.Delay(1000).Wait();
+            //FindViewById<ImageView>(Resource.Id.role_mage).SetImageResource(Resource.Drawable.sorcerer_logo);
+            //Task.Delay(1000).Wait();
+            //FindViewById<ImageView>(Resource.Id.role_operative).SetImageResource(Resource.Drawable.spy_logo);
+            //FindViewById<LinearLayout>(Resource.Id.linearLayout1).RequestLayout();
         }
 
         protected override void OnPause()
         {
             base.OnPause();
             Res.SFX.StopAll();
+        }
+
+        private void InitImageButton(int buttonID, int primaryImageID, int secondaryImageID)
+        {
+            bool Success = false;
+            Action<int> TryToAssign = (imgID) =>
+                Task.Run(() =>
+                {
+                    FindViewById<ImageView>(buttonID).SetImageResource(imgID);
+                    Success = true;
+                });
+            TryToAssign(primaryImageID);
+            if (Success) return;
+            TryToAssign(secondaryImageID);
+            if (Success) return;
+            while (!Success)
+            {
+                Task.Delay(500)
+                    .ContinueWith(_ => TryToAssign(secondaryImageID));
+            }
         }
 
         public static void InitializeAll()

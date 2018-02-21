@@ -42,7 +42,12 @@ namespace Atropos.Communications
         protected new string _tag = "WifiServer";
         private object _lock = new object();
 
-        //public event EventHandler<EventArgs<String>> OnServerCommandReceived;
+        public int numMessagesReceived = 0;
+        public int numMessagesSentOut = 0;
+        public int numAcksSentOut = 0;
+        public int numConnections { get { return connections.Count; } }
+
+        public event EventHandler<EventArgs<string>> OnServerForwardingMessage;
 
         public WifiServer(CancellationToken? stopToken = null) : base(stopToken) { }
 
@@ -57,12 +62,13 @@ namespace Atropos.Communications
                     // Create the ServerSocket
                     serverSocket = new ServerSocket();
                     var sAddr = new InetSocketAddress(Port);
-                    serverSocket.ReuseAddress = true;
+                    //serverSocket.ReuseAddress = true;
                     serverSocket.Bind(sAddr);
                     Log.Debug(_tag, $"Server listening on {Port}.");
 
                     while (!_cts.IsCancellationRequested)
                     {
+                        Log.Debug(_tag, "Server socket ready and waiting.");
                         // Grab the next incoming connection
                         Socket socket = serverSocket.Accept();
                         Log.Debug(_tag, $"Server accepted a connection from {socket.InetAddress.CanonicalHostName}.");
@@ -115,15 +121,15 @@ namespace Atropos.Communications
             }
         }
 
-        public void Forward(string sender, string message)
-        {
+        //public void Forward(string sender, string message)
+        //{
             
-            foreach (string conn in connections.Keys)
-            {
-                if (conn != sender) 
-                    ForwardTo(conn, sender, message);
-            }
-        }
+        //    foreach (string conn in connections.Keys)
+        //    {
+        //        if (conn != sender) 
+        //            ForwardTo(conn, sender, message);
+        //    }
+        //}
 
         public void ForwardTo(string address, string sender, string message)
         {
@@ -137,6 +143,8 @@ namespace Atropos.Communications
             var dInStream = inputStreams[recipientSocket];
 
             SendString(dOutStream, dInStream, $"{address}{NEXT}{sender}{NEXT}{message}");
+
+            OnServerForwardingMessage.Raise($"Server stats: Rcvd {numMessagesReceived}, Sent {numMessagesSentOut}, Acks {numAcksSentOut}.\nConnections {connections.Keys.Join()}.");
         }
 
         public class ServerThread : WifiCore
@@ -190,13 +198,21 @@ namespace Atropos.Communications
                         var address = data.ElementAtOrDefault(0);
                         var sender = data.ElementAtOrDefault(1);
                         var message = data.ElementAtOrDefault(2);
+                        server.numMessagesReceived++;
 
-                        if (address != SERVER) server.ForwardTo(address, sender, message); 
+                        if (address != SERVER)
+                        {
+                            server.ForwardTo(address, sender, message);
+                            server.numMessagesSentOut++;
+                        }
                         //else server.OnServerCommandReceived?.Invoke(this, new EventArgs<string>($"{sender}{NEXT}{message}"));
                         //else server.Forward(sender, message);
 
                         if (server.DoACK && !message.StartsWith(ACK))
+                        {
                             server.ForwardTo(sender, "Server", $"{ACK}: relaying [{Readable(message)}] from {sender}.");
+                            server.numAcksSentOut++;
+                        }
 
                         Handled = true; // If we made it to here, then we don't need to close things down.
                     }

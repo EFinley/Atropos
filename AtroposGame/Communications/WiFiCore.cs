@@ -101,7 +101,7 @@ namespace Atropos.Communications
                 }
                 //outStream.WriteChar(ACKchar);
             }).Wait();
-            Log.Debug(_tag, $"Received '{Readable(resultString)}'.");
+            //Log.Debug(_tag, $"Received '{Readable(resultString)}'.");
             return resultString.TrimStart(START); // Using START here is mostly as a buffer - first-character drops seem to be common - so if they happen all they cost us is a START char (which we then silently fail to trim).
         }
 

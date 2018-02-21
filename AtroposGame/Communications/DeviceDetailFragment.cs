@@ -36,13 +36,10 @@ namespace Atropos.Communications
             FindViewById<Button>(Resource.Id.btn_connect).Click += (sender, args) =>
                 {
                     var config = new WifiP2pConfig
-                        {
-                            DeviceAddress = _device.MACaddress, 
-                            Wps =
-                                {
-                                    Setup = WpsInfo.Pbc
-                                }
-                        };
+                    {
+                        DeviceAddress = _device.MACaddress, 
+                        Wps = { Setup = WpsInfo.Pbc }
+                    };
                     if (_progressDialog != null && _progressDialog.IsShowing)
                         _progressDialog.Dismiss();
 
@@ -98,19 +95,19 @@ namespace Atropos.Communications
 
             DetailView.Visibility = ViewStates.Visible;
 
-            // The owner IP is now known.
-            var view = FindViewById<TextView>(Resource.Id.group_owner);
-            view.Text = Resources.GetString(Resource.String.group_owner_text)
+            // STEP ONE - Acknowledge the group and display info about it.
+
+            FindViewById<LinearLayout>(Resource.Id.wifi_groupInfo).Visibility = ViewStates.Visible;
+            FindViewById<TextView>(Resource.Id.group_owner).Text = Resources.GetString(Resource.String.group_owner_text)
                     + ((info.IsGroupOwner) ? Resources.GetString(Resource.String.yes)
                             : Resources.GetString(Resource.String.no));
+            FindViewById<TextView>(Resource.Id.group_ip).Text = "Group Owner IP - " + _info.GroupOwnerAddress.HostAddress;
 
-            // InetAddress from WifiP2pInfo struct.
-            view = FindViewById<TextView>(Resource.Id.group_ip);
-            view.Text = "Group Owner IP - " + _info.GroupOwnerAddress.HostAddress;
             Log.Debug(Tag, $"Info received: Group formed [{_info.GroupFormed}], Owner address [{_info.GroupOwnerAddress}], Am Owner [{_info.IsGroupOwner}].");
             Toast.MakeText(this, $"P2P group formed ({((_info.IsGroupOwner) ? "am owner" : "not owner")})", ToastLength.Short).Show();
 
-            //**FindViewById<Button>(Resource.Id.btn_start_client).Visibility = ViewStates.Visible;
+            // STEP TWO - Change the "connect" / "disconnect" buttons to match.
+            // TODO: Move this to the onListItemSelected code instead (as it ought to be per-peer, not universal).
             FindViewById(Resource.Id.btn_disconnect).Visibility = ViewStates.Visible;
             FindViewById<Button>(Resource.Id.btn_connect).Visibility = ViewStates.Gone;
 
@@ -122,6 +119,7 @@ namespace Atropos.Communications
                 return;
             }
 
+            // STEP THREE - (One member only) Set up Message Server
             // After the group negotiation, we assign the group owner as the message-relay
             // server. The message server is a multiple-threaded, multiple-connection server
             // socket.
@@ -129,6 +127,9 @@ namespace Atropos.Communications
             {
                 Server = new WifiServer(_cts.Token);
                 Server.Listen();
+                FindViewById<LinearLayout>(Resource.Id.wifi_serverInfo).Visibility = ViewStates.Visible;
+                var serverInfo = FindViewById<TextView>(Resource.Id.wifi_serverTextField);
+                Server.OnServerForwardingMessage += (o, e) => { RunOnUiThread(() => { serverInfo.Text = e.Value; }); };
             }
             #region Previous almost-working code...
             //ServerSocket serverSocket = null;
@@ -284,7 +285,7 @@ namespace Atropos.Communications
             //    });
             #endregion
 
-            // Whether or not you're the server, everybody then signs on to that server as a client.
+            // Whether or not you're running the server, everybody then signs on to that server as a client.
             Client = new WifiClient(_info.GroupOwnerAddress.ToString().TrimStart('/'), _cts.Token);
 
             var statusText = FindViewById<TextView>(Resource.Id.status_text);
@@ -298,10 +299,10 @@ namespace Atropos.Communications
             };
             Client.OnMessageSent += (o, e) =>
             {
-                Log.Debug(Tag, $"Sent '{e.Value}'.");
+                Log.Debug(Tag, $"Trying to send '{e.Value}'.");
                 RunOnUiThread(() =>
                 {
-                    statusText.Text = "String sent - " + e.Value;
+                    statusText.Text = "String sending - " + e.Value;
                 });
             };
             Client.OnConnectionSuccess += (o, e) =>
@@ -310,7 +311,9 @@ namespace Atropos.Communications
                 {
                     for (int i = 0; i < 20; i++)
                     {
-                        if (AddressBook.Names.Contains(MyDevice.DeviceName)) break;
+                        RefreshDetails();
+                        //if (AddressBook.Names.Contains(MyDevice.DeviceName)) break;
+                        if (AddressBook.Names.Where(n => n != MyDevice.DeviceName).Count() > 0) break;
                         Task.Delay(150).Wait();
                     }
                     RunOnUiThread(() =>
@@ -331,7 +334,8 @@ namespace Atropos.Communications
             //    }
             //    else Team.All.Members.Add(detectedTeammate);
             //};
-            Client.Connect(MyDevice.DeviceName);
+
+            Task.Delay(250).ContinueWith(_ => Client.Connect(MyDevice.DeviceName)); // Both allows a little delay for if this one is processing faster than the server, AND puts it on a separate thread so this doesn't block.
         }
 
 //        public void DisconnectSocketStreams()
@@ -707,11 +711,10 @@ namespace Atropos.Communications
             view.Text = string.Empty;
             view = FindViewById<TextView>(Resource.Id.selected_device_info);
             view.Text = string.Empty;
-            view = FindViewById<TextView>(Resource.Id.group_owner);
-            view.Text = string.Empty;
             view = FindViewById<TextView>(Resource.Id.status_text);
             view.Text = string.Empty;
             FindViewById<Button>(Resource.Id.btn_start_client).Visibility = ViewStates.Gone;
+            FindViewById(Resource.Id.wifi_groupInfo).Visibility = ViewStates.Gone;
             DetailView.Visibility = ViewStates.Gone;
         }
     }

@@ -237,7 +237,7 @@ namespace Atropos.Machine_Learning
                 lock (SelectedGestureClass)
                 {                   
                     if (CuePrompter?.ListeningForFalseStart ?? false)
-                        {
+                    {
                         CuePrompter.DoOnFalseStart();
                         return true;
                     }
@@ -298,7 +298,7 @@ namespace Atropos.Machine_Learning
                         if (_guessandteach.Checked && MostRecentSample.RecognizedAsIndex >= 0)
                         {
                             var sc = MostRecentSample.RecognitionScore;
-                            var prefix = (sc < 1) ? "Possibly " :
+                            var prefix = (sc < 1) ? "Arguably " :
                                          (sc < 1.5) ? "Maybe " :
                                          (sc < 2) ? "Probably " :
                                          (sc < 2.5) ? "Clearly " :
@@ -686,6 +686,7 @@ namespace Atropos.Machine_Learning
 
                     _newClassNameField.Text = null;
                     _newClassNameField.ClearFocus();
+                    this.HideKeyboard();
                 };
 
             if (_newClassNameField != null)

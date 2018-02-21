@@ -117,7 +117,6 @@ namespace Atropos
         }
 
         private string[] againPrompts = new string[] { "Again", "As before", "Once more", "Same again", "Ditto", "Like before", "Same instructions" };
-        private Dictionary<Task, CancellationTokenSource> UtteranceCancellers = new Dictionary<Task, CancellationTokenSource>();
 
         public Task SayNow(string content, stringOrID[] parameters = null, bool queue = false, CrossLocale? crossLocale = null, double? pitch = 1.0, double? speakRate = 1.0, double? volume = 1.0, CancellationToken? cancelToken = null)
         {

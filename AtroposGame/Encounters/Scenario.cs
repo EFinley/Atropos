@@ -47,6 +47,7 @@ namespace Atropos.Encounters
         public string Name { get; set; }
         public string Prefix { get { return $"Atropos : {Name} : "; } }
         private OrderedDictionary<string, Func<Task>> Actions = new OrderedDictionary<string, Func<Task>>();
+        private OrderedDictionary<string, DateTime> ActionsExecutedAt = new OrderedDictionary<string, DateTime>();
         public OrderedDictionary<string, State> Variables = new OrderedDictionary<string, State>();
         private DoubleDictionary<string, State, List<Action>> VariableSetResults = new DoubleDictionary<string, State, List<Action>>();
 
@@ -78,6 +79,7 @@ namespace Atropos.Encounters
             if (!qrString.StartsWith("http")) qrString = Prefix + qrString;
             if (Actions.ContainsKey(qrString)) throw new ArgumentException($"Duplicate QRstring '{qrString}' not allowed!");
             Actions.Add(qrString, action);
+            ActionsExecutedAt.Add(qrString, DateTime.MinValue);
             return this;
         }
 
@@ -108,6 +110,7 @@ namespace Atropos.Encounters
             if (!Actions.ContainsKey(qrString)) throw new ArgumentException($"Cannot find <{qrString}> in scenario.");
             var doThis = Actions[qrString];
             await doThis?.Invoke();
+            ActionsExecutedAt[qrString] = DateTime.Now;
         }
 
         public Scenario AddVariable(string name, State initialState = State.InitialState)

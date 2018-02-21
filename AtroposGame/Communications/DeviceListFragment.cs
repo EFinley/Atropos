@@ -72,32 +72,32 @@ namespace Atropos.Communications
                 StatusByMacAddress[device.DeviceAddress] = device.Status;
             }
 
-            //switch (device.Status)
-            //{
-            //    case WifiP2pDeviceState.Available:
-            //        return "Available";
-            //    case WifiP2pDeviceState.Invited:
-            //        return "Invited";
-            //    case WifiP2pDeviceState.Connected:
-            //        return "Connected";
-            //    case WifiP2pDeviceState.Failed:
-            //        return "Failed";
-            //    case WifiP2pDeviceState.Unavailable:
-            //        return "Unavailable";
-            //    default:
-            //        return "Unknown";
-            //}
+            string result = device.Status.ToString();
+            if (device.Status == WifiP2pDeviceState.Connected)
+            {
+                var i = AddressBook.Names.IndexOf(device.DeviceName);
+                if (i >= 0)
+                {
+                    result = $"Connected as {AddressBook.IPaddresses[i]}";
+                }
+            }
 
-            return device.Status.ToString();
+            return result;
         }
 
         public void OnListItemClick(object sender, Android.Widget.AdapterView.ItemClickEventArgs e)
         {
             var listView = sender as ListView;
             selectedDeviceIndex = e.Position;
-            _device = (WifiPeer)ListAdapter.GetItem(e.Position);
+            RefreshDetails();
+        }
+
+        public void RefreshDetails()
+        {
+            _device = (WifiPeer)ListAdapter.GetItem(selectedDeviceIndex);
             ListAdapter.NotifyDataSetChanged();
             ShowDetails(_device);
+            UpdateThisDevice(MyDevice);
         }
 
         /// <summary>

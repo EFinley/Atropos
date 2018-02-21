@@ -20,6 +20,8 @@ namespace Atropos.Communications
           WifiP2pManager.IPeerListListener,
           WifiP2pManager.IConnectionInfoListener
     {
+        public static WiFiDirectActivity Current { get; set; }
+
         public const string Tag = "Atropos_Wifidirect";
         private WifiP2pManager _manager;
         private bool _retryChannel;
@@ -35,6 +37,7 @@ namespace Atropos.Communications
             base.OnCreate(bundle);
 
             SetContentView(Resource.Layout.WiFi_main);
+            Current = this;
 
             _intentFilter.AddAction(WifiP2pManager.WifiP2pStateChangedAction);
             _intentFilter.AddAction(WifiP2pManager.WifiP2pPeersChangedAction);

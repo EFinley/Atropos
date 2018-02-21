@@ -167,7 +167,7 @@ namespace Atropos
             CreateTest("Pitch Decrease*", () => PlaySound(Resource.Raw._175949_clash_t, new SoundOptions() { Pitch = 0.25 }));
             CreateTest("Rate Increase*", () => PlaySound(Resource.Raw._175949_clash_t, new SoundOptions() { Speed = 2.0 }));
             CreateTest("Rate Decrease*", () => PlaySound(Resource.Raw._175949_clash_t, new SoundOptions() { Speed = 0.5 }));
-            CreateTest("Interrupt (Timed)*", async () =>
+            CreateTest("Interrupt (Timed)", async () =>
             {
                 var eff = new Effect("strongerThanTheDark", Resource.Raw._316626_strongerThanTheDark_needsTrim);
                 cts = new CancellationTokenSource();
@@ -181,7 +181,7 @@ namespace Atropos
                 UpdateInfo("Test complete.");
                 cts = null;
             });
-            CreateTest("Interrupt (Manual)*", async () =>
+            CreateTest("Interrupt (Manual)", async () =>
             {
                 var eff = new Effect("strongerThanTheDark", Resource.Raw._316626_strongerThanTheDark_needsTrim) { Looping = true };
                 var token = SetupStopButtonOneShot("Interrupt token sent. Sound should stop; test continues.");
@@ -289,7 +289,7 @@ namespace Atropos
             CreateTest("Accelerometer", () => RunSensor(SensorType.Accelerometer));
             CreateTest("Linear Accel", () => RunSensor(SensorType.LinearAcceleration));
             CreateTest("Gravity", () => RunSensor(SensorType.Gravity));
-            CreateTest("Gyroscope", () => RunSensor(SensorType.Gravity));
+            CreateTest("Gyroscope", () => RunSensor(SensorType.Gyroscope));
             CreateTest("Compass", () => RunSensor(SensorType.MagneticField));
             CreateTest("Rotation Vector", () => RunSensor(SensorType.RotationVector));
             CreateTest("Game Rot. Vector", () => RunSensor(SensorType.GameRotationVector));

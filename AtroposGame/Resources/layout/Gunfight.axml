@@ -34,7 +34,7 @@
         android:layout_marginTop="30dp"/>
     <SeekBar
           android:id="@+id/pGain_seekbar"
-          android:layout_width="fill_parent"
+          android:layout_width="match_parent"
           android:layout_height="wrap_content"
           android:layout_marginLeft="15dp"
           android:max="100"
@@ -48,7 +48,7 @@
           android:layout_marginTop="30dp"/>
     <SeekBar
           android:id="@+id/iGain_seekbar"
-          android:layout_width="fill_parent"
+          android:layout_width="match_parent"
           android:layout_height="wrap_content"
           android:layout_marginLeft="15dp"
           android:max="100"
@@ -62,14 +62,14 @@
           android:layout_marginTop="30dp"/>
     <SeekBar
           android:id="@+id/dGain_seekbar"
-          android:layout_width="fill_parent"
+          android:layout_width="match_parent"
           android:layout_height="wrap_content"
           android:layout_marginLeft="15dp"
           android:max="100"
           android:progress="0"/>-->
         <!--<TextView
             android:id="@+id/current_signals_text"
-            android:layout_width="fill_parent"
+            android:layout_width="match_parent"
             android:textAppearance="?android:attr/textAppearanceLarge"
             android:layout_height="wrap_content"
             android:text=""
@@ -78,7 +78,7 @@
             android:layout_marginTop="30dp" />
         <TextView
             android:id="@+id/best_signals_text"
-            android:layout_width="fill_parent"
+            android:layout_width="match_parent"
             android:textAppearance="?android:attr/textAppearanceLarge"
             android:layout_height="wrap_content"
             android:text=""
@@ -87,7 +87,7 @@
             android:layout_marginTop="30dp" />
         <TextView
             android:id="@+id/result_text"
-            android:layout_width="fill_parent"
+            android:layout_width="match_parent"
             android:textAppearance="?android:attr/textAppearanceLarge"
             android:layout_height="wrap_content"
             android:text=""
@@ -97,32 +97,32 @@
         <!--<ImageView
           android:id="@+id/bullet1"
           android:src="@drawable/bullet"
-          android:layout_width="fill_parent"
+          android:layout_width="match_parent"
           android:layout_height="wrap_content"/>
     <ImageView
           android:id="@+id/bullet2"
           android:src="@drawable/bullet"
-          android:layout_width="fill_parent"
+          android:layout_width="match_parent"
           android:layout_height="wrap_content"/>
     <ImageView
           android:id="@+id/bullet3"
           android:src="@drawable/bullet"
-          android:layout_width="fill_parent"
+          android:layout_width="match_parent"
           android:layout_height="wrap_content"/>
     <ImageView
           android:id="@+id/bullet4"
           android:src="@drawable/bullet"
-          android:layout_width="fill_parent"
+          android:layout_width="match_parent"
           android:layout_height="wrap_content"/>
     <ImageView
           android:id="@+id/bullet5"
           android:src="@drawable/bullet"
-          android:layout_width="fill_parent"
+          android:layout_width="match_parent"
           android:layout_height="wrap_content"/>
     <ImageView
           android:id="@+id/bullet6"
           android:src="@drawable/bullet"
-          android:layout_width="fill_parent"
+          android:layout_width="match_parent"
           android:layout_height="wrap_content"/>-->
         </LinearLayout>
     </ScrollView>
