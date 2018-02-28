@@ -31,27 +31,24 @@ namespace Atropos.Machine_Learning
 
         //// Less obviously, some averaging processes to keep track of the typical features of the gesture - total dimensions, total time,
         //// eventually other stuff like energy spectra etc. if necessary.
-        //private AdvancedRollingAverage<float> _avgWidth, _avgHeight, _avgDuration;
-        //public double AverageWidth { get { return _avgWidth.Average; } }
-        //public double AverageHeight { get { return _avgHeight.Average; } }
-        //public TimeSpan AverageDuration { get { return TimeSpan.FromMilliseconds(_avgDuration?.Average ?? 0); } }
-        //public double WidthSigma { get { return _avgWidth.Sigma; } }
-        //public double HeightSigma { get { return _avgHeight.Sigma; } }
-        //public double DurationSigma { get { return _avgDuration.Sigma; } }
-        public void UpdateAverages(double width, double height, TimeSpan duration)
+        public SequenceMetadata AverageMetadata;
+        private int numMetadataPoints = 0;
+        private double rollinAverage(double oldAvg, double newVal) { return oldAvg + (newVal - oldAvg) / (numMetadataPoints + 1); }
+        private TimeSpan rollinAverage(TimeSpan oldAvg, TimeSpan newVal) { return TimeSpan.FromMilliseconds(oldAvg.TotalMilliseconds + ((newVal - oldAvg).TotalMilliseconds) / (numMetadataPoints + 1)); }
+        public void UpdateMetadata(SequenceMetadata newData)
         {
-            //if (_avgWidth == null)
-            //{
-            //    _avgWidth = AdvancedRollingAverage<float>.Create<float>(10, (float)width);
-            //    _avgHeight = AdvancedRollingAverage<float>.Create<float>(10, (float)height);
-            //    _avgDuration = AdvancedRollingAverage<float>.Create<float>(10, (float)duration.TotalMilliseconds);
-            //}
-            //else
-            //{
-            //    _avgWidth.Update((float)width);
-            //    _avgHeight.Update((float)height);
-            //    _avgDuration.Update((float)duration.TotalMilliseconds);
-            //}
+            AverageMetadata.QualityScore = rollinAverage(AverageMetadata.QualityScore, newData.QualityScore);
+            AverageMetadata.Delay = rollinAverage(AverageMetadata.Delay, newData.Delay);
+            AverageMetadata.Duration = rollinAverage(AverageMetadata.Duration, newData.Duration);
+            AverageMetadata.NumPoints = rollinAverage(AverageMetadata.NumPoints, newData.NumPoints);
+            AverageMetadata.PeakAccel = rollinAverage(AverageMetadata.PeakAccel, newData.PeakAccel);
+            numMetadataPoints++;
+            Android.Util.Log.Debug("MachineLearning|GC", $"Updating average metadata for {className} to Qual {AverageMetadata.QualityScore}, Delay {AverageMetadata.Delay.TotalMilliseconds}, Duration {AverageMetadata.Duration.TotalMilliseconds}, #pts {AverageMetadata.NumPoints}, and peak accel {AverageMetadata.PeakAccel}.");
+        }
+        public void ResetMetadata()
+        {
+            AverageMetadata = new SequenceMetadata();
+            numMetadataPoints = 0;
         }
 
         public virtual string PercentageText

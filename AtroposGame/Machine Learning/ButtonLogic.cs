@@ -54,12 +54,15 @@ namespace Atropos.Machine_Learning.Button_Logic
             set
             {
                 _state = value;
-                if (_state.Enabled != null) Target.Enabled = _state.Enabled.Value;
-                if (_state.Text != FieldState.NoChange) Target.Text = _state.Text;
+                Task.Delay(2).ContinueWith(_ =>
+                {
+                    if (_state.Enabled != null) Target.Enabled = _state.Enabled.Value;
+                    if (_state.Text != FieldState.NoChange) Target.Text = _state.Text;
+                });
 
                 Target.Clickable = _state.Clickable;
 
-                Target.Invalidate(); // Tell the engine we need re-displaying.
+                Target.RequestLayout(); // Tell the engine we need re-displaying.
             }
         }
     }
@@ -111,7 +114,7 @@ namespace Atropos.Machine_Learning.Button_Logic
         private ListView _listview;
         private RadioButton _guessAndTeach, _cuemode;
         private Button _gimmeCue;
-        private CheckBox _repeatCuesCheckbox;
+        private CheckBox _repeatCuesCheckbox, _advancedCuesCheckbox;
         private EditText _newClassName;
 
         public virtual void AssignTargets(Activity activity)
@@ -128,6 +131,7 @@ namespace Atropos.Machine_Learning.Button_Logic
             _cuemode = parentActivity.FindViewById<RadioButton>(Resource.Id.mlrn_trainmode_cue);
             _gimmeCue = parentActivity.FindViewById<Button>(Resource.Id.mlrn_cue_button);
             _repeatCuesCheckbox = parentActivity.FindViewById<CheckBox>(Resource.Id.mlrn_cue_repeat_checkbox);
+            _advancedCuesCheckbox = parentActivity.FindViewById<CheckBox>(Resource.Id.mlrn_cue_advanced_mode);
             _newClassName = parentActivity.FindViewById<EditText>(Resource.Id.mlrn_new_gesture_class_namefield);
         }
 
@@ -149,7 +153,7 @@ namespace Atropos.Machine_Learning.Button_Logic
         public static FieldState CanCompute = FieldState.Def("Generate Classification AI", true);
         public static FieldState IsComputing = FieldState.Def("Computing...", true, false);
         public static FieldState IsReassessing = FieldState.Def("Reassessing data...", true, false);
-        public static FieldState DoFullReassess = FieldState.Def("Reassessing data...", true);
+        public static FieldState DoFullReassess = FieldState.Def("Reassess data", true);
         public static FieldState JustComputed = FieldState.Def("Classifier Up To Date", true, false);
         public static FieldState CanRecompute = FieldState.Def("Incorporate New Data", true);
 
@@ -166,7 +170,7 @@ namespace Atropos.Machine_Learning.Button_Logic
             var Dataset = activity.Dataset;
             var Classifier = activity.Classifier;
 
-            // Anything for us to load?  This (only) doesn't depend on the dataset existing at all.
+            // Anything for us to load?  This (and only this) doesn't depend on the dataset existing at all.
             bool foundAtLeastOneDataset = false;
             var externalDir = parentActivity.GetExternalFilesDir(null).AbsoluteFile;
             var allFiles = externalDir.ListFiles().ToList();
@@ -195,7 +199,10 @@ namespace Atropos.Machine_Learning.Button_Logic
             if (_cuemode != null)
             {
                 _cuemode.Enabled = (Classifier != null && Classifier.MachineOnline);
-                _gimmeCue.Visibility = _repeatCuesCheckbox.Visibility = (_cuemode.Checked) ? ViewStates.Visible : ViewStates.Gone;
+                _gimmeCue.Visibility = 
+                    _repeatCuesCheckbox.Visibility = 
+                    _advancedCuesCheckbox.Visibility =
+                    (_cuemode.Checked) ? ViewStates.Visible : ViewStates.Gone;
             }
             _newClassName.Text = _newClassName.Text + ""; // Causes it to reassess its "on text changed" event
 

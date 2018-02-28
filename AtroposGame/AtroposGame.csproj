@@ -233,6 +233,8 @@
     <Compile Include="MainActivity.cs" />
     <Compile Include="Melee Training Activity.cs" />
     <Compile Include="MeleeDefinitions.cs" />
+    <Compile Include="Melee\Choreographer.cs" />
+    <Compile Include="Melee\MeleeBetaActivity.cs" />
     <Compile Include="MiscUtil\ApplicationChooser.cs" />
     <Compile Include="MiscUtil\BufferAcquisitionException.cs" />
     <Compile Include="MiscUtil\CachedBuffer.cs" />
@@ -352,7 +354,7 @@
     <Compile Include="Utilities\ExponentialAveragers.cs" />
     <Compile Include="Utilities\Extensions.cs" />
     <Compile Include="Utilities\NullableImproved.cs" />
-    <Compile Include="Vector6.cs" />
+    <Compile Include="Data Structures\Vector6.cs" />
   </ItemGroup>
   <ItemGroup>
     <AndroidAsset Include="Assets\FTLTLT.TTF" />
@@ -376,7 +378,9 @@
     <AndroidResource Include="Resources\layout\fragment_test.axml" />
     <AndroidResource Include="Resources\layout\Gunfight.axml" />
     <AndroidResource Include="Resources\layout\LockTraining.axml" />
-    <AndroidResource Include="Resources\layout\MachineLearning.axml" />
+    <AndroidResource Include="Resources\layout\MachineLearning.axml">
+      <SubType>Designer</SubType>
+    </AndroidResource>
     <AndroidResource Include="Resources\layout\MachineLearning_gestureClassRepresentation.axml" />
     <AndroidResource Include="Resources\layout\Mage.axml" />
     <AndroidResource Include="Resources\layout\Mage_old.axml" />
@@ -436,6 +440,9 @@
       <SubType>Designer</SubType>
     </AndroidResource>
     <AndroidResource Include="Resources\layout\TestSuite.axml" />
+    <AndroidResource Include="Resources\layout\MeleeBeta.axml">
+      <SubType>Designer</SubType>
+    </AndroidResource>
   </ItemGroup>
   <ItemGroup>
     <AndroidResource Include="Resources\layout\Main.axml">
@@ -822,6 +829,9 @@
   </ItemGroup>
   <ItemGroup>
     <AndroidResource Include="Resources\values\Colors.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidAsset Include="Assets\MeleeClassifier.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets" />
   <Import Project="..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets" Condition="Exists('..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets')" />

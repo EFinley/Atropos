@@ -330,10 +330,8 @@ namespace Atropos
 
             protected override async void startAction()
             {
-                var _cts = new System.Threading.CancellationTokenSource();
-                sayIt = Speech.SayAllOf($"Hold device at each position until you hear the tone.  Take your zero stance to begin.", 
-                    volume: 0.5, cancelToken: _cts.Token); // : StopToken
-                _cts.CancelAfter(750);
+                sayIt = Speech.SayAllOf($"Hold device at each position until you hear the tone.  Take your zero stance to begin.",
+                    volume: 0.5, cancelToken: StopToken);
                 await sayIt;
                 //Speech.Say("Hold device at each position yadda yadda.");
                 await Task.Delay(1000);

@@ -48,18 +48,21 @@
             <Button
                 android:text="Load Dataset"
                 android:id="@+id/mlrn_dataset_load_btn"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
+                android:layout_weight="1"
                 android:layout_height="match_parent" />
             <Button
                 android:text="Save Dataset"
                 android:id="@+id/mlrn_dataset_save_btn"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
+                android:layout_weight="1"
                 android:layout_height="match_parent"
                 android:enabled="false" />
             <Button
                 android:text="Clear"
                 android:id="@+id/mlrn_dataset_clear_btn"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
+                android:layout_weight="1"
                 android:layout_height="match_parent" />
         </LinearLayout>
         <Button
@@ -68,6 +71,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:enabled="false"
+            android:layout_margin="10dp" />
+        <Button
+            android:id="@+id/mlrn_run_test_btn"
+            android:text="Run Debugging Test"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:layout_margin="10dp" />
     <!--<fragment
         class="Atropos.Machine_Learning.GestureListFragment"
@@ -117,7 +126,7 @@
                 android:layout_weight="1"
                 android:layout_height="wrap_content"
                 android:checked="true"
-                android:text="Teach + Repeat" />
+                android:text="Teach Only" />
             <RadioButton
                 android:id="@+id/mlrn_trainmode_guessandteach"
                 android:layout_width="0dp"
@@ -133,20 +142,31 @@
                 android:text="Cue"
                 android:enabled="false" />
         </RadioGroup>
-        <Button 
+        <Button
             android:id="@+id/mlrn_cue_button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Gimme a cue!" 
-            android:visibility="gone"/>
-        <CheckBox
-            android:id="@+id/mlrn_cue_repeat_checkbox"
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content"
-            android:checked="false"
-            android:visibility="gone"
-            android:text="Keep 'em Coming"
-            />
+            android:text="Gimme a cue!"
+            android:visibility="gone" />
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <CheckBox
+                android:id="@+id/mlrn_cue_repeat_checkbox"
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content"
+                android:checked="false"
+                android:visibility="gone"
+                android:text="Keep 'em Coming" />
+            <CheckBox
+                android:id="@+id/mlrn_cue_advanced_mode"
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content"
+                android:checked="false"
+                android:visibility="gone"
+                android:text="Advanced" />
+        </LinearLayout>
         <LinearLayout
             android:id="@+id/mlrn_latest_sample_display"
             android:orientation="horizontal"
@@ -171,14 +191,12 @@
                 <TextView
                     android:id="@+id/mlrn_latest_sample_guessfield"
                     android:layout_width="match_parent"
-                    android:layout_height="0dp"
-                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
                     android:layout_margin="10dp" />
                 <Spinner
                     android:id="@+id/mlrn_latest_sample_classname_spinner"
                     android:layout_width="match_parent"
-                    android:layout_height="0dp"
-                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
                     android:layout_margin="10dp" />
                 <Button
                     android:id="@+id/mlrn_latest_sample_discard"
@@ -187,9 +205,9 @@
                     android:layout_height="wrap_content"
                     android:text="Discard sample"
                     android:layout_marginLeft="15dp"
-                    android:layout_marginTop="5dp"
+                    android:layout_marginTop="3dp"
                     android:layout_marginRight="5dp"
-                    android:layout_marginBottom="5dp" />
+                    android:layout_marginBottom="3dp" />
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>

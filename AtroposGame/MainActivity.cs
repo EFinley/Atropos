@@ -67,36 +67,36 @@ namespace Atropos
             //    .ContinueWith(_ => FindViewById<ImageView>(Resource.Id.role_mage).SetImageResource(Resource.Drawable.sorcerer_logo_small))
             //    .ContinueWith(_ => Task.Delay(1000).Wait())
             //    .ContinueWith(_ => FindViewById<ImageView>(Resource.Id.role_operative).SetImageResource(Resource.Drawable.spy_logo_small));
-            InitImageButton(Resource.Id.role_samurai, Resource.Drawable.hitter_logo, Resource.Drawable.hitter_logo_small);
-            InitImageButton(Resource.Id.role_decker, Resource.Drawable.hacker_logo, Resource.Drawable.hacker_logo_small);
-            InitImageButton(Resource.Id.role_mage, Resource.Drawable.sorcerer_logo, Resource.Drawable.sorcerer_logo_small);
-            InitImageButton(Resource.Id.role_operative, Resource.Drawable.spy_logo, Resource.Drawable.spy_logo_small);
+            //InitImageButton(Resource.Id.role_samurai, Resource.Drawable.hitter_logo, Resource.Drawable.hitter_logo_small);
+            //InitImageButton(Resource.Id.role_decker, Resource.Drawable.hacker_logo, Resource.Drawable.hacker_logo_small);
+            //InitImageButton(Resource.Id.role_mage, Resource.Drawable.sorcerer_logo, Resource.Drawable.sorcerer_logo_small);
+            //InitImageButton(Resource.Id.role_operative, Resource.Drawable.spy_logo, Resource.Drawable.spy_logo_small);
 
 
             InitializeAll();
 
-            // TODO!  This all fails because for some reason the main panel isn't displaying the "Create" button.  Can't figure out why, so I'm punting on it for now.
-            foreach (var roleInfo in RoleInfoList)
-            {
-                this.RotateText(roleInfo.createButtonID);
-                SetTypeface(roleInfo.createButtonID, "FTLTLT.TTF");
+            //// TODO!  This all fails because for some reason the main panel isn't displaying the "Create" button.  Can't figure out why, so I'm punting on it for now.
+            //foreach (var roleInfo in RoleInfoList)
+            //{
+            //    this.RotateText(roleInfo.createButtonID);
+            //    SetTypeface(roleInfo.createButtonID, "FTLTLT.TTF");
 
-                var namesField = FindViewById<TextView>(roleInfo.namesFieldID);
+            //    var namesField = FindViewById<TextView>(roleInfo.namesFieldID);
 
-                var storedChars = CharacterStats.GetStoredByRole(roleInfo.role);
-                if (storedChars.Count() == 0)
-                    SetupButton(roleInfo.launchButtonID, roleInfo.activityType);
-                else if (storedChars.Count() == 1)
-                {
-                    namesField.Text = storedChars.First().CharacterName;
-                    SetupButton(roleInfo.launchButtonID, roleInfo.activityType, storedChars.First());
-                }
-                else
-                {
-                    namesField.Text = $"{storedChars.Count()} Saved";
-                    SetupButton(roleInfo.launchButtonID, roleInfo.activityType, storedChars.First());
-                }
-            }
+            //    var storedChars = CharacterStats.GetStoredByRole(roleInfo.role);
+            //    if (storedChars.Count() == 0)
+            //        SetupButton(roleInfo.launchButtonID, roleInfo.activityType);
+            //    else if (storedChars.Count() == 1)
+            //    {
+            //        namesField.Text = storedChars.First().CharacterName;
+            //        SetupButton(roleInfo.launchButtonID, roleInfo.activityType, storedChars.First());
+            //    }
+            //    else
+            //    {
+            //        namesField.Text = $"{storedChars.Count()} Saved";
+            //        SetupButton(roleInfo.launchButtonID, roleInfo.activityType, storedChars.First());
+            //    }
+            //}
 
             //this.RotateText(Resource.Id.role_samurai_createBtn);
             //SetTypeface(Resource.Id.role_samurai_createBtn, "FTLTLT.TTF");
@@ -106,12 +106,12 @@ namespace Atropos
             //    : (storedHitters.Count() == 1) ? storedHitters.First().CharacterName
             //    : "";
 
-            //SetupButton(Resource.Id.role_samurai, () => LaunchDirectly(typeof(SamuraiActivity), storedHitters));
+            SetupButton(Resource.Id.role_samurai, typeof(SamuraiActivity));
             SetupButton(Resource.Id.role_decker, typeof(DeckerActivity));
             SetupButton(Resource.Id.role_mage, typeof(MageActivity));
             SetupButton(Resource.Id.role_operative, typeof(OperativeActivity));
 
-            SetupButton(Resource.Id.role_samurai_createBtn, typeof(CharacterSheetActivity), Role.Hitter);
+            //SetupButton(Resource.Id.role_samurai_createBtn, typeof(CharacterSheetActivity), Role.Hitter);
             //SetupButton(Resource.Id.role_decker_createBtn, () => LaunchDirectly(typeof(CharacterSheetActivity), Role.Hacker));
             //SetupButton(Resource.Id.role_mage_createBtn, () => LaunchDirectly(typeof(CharacterSheetActivity), Role.Sorceror));
             //SetupButton(Resource.Id.role_operative_createBtn, () => LaunchDirectly(typeof(CharacterSheetActivity), Role.Spy));
@@ -130,7 +130,11 @@ namespace Atropos
             //FindViewById<ImageView>(Resource.Id.role_mage).SetImageResource(Resource.Drawable.sorcerer_logo);
             //Task.Delay(1000).Wait();
             //FindViewById<ImageView>(Resource.Id.role_operative).SetImageResource(Resource.Drawable.spy_logo);
-            //FindViewById<LinearLayout>(Resource.Id.linearLayout1).RequestLayout();
+            InitImageButton(Resource.Id.role_samurai, Resource.Drawable.hitter_logo, Resource.Drawable.hitter_logo_small);
+            InitImageButton(Resource.Id.role_decker, Resource.Drawable.hacker_logo, Resource.Drawable.hacker_logo_small);
+            InitImageButton(Resource.Id.role_mage, Resource.Drawable.sorcerer_logo, Resource.Drawable.sorcerer_logo_small);
+            InitImageButton(Resource.Id.role_operative, Resource.Drawable.spy_logo, Resource.Drawable.spy_logo_small);
+            FindViewById<LinearLayout>(Resource.Id.linearLayout1).RequestLayout();
         }
 
         protected override void OnPause()
@@ -149,6 +153,8 @@ namespace Atropos
                     Success = true;
                 });
             TryToAssign(primaryImageID);
+            if (Success) return;
+            TryToAssign(primaryImageID); // Sometimes some memory has cleared up by this point.
             if (Success) return;
             TryToAssign(secondaryImageID);
             if (Success) return;
@@ -170,26 +176,26 @@ namespace Atropos
             Encounters.Scenario.Current = Encounters.Scenario.Postcard;
         }
 
-        private struct RoleInformation
-        {
-            public Role role;
-            public Type activityType;
-            public int launchButtonID;
-            public int createButtonID;
-            public int namesFieldID;
-        }
+        //private struct RoleInformation
+        //{
+        //    public Role role;
+        //    public Type activityType;
+        //    public int launchButtonID;
+        //    public int createButtonID;
+        //    public int namesFieldID;
+        //}
 
-        private static RoleInformation[] RoleInfoList = new RoleInformation[]
-        {
-            new RoleInformation()
-            {
-                role = Role.Hitter,
-                activityType = typeof(SamuraiActivity),
-                launchButtonID = Resource.Id.role_samurai,
-                createButtonID = Resource.Id.role_samurai_createBtn,
-                namesFieldID = Resource.Id.role_samurai_storedNames
-            }
-        };
+        //private static RoleInformation[] RoleInfoList = new RoleInformation[]
+        //{
+        //    new RoleInformation()
+        //    {
+        //        role = Role.Hitter,
+        //        activityType = typeof(SamuraiActivity),
+        //        launchButtonID = Resource.Id.role_samurai,
+        //        createButtonID = Resource.Id.role_samurai_createBtn,
+        //        namesFieldID = Resource.Id.role_samurai_storedNames
+        //    }
+        //};
     }
 }
 

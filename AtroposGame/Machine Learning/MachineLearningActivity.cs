@@ -34,6 +34,7 @@ using PerpetualEngine.Storage;
 using MiscUtil;
 using Atropos.DataStructures;
 using Atropos.Machine_Learning.Button_Logic;
+using Accord.Math;
 
 namespace Atropos.Machine_Learning
 {
@@ -41,20 +42,29 @@ namespace Atropos.Machine_Learning
     /// Specific implementation - must specify the type argument of the underlying base class,
     /// and then in ResetStage launch a stage with an appropriate <see cref="LoggingSensorProvider{T}"/>.
     /// 
-    /// <para>Type argument here is constrained (at present) to one of: Vector2, Vector3, <seealso cref="Vector6"/>.  
-    /// See also <seealso cref="Feature{T}"/> to implement any other types.</para>
+    /// <para>Type argument here is constrained (at present) to one of: Vector2, Vector3, <seealso cref="Datapoint{T}"/>, <seealso cref="Datapoint{T1, T2}"/>.</para>
     /// </summary>
     [Activity(ScreenOrientation = Android.Content.PM.ScreenOrientation.Portrait, WindowSoftInputMode = SoftInput.AdjustPan)]
-    public class MachineLearningActivity : MachineLearningActivity<Datapoint<Vector3, Vector3>>
+    public class MachineLearningActivity : MachineLearningPageActivity<Datapoint<Vector3, Vector3>>
     {
 
         protected new static MachineLearningActivity Current { get { return (MachineLearningActivity)CurrentActivity; } set { CurrentActivity = value; } }
 
         protected override void ResetStage(string label)
         {
-            CurrentStage = new MachineLearningStage(label, Dataset, 
-                //new SmoothClusterProvider<Vector3, Vector3>(SensorType.LinearAcceleration, SensorType.Gravity)); 
-                new ClusterLoggingProvider<Vector3, Vector3>(SensorType.LinearAcceleration, SensorType.Gravity));
+            //if (!_advancedCueMode)
+                CurrentGestureStage = new MachineLearningStage(label, Dataset, 
+                    new ClusterLoggingProvider<Vector3, Vector3>(SensorType.LinearAcceleration, SensorType.Gravity));
+            //else CurrentStage = new SelfEndpointingSingleGestureRecognizer(label, Classifier,
+            //            new ClusterLoggingProvider<Vector3, Vector3>(SensorType.LinearAcceleration, SensorType.Gravity));
+        }
+
+        protected override void AlternativeResetStage(string label, params object[] info)
+        {
+            CurrentGestureStage?.Deactivate();
+            CurrentGestureStage = null;
+            CurrentGestureStage = new SelfEndpointingSingleGestureRecognizer(label, Classifier,
+                        new ClusterLoggingProvider<Vector3, Vector3>(SensorType.LinearAcceleration, SensorType.Gravity));
         }
     }
 
@@ -82,20 +92,69 @@ namespace Atropos.Machine_Learning
     //    }
     //}
 
-    public abstract partial class MachineLearningActivity<T> 
-        : BaseActivity_Portrait, MachineLearningActivity<T>.IMachineLearningActivity 
+    public abstract partial class MachineLearningActivity<T>
+        : BaseActivity_Portrait, MachineLearningActivity<T>.IMachineLearningActivity
         where T : struct
     {
         protected static MachineLearningActivity<T> Current { get { return (MachineLearningActivity<T>)CurrentActivity; } set { CurrentActivity = value; } }
+        //protected static MachineLearningStage CurrentGestureStage { get { return (MachineLearningStage)BaseActivity.CurrentStage; } set { BaseActivity.CurrentStage = value; } }
+        protected static MachineLearningStage CurrentGestureStage { get; set; }
+
         public interface IMachineLearningActivity
         {
-            GestureClass SelectedGestureClass { get; }
-            ISequence MostRecentSample { get; }
-            void SetUpAdapters(IDataset dataset);
+            GestureClass SelectedGestureClass { get; set; }
+            DataSet<T> Dataset { get; set; }
+            Sequence<T> MostRecentSample { get; }
+            void SetUpAdapters(IDataset dataSet);
         } // Mostly a 'marker' interface, used because the "typeless" MachineLearningActivity is in this case the more derived class, instead of the less derived one.
 
         #region Data Members (and tightly linked functions / properties)
-        public DataSet<T> Dataset
+        public virtual DataSet<T> Dataset
+        {
+            get
+            {
+                return DataSet.Current as DataSet<T>;
+            }
+            set
+            {
+                DataSet.Current = value as DataSet;
+            }
+        }
+
+        public GestureClass SelectedGestureClass { get; set; } = GestureClass.NullGesture;
+
+        protected Sequence<T> _mostRecentSample;
+        public virtual Sequence<T> MostRecentSample
+        {
+            get { return _mostRecentSample; }
+            set
+            {
+                _mostRecentSample = value;
+            }
+        }
+
+        public Classifier Classifier { get; set; }
+        protected abstract void ResetStage(string label);
+        protected virtual void AlternativeResetStage(string label, params object[] info) { ResetStage(label); }
+        protected CuePrompter<T> CuePrompter { get; set; }
+        public virtual void SetUpAdapters(IDataset dataSet) { throw new NotImplementedException(); }
+        #endregion
+
+        public async Task<Sequence<T>> Analyze(Sequence<T> sequence)
+        {
+            if (Classifier != null && Classifier.MachineOnline)
+            {
+                sequence.RecognizedAsIndex = await Classifier.Recognize(sequence);
+                //sequence.TrueClassIndex = SelectedGestureClass.index;
+            }
+            return sequence;
+        }
+    }
+
+    public class MachineLearningPageActivity<T> : MachineLearningActivity<T> where T : struct
+    {
+        #region Data members (and tightly linked properties & functions)
+        public override DataSet<T> Dataset
         {
             get
             {
@@ -107,22 +166,15 @@ namespace Atropos.Machine_Learning
                 ButtonStates.Update(this);
             }
         }
-
-        public GestureClass SelectedGestureClass { get; set; } = GestureClass.NullGesture;
-
-        private Sequence<T> _mostRecentSample;
-        public ISequence MostRecentSample
+        public override Sequence<T> MostRecentSample
         {
             get { return _mostRecentSample; }
             set
             {
-                _mostRecentSample = (Sequence<T>)value;
-                _latestSampleDisplay.Visibility = (_mostRecentSample != null) ? ViewStates.Visible : ViewStates.Gone;
+                _mostRecentSample = value;
+                RunOnUiThread(() => { _latestSampleDisplay.Visibility = (_mostRecentSample != null) ? ViewStates.Visible : ViewStates.Gone; });
             }
         }
-
-        public Classifier Classifier { get; set; }
-
         protected RadioButton _teachonly, _guessandteach, _cuemode;
         protected ImageView _sampleVisualization;
         protected TextView _guessField;
@@ -157,10 +209,10 @@ namespace Atropos.Machine_Learning
         protected bool _collectingData = false;
         protected bool _listeningForGesture { get { return SelectedGestureClass != GestureClass.NullGesture
                                                     && !_collectingData; } }
-        protected CuePrompter<T> CuePrompter { get; set; }
+        protected bool _advancedCueMode { get { return _cuemode != null && _cuemode.Checked && FindViewById<CheckBox>(Resource.Id.mlrn_cue_advanced_mode).Checked; } }
 
-        protected abstract void ResetStage(string label);
-        private ProgressDialog _progressDialog;
+        protected override void ResetStage(string label) { throw new NotImplementedException(); }
+        //private ProgressDialog _progressDialog;
 
         protected void FindAllViews()
         {
@@ -235,7 +287,7 @@ namespace Atropos.Machine_Learning
             if (keyCode == Keycode.VolumeDown || keyCode == Keycode.VolumeUp)
             {
                 lock (SelectedGestureClass)
-                {                   
+                {
                     if (CuePrompter?.ListeningForFalseStart ?? false)
                     {
                         CuePrompter.DoOnFalseStart();
@@ -247,9 +299,11 @@ namespace Atropos.Machine_Learning
                         //Log.Debug("MachineLearning", $"{keyCode} down");
 
                         AssertRecognition();
-                        CuePrompter?.MarkGestureStart();
-
-                        CurrentStage.Activate();
+                        if (!_advancedCueMode)
+                        {
+                            CuePrompter?.MarkGestureStart();
+                            CurrentGestureStage.Activate();
+                        }
                         return true; // Handled it, thanks.
                     }
                 }
@@ -267,61 +321,74 @@ namespace Atropos.Machine_Learning
                     {
                         //Log.Debug("MachineLearning", $"{keyCode} up");
 
-                        // Halt the gesture-collection stage and query it.
-                        var featureVectors = ((MachineLearningStage)CurrentStage).StopAndReturnResults();
-                        var SelectedGestureClassIndex = SelectedGestureClass.index;
-
-                        MostRecentSample = new Sequence<T>() { SourcePath = featureVectors };
-                        if (TeachOnlyMode) MostRecentSample.TrueClassIndex = SelectedGestureClassIndex;
-
-                        //if (TeachOnlyMode) Dataset.AddSequence(MostRecentSample);
-                        Dataset.AddSequence(MostRecentSample);
-
-                        //CurrentStage.Deactivate();
-                        //CurrentStage = new MachineLearningStage<T>($"Learning gesture {SelectedGestureClass.className}#{SelectedGestureClass.numExamples + SelectedGestureClass.numNewExamples}", Dataset);
-                        string StageLabel = (TeachOnlyMode)
-                            ? $"Learning gesture {SelectedGestureClass.className}#{SelectedGestureClass.numExamples + SelectedGestureClass.numNewExamples}"
-                            : $"Reading gesture (#{Dataset.SequenceCount + 1})";
-                        ResetStage(StageLabel);
-
-                        //var vNormal = ((MachineLearningStage)CurrentStage).
-
-                        //FindViewById(Resource.Id.mlrn_latest_sample_display).Visibility = ViewStates.Visible;
-                        _collectingData = false;
-
-                        //Task.Run(() =>
-                        //{
-                        MostRecentSample = Analyze(MostRecentSample).Result;
-
-                        // If right or wrong, tweak the display properties of the sample.  This may depend on TeachMode.
-                        DisplaySampleInfo(MostRecentSample);
-                        if (_guessandteach.Checked && MostRecentSample.RecognizedAsIndex >= 0)
+                        if (!_advancedCueMode)
                         {
-                            var sc = MostRecentSample.RecognitionScore;
-                            var prefix = (sc < 1) ? "Arguably " :
-                                         (sc < 1.5) ? "Maybe " :
-                                         (sc < 2) ? "Probably " :
-                                         (sc < 2.5) ? "Clearly " :
-                                         (sc < 3) ? "Certainly " :
-                                         "A perfect ";
-                            Speech.Say(prefix + MostRecentSample.RecognizedAsName);
+                            // Halt the gesture-collection stage and query it.
+                            var resultData = CurrentGestureStage.StopAndReturnResults();
+                            var resultSeq = new Sequence<T>() { SourcePath = resultData };
+                            resultSeq.Metadata = CurrentGestureStage.GetMetadata();
+                            ResolveEndOfGesture(resultSeq);
                         }
-                        else if (_cuemode.Checked)
+                        else // Advanced Cue Mode - where releasing the button is NOT the end of the gesture... merely the start of the cue timer.
                         {
-                            CuePrompter?.ReactToFinalizedGesture(MostRecentSample);
+                            GimmeCue(true).LaunchAsOrphan("Cue");
                         }
-                        //});
-
-                        _listView.Adapter = _listAdapter;
-                        _listView.RequestLayout();
-                        _latestSampleDisplay.RequestLayout();
-                        ButtonStates.Update(this);
-
-                        return true; // Handled it, thanks. 
+                        return true; // Handled it, thanks.  
                     }
                 }
             }
             return base.OnKeyUp(keyCode, e);
+        }
+
+        protected void ResolveEndOfGesture(Sequence<T> resultSequence)
+        {
+            var SelectedGestureClassIndex = SelectedGestureClass.index;
+
+            MostRecentSample = resultSequence;
+            if (TeachOnlyMode) MostRecentSample.TrueClassIndex = SelectedGestureClassIndex;
+
+            //if (TeachOnlyMode) Dataset.AddSequence(MostRecentSample);
+            Dataset?.AddSequence(MostRecentSample);
+
+            //CurrentStage.Deactivate();
+            //CurrentStage = new MachineLearningStage<T>($"Learning gesture {SelectedGestureClass.className}#{SelectedGestureClass.numExamples + SelectedGestureClass.numNewExamples}", Dataset);
+            string StageLabel = (TeachOnlyMode)
+                ? $"Learning gesture {SelectedGestureClass.className}#{SelectedGestureClass.numExamples + SelectedGestureClass.numNewExamples}"
+                : $"Reading gesture (#{Dataset.SequenceCount + 1})";
+            if (!_advancedCueMode) ResetStage(StageLabel);
+
+            //var vNormal = ((MachineLearningStage)CurrentStage).
+
+            //FindViewById(Resource.Id.mlrn_latest_sample_display).Visibility = ViewStates.Visible;
+            _collectingData = false;
+
+            //Task.Run(() =>
+            //{
+            MostRecentSample = Analyze(MostRecentSample).Result;
+
+            // If right or wrong, tweak the display properties of the sample.  This may depend on TeachMode.
+            DisplaySampleInfo(MostRecentSample);
+            if (_guessandteach.Checked && MostRecentSample.RecognizedAsIndex >= 0)
+            {
+                var sc = MostRecentSample.RecognitionScore;
+                var prefix = (sc < 1) ? "Arguably " :
+                             (sc < 1.5) ? "Maybe " :
+                             (sc < 2) ? "Probably " :
+                             (sc < 2.5) ? "Clearly " :
+                             (sc < 3) ? "Certainly " :
+                             "A perfect ";
+                Speech.Say(prefix + MostRecentSample.RecognizedAsName);
+            }
+            else if (_cuemode.Checked)
+            {
+                CuePrompter?.ReactToFinalizedGesture(MostRecentSample);
+            }
+            //});
+
+            _listView.Adapter = _listAdapter;
+            _listView.RequestLayout();
+            _latestSampleDisplay.RequestLayout();
+            ButtonStates.Update(this);
         }
 
         protected virtual void SetUpButtonClicks()
@@ -552,16 +619,30 @@ namespace Atropos.Machine_Learning
 
                     if (!String.IsNullOrEmpty(filepath))
                     {
-                        using (var streamWriter = new StreamWriter(filepath))
+                        // Exception: if the name of the Dataset is exactly "Melee" then use the asset file instead...
+                        Stream assetStream = null;
+                        //if (Dataset.Name == "Melee")
+                        //{
+                        //    assetStream = this.Assets.Open("MeleeClassifier.txt");
+                        //}
+
+                        using (var streamWriter = (assetStream != null) ? new StreamWriter(assetStream) : new StreamWriter(filepath))
                         {
                             var serialForm = Serializer.Serialize<Classifier>(Classifier);
                             Log.Debug("Saving classifier", $"Saving our classifier, it currently contains: \n\n{serialForm}\n");
                             streamWriter.Write(serialForm);
 
                             var ClipboardMgr = (ClipboardManager)GetSystemService(Service.ClipboardService);
-                            var myClip = ClipData.NewPlainText("AtroposSavedClassifier", serialForm);
-                            ClipboardMgr.PrimaryClip = myClip;
-                            Toast.MakeText(this, "Classifier compressed and saved to clipboard.", ToastLength.Short);
+                            try
+                            {
+                                var myClip = ClipData.NewPlainText("AtroposSavedClassifier", serialForm);
+                                ClipboardMgr.PrimaryClip = myClip;
+                                Toast.MakeText(this, "Classifier compressed and saved to clipboard.", ToastLength.Short); 
+                            }
+                            catch
+                            {
+                                Toast.MakeText(this, "Error copying classifier to clipboard - presumably too long for it.", ToastLength.Short);
+                            }
                         }
                     }
 
@@ -605,6 +686,8 @@ namespace Atropos.Machine_Learning
 
             if (_computeButton != null) _computeButton.Click += async (o, e) =>
             {
+                //var sw1 = new System.Diagnostics.Stopwatch();
+
                 if (ButtonStates.Compute.State != ButtonStates.DoFullReassess)
                 {
                     AssertRecognition();
@@ -614,7 +697,24 @@ namespace Atropos.Machine_Learning
                     ButtonStates.Compute.State = ButtonStates.IsComputing;
                     ShowProgressIndicator("Calculating", "Please hold for the next available AI...");
                     //await Task.Run(() => Classifier.CreateMachine(Dataset));
+
+                    //var subDataset = new DataSet<T>();
+                    //foreach (var gc in Dataset.ActualGestureClasses) subDataset.AddClass(gc);
+                    //subDataset.TallySequences();
+                    //Dataset.Samples.Shuffle();
+                    //foreach (var seq in Dataset.Samples) if (subDataset.MinSamplesInAnyClass() < 3 || Res.Random < 0.25) subDataset.AddSequence(seq);
+                    //subDataset.TallySequences();
+                    //sw1.Start();
+                    //Classifier.CreateMachine(subDataset);
+                    //sw1.Stop();
+                    //var t1 = sw1.Elapsed.TotalMilliseconds;
+                    //Log.Debug("MachineLearning|Calculate", $"Classifier for sub-dataset consisting of {subDataset.Samples.Count} samples ({Dataset.ActualGestureClasses.Count} classes) generated in {sw1.Elapsed.TotalMilliseconds} ms.");
+                    //sw1.Restart();
+
                     Classifier.CreateMachine(Dataset);
+
+                    //sw1.Stop();
+                    //Log.Debug("MachineLearning|Calculate", $"Classifier for dataset consisting of {Dataset.Samples.Count} samples ({Dataset.ActualGestureClasses.Count} classes) generated in {sw1.Elapsed.TotalMilliseconds} ms ({(sw1.Elapsed.TotalMilliseconds / t1):2f}x as long).");
 
                     DismissProgressIndicator();
                     ShowProgressIndicator("Calculating", "Reassessing data set using new AI...");
@@ -623,8 +723,13 @@ namespace Atropos.Machine_Learning
                     double percentage = (minSamples < 20) ? 100.0 :
                                         (minSamples < 40) ? 50.0 :
                                         (minSamples < 80) ? 25.0 :
-                                                            10.0 ;
+                                                            10.0;
+                    //double percentage = 100.0;
+                    //double percentage = 25.0;
+                    //sw1.Restart();
                     await Classifier.Assess(Dataset, percentage);
+                    //sw1.Stop();
+                    //Log.Debug("MachineLearning|Calculate", $"25% of samples (i.e. {Dataset.Samples.Count * 0.25}) assessed in {sw1.Elapsed.TotalMilliseconds} ms.");
 
                     Dataset.TallySequences(true);
                     DismissProgressIndicator();
@@ -634,15 +739,83 @@ namespace Atropos.Machine_Learning
                 else // Available only immediately following a click of the Compute button as per above; signals a desire to run a *full* reassess
                 {
                     ShowProgressIndicator("Calculating", "Reassessing all data using new AI...");
+
+                    //sw1.Start();
                     await Task.Run(() => Classifier.Assess(Dataset, 100.0));
+                    //sw1.Stop();
+                    //Log.Debug("MachineLearning|Calculate", $"100% of samples (i.e. {Dataset.Samples.Count}) assessed in {sw1.Elapsed.TotalMilliseconds} ms.");
 
                     Dataset.TallySequences(true);
                     DismissProgressIndicator();
                     ButtonStates.Update(this);
                 }
-                
-                
-                
+            };
+
+            // Special debugging test operation
+            FindViewById<Button>(Resource.Id.mlrn_run_test_btn).Click += async (o, e) =>
+            {
+                var sw = new System.Diagnostics.Stopwatch();
+                foreach (var currentGC in Dataset.ActualGestureClasses)
+                {
+                    var d = new DataSet<T>();
+                    d.AddClass(currentGC.className);
+                    d.AddClass("Other");
+                    foreach (var seq in Dataset.Samples)
+                    {
+                        var s = new Sequence<T>() { SourcePath = seq.SourcePath };
+                        if (seq.TrueClassIndex == currentGC.index) s.TrueClassIndex = 0;
+                        else s.TrueClassIndex = 1;
+                        d.AddSequence(s, skipBitmap: true);
+                    }
+
+                    var c = new Classifier();
+
+                    sw.Start();
+                    c.CreateMachine(d);
+                    sw.Stop();
+                    Log.Debug("MachineLearning|SpecialTest", $"Created special classifier for {currentGC.className} in {sw.Elapsed.TotalSeconds}s.");
+                    sw.Reset();
+
+                    sw.Start();
+                    await c.FastAssess(d);
+                    sw.Stop();
+                    int numCorrectPositives = 0, numFalseNegatives = 0, numCorrectNegatives = 0, numFalsePositives = 0;
+                    double scoCorrectPositives = 0, scoFalseNegatives = 0, scoCorrectNegatives = 0, scoFalsePositives = 0;
+                    foreach (var seq in d.Samples)
+                    {
+                        if (seq.TrueClassIndex == 0)
+                        {
+                            if (seq.RecognizedAsIndex == 0)
+                            {
+                                numCorrectPositives++;
+                                scoCorrectPositives += (seq.RecognitionScore - scoCorrectPositives) / numCorrectPositives;
+                            }
+                            else
+                            {
+                                numFalseNegatives++;
+                                scoFalseNegatives += (seq.RecognitionScore - scoFalseNegatives) / numFalseNegatives;
+                            }
+                        }
+                        else
+                        {
+                            if (seq.RecognizedAsIndex == 1)
+                            {
+                                numCorrectNegatives++;
+                                scoCorrectNegatives += (seq.RecognitionScore - scoCorrectNegatives) / numCorrectNegatives;
+                            }
+                            else
+                            {
+                                numFalsePositives++;
+                                scoFalsePositives += (seq.RecognitionScore - scoFalsePositives) / numFalsePositives;
+                            }
+                        }
+                    }
+                    Log.Debug("MachineLearning|SpecialTest", $"Assessed in {sw.Elapsed.TotalMilliseconds} ms, with {numCorrectPositives}"
+                        + $"({scoCorrectPositives:f2}) correct positives, {numCorrectNegatives} ({scoCorrectNegatives:f2}) correct"
+                        + $" negatives, {numFalseNegatives} ({scoFalseNegatives:f2}) false negatives, and {numFalsePositives} "
+                        + $"({scoFalsePositives:f2}) false positives.");
+                    sw.Reset();
+                }
             };
 
             if (_addNewClassButton != null) _addNewClassButton.Click +=
@@ -727,14 +900,17 @@ namespace Atropos.Machine_Learning
 
             if (_gimmeCueButton != null) _gimmeCueButton.Click += async (o, e) =>
             {
-                CuePrompter = new CuePrompter<T>(this);
-                await CuePrompter.SetAndProvideCue();
+                if (_advancedCueMode) return; // Does nothing in this mode - click volume button(s) instead.
+                else await GimmeCue();
             };
 
             if (_discardSampleBtn != null) _discardSampleBtn.Click += (o, e) =>
             {
                 MostRecentSample = null;
                 Dataset?.RemoveSequence();
+                if (Dataset == null || Dataset.Samples.Count == 0) return;
+                MostRecentSample = Dataset.Samples.Last();
+                DisplaySampleInfo(MostRecentSample);
             };
 
             if (_guessandteach != null) _guessandteach.CheckedChange += (o, e) => ButtonStates.Update(this);
@@ -742,6 +918,67 @@ namespace Atropos.Machine_Learning
             if (_cuemode != null) _cuemode.CheckedChange += (o, e) => ButtonStates.Update(this);
 
             if (_listView != null) _listView.ItemClick += OnListItemClick;
+        }
+
+        public async Task GimmeCue(bool advancedMode = false)
+        {
+            if (!advancedMode)
+            {
+                CuePrompter = new MlrnCuePrompter<T>(this);
+                await CuePrompter.WaitBeforeCue();
+                CuePrompter.ProvideCue();
+                return;
+            }
+
+            else // Advanced mode
+            {
+                SelectedGestureClass = Dataset.Classes.GetRandom();
+                //CurrentStage = new SelfEndpointingSingleGestureRecognizer($"Cueing {targetClass?.className}", Classifier,
+                //        new ClusterLoggingProvider<Vector3, Vector3>(SensorType.LinearAcceleration, SensorType.Gravity));
+
+                AlternativeResetStage($"Cueing {SelectedGestureClass?.className}");
+
+                CuePrompter = new MlrnCuePrompter<T>(this);
+                await CuePrompter.WaitBeforeCue();
+                CuePrompter.ProvideCue(SelectedGestureClass);
+                //CurrentGestureStage.Activate(); // Is included in "RunUntilFound()" below.
+
+                //// Retrieve "this is where we are now, as the cue is given" info from the current stage
+                //var CurrentProvider = ((CurrentStage as MachineLearningStage).DataProvider as ClusterLoggingProvider<Vector3, Vector3>);
+                //var PromptStartTimeStamp = CurrentProvider.Timestamp;
+                //var PromptStartIndex = CurrentProvider.LoggedData.Count - 1;
+                var PromptStartTimeStamp = TimeSpan.Zero;
+
+                await Task.Run(async () =>
+                {
+                    // Now start the gesture recognition stage and run until it comes back saying it's got one.
+                    var resultSeq = await ((SelfEndpointingSingleGestureRecognizer)CurrentGestureStage).RunUntilFound(SelectedGestureClass);
+
+                    //// To work out the "promptness" component of their score, we need to see where the best fit *beginning* of their gesture was.
+                    //var reversePeakFinder = new PeakFinder<T>.IncrementingStartIndexVariant<T>(
+                    //    resultSeq.SourcePath.ToList(),
+                    //    (seq) =>
+                    //    {
+                    //        var Seq = new Sequence<T>() { SourcePath = seq.ToArray() };
+                    //        var analyzedSeq = Current.Analyze(Seq).Result;
+
+                    //        if (SelectedGestureClass != null && Seq.RecognizedAsIndex != SelectedGestureClass.index) return double.NaN;
+                    //        else return analyzedSeq.RecognitionScore;
+                    //    }, thresholdScore: 1.5, minLength: Dataset?.MinSequenceLength ?? 5); // Might need to tweak this depending on how the parsing of the stuff works out.
+
+                    //resultSeq = new Sequence<T>() { SourcePath = reversePeakFinder.FindBestSequence().ToArray() };
+                    ////MostRecentSample = Current.Analyze(resultSeq).Result;
+
+                    CuePrompter.TimeElapsed = (CurrentGestureStage as MachineLearningStage).RunTime - PromptStartTimeStamp;
+                    ResolveEndOfGesture(resultSeq);
+
+                });
+                //Dataset.AddSequence(MostRecentSample); // All of this got incorporated into ResolveEndOfGesture().
+                //DisplaySampleInfo(MostRecentSample);
+                //_listView.Adapter = _listAdapter;
+                //_listView.RequestLayout();
+                //_latestSampleDisplay.RequestLayout();
+            }
         }
 
         protected void AskToDelete(string prompt, string filepath)
@@ -765,7 +1002,7 @@ namespace Atropos.Machine_Learning
             //bool itChanged = (_teachonly.Checked) 
             //    ? (MostRecentSample.TrueClassIndex != e.Position)
             //    : (MostRecentSample.RecognizedAsIndex != e.Position);
-            bool itChanged = (e.Position == lastClassnameSpinnerSelection);
+            bool itChanged = (e.Position != lastClassnameSpinnerSelection);
             lastClassnameSpinnerSelection = e.Position;
             MostRecentSample.TrueClassIndex = e.Position;
             Dataset.TallySequences();
@@ -779,8 +1016,10 @@ namespace Atropos.Machine_Learning
         {
             if (position < 0) return;
             SpinnerChangeIsSilent = true;
-            _classnameSpinner.SetSelection(position);
+            Task.Delay(5).ContinueWith(_ => RunOnUiThread(() => _classnameSpinner.SetSelection(position, true)));
+            //_classnameSpinner.Adapter = _classnameSpinnerAdapter;
             _latestSampleDisplay.RequestLayout();
+            //ButtonStates.Update(this);
         }
 
         public void OnListItemClick(object sender, Android.Widget.AdapterView.ItemClickEventArgs e)
@@ -807,17 +1046,17 @@ namespace Atropos.Machine_Learning
 
         public void DismissProgressIndicator()
         {
-            if (_progressDialog != null && _progressDialog.IsShowing)
-                _progressDialog.Dismiss();
+            //if (_progressDialog != null && _progressDialog.IsShowing)
+            //    _progressDialog.Dismiss();
         }
 
         public void ShowProgressIndicator(string title, string message)
         {
-            _progressDialog = ProgressDialog.Show(this, title, message, true, true);
+            //_progressDialog = ProgressDialog.Show(this, title, message, true, true);
         }
         #endregion
 
-        public void SetUpAdapters(IDataset dataSet)
+        public override void SetUpAdapters(IDataset dataSet)
         {
             SpinnerChangeIsSilent = true;
 
@@ -834,119 +1073,122 @@ namespace Atropos.Machine_Learning
 
         public virtual void DisplaySampleInfo(ISequence sequence)
         {
-            if (sequence == null || (sequence as Sequence<T>).SourcePath.Length < 3) return;
-
-            _sampleVisualization.SetImageBitmap(sequence.Bitmap);
-            bool SubmitButtonPermitted = true;
-
-            // Contents of the text field, and selected item in the spinner, both depend on a number of settings & factors.
-
-            // (A) Which mode are we in?
-            if (_teachonly.Checked)
+            RunOnUiThread(() =>
             {
-                SilentlySetClassnameSpinner(sequence.TrueClassIndex); // Does nothing if index < 0 (aka "I dunno"), although how that'd happen is unclear.
+                if (sequence == null || (sequence as Sequence<T>).SourcePath.Length < 3) return;
 
-                // (B) Did we run it through an existing classifier?
-                if (sequence.RecognizedAsIndex >= 0)
+                _sampleVisualization.SetImageBitmap(sequence.Bitmap);
+                bool SubmitButtonPermitted = true;
+
+                // Contents of the text field, and selected item in the spinner, both depend on a number of settings & factors.
+
+                // (A) Which mode are we in?
+                if (_teachonly.Checked)
                 {
-                    // (C) Did we get it right?
-                    if (sequence.TrueClassIndex == sequence.RecognizedAsIndex)
+                    SilentlySetClassnameSpinner(sequence.TrueClassIndex); // Does nothing if index < 0 (aka "I dunno"), although how that'd happen is unclear.
+
+                    // (B) Did we run it through an existing classifier?
+                    if (sequence.RecognizedAsIndex >= 0)
                     {
-                        _guessField.Text = $"Correctly read as {sequence.TrueClassName}";
-                        _guessField.SetTextColor(Android.Graphics.Color.Green);
-                    }
-                    // (C') We got it wrong, alas.
-                    else
-                    {
-                        _guessField.Text = $"{sequence.TrueClassName} (Read as {sequence.RecognizedAsName})";
-                        _guessField.SetTextColor(Android.Graphics.Color.Red);
-                    }
-                }
-                // (B') Nope, we didn't recognize it (probably because we haven't trained a classifier yet)
-                else
-                {
-                    _guessField.Text = $"Recorded as {sequence.TrueClassName}";
-                    _guessField.SetTextColor(Android.Graphics.Color.Gray);
-                }
-            }
-            // (A') We're in guess-and-teach mode
-            else if (_guessandteach.Checked)
-            {
-                // (B) Did we recognize it as anything at all?
-                if (sequence.RecognizedAsIndex >= 0)
-                {
-                    // (C) Have we not told it yet what it really is?
-                    if (sequence.TrueClassIndex < 0)
-                    {
-                        SilentlySetClassnameSpinner(sequence.RecognizedAsIndex);
-                        _guessField.Text = $"Is that a {sequence.RecognizedAsName}?";
-                        _guessField.SetTextColor(Android.Graphics.Color.Blue);
-                    }
-                    // (C') Okay, we've set the spinner (or used another input method like the Submit button) and thus told it what it is.
-                    else
-                    {
-                        SilentlySetClassnameSpinner(sequence.TrueClassIndex);
-                        // (D) Did our guess get it right?  Yup, awesome!
-                        if (sequence.RecognizedAsIndex == sequence.TrueClassIndex)
+                        // (C) Did we get it right?
+                        if (sequence.TrueClassIndex == sequence.RecognizedAsIndex)
                         {
                             _guessField.Text = $"Correctly read as {sequence.TrueClassName}";
                             _guessField.SetTextColor(Android.Graphics.Color.Green);
                         }
-                        // (D') Nope, and we've corrected it with the spinner.
+                        // (C') We got it wrong, alas.
                         else
                         {
-                            _guessField.Text = $"Recorded as {sequence.TrueClassName} (not {sequence.RecognizedAsName})";
-                            _guessField.SetTextColor(Android.Graphics.Color.Magenta);
+                            _guessField.Text = $"{sequence.TrueClassName} (Read as {sequence.RecognizedAsName})";
+                            _guessField.SetTextColor(Android.Graphics.Color.Red);
                         }
                     }
+                    // (B') Nope, we didn't recognize it (probably because we haven't trained a classifier yet)
+                    else
+                    {
+                        _guessField.Text = $"Recorded as {sequence.TrueClassName}";
+                        _guessField.SetTextColor(Android.Graphics.Color.Gray);
+                    }
                 }
-                // (B') Nope, we didn't recognize it - which probably means we REALLY screwed it up.
-                else
+                // (A') We're in guess-and-teach mode
+                else if (_guessandteach.Checked)
                 {
-                    _guessField.Text = $"Gesture not recognized";
-                    _guessField.SetTextColor(Android.Graphics.Color.Gray);
+                    // (B) Did we recognize it as anything at all?
+                    if (sequence.RecognizedAsIndex >= 0)
+                    {
+                        // (C) Have we not told it yet what it really is?
+                        if (sequence.TrueClassIndex < 0)
+                        {
+                            SilentlySetClassnameSpinner(sequence.RecognizedAsIndex);
+                            _guessField.Text = $"Is that a {sequence.RecognizedAsName}?";
+                            _guessField.SetTextColor(Android.Graphics.Color.Blue);
+                        }
+                        // (C') Okay, we've set the spinner (or used another input method like the volume button & AssertRecognition) and thus told it what it is.
+                        else
+                        {
+                            SilentlySetClassnameSpinner(sequence.TrueClassIndex);
+                            // (D) Did our guess get it right?  Yup, awesome!
+                            if (sequence.RecognizedAsIndex == sequence.TrueClassIndex)
+                            {
+                                _guessField.Text = $"Correctly read as {sequence.TrueClassName}";
+                                _guessField.SetTextColor(Android.Graphics.Color.Green);
+                            }
+                            // (D') Nope, and we've corrected it with the spinner.
+                            else
+                            {
+                                _guessField.Text = $"Recorded as {sequence.TrueClassName} (not {sequence.RecognizedAsName})";
+                                _guessField.SetTextColor(Android.Graphics.Color.Magenta);
+                            }
+                        }
+                    }
+                    // (B') Nope, we didn't recognize it - which probably means we REALLY screwed it up.
+                    else
+                    {
+                        _guessField.Text = $"Gesture not recognized";
+                        _guessField.SetTextColor(Android.Graphics.Color.Gray);
+                        SubmitButtonPermitted = false;
+                    }
+                }
+                else // (A") We're in cued mode
+                {
+                    SilentlySetClassnameSpinner(SelectedGestureClass.index);
+                    string formatString;
+
+                    // (B) Did the user perform the *correct* gesture?
+                    if (sequence.RecognizedAsIndex != SelectedGestureClass.index)
+                    {
+                        formatString = $"Not {sequence.RecognizedAsName}, {{0}}!";
+                        _guessField.SetTextColor(Android.Graphics.Color.Red);
+                    }
+
+                    else if (sequence.RecognitionScore < 1.5)
+                    {
+                        formatString = "Sloppy {0}";
+                        _guessField.SetTextColor(Android.Graphics.Color.Red);
+                    }
+                    else if (sequence.RecognitionScore < 2.25)
+                    {
+                        formatString = "Respectable {0}";
+                        _guessField.SetTextColor(Android.Graphics.Color.Magenta);
+                    }
+                    else
+                    {
+                        formatString = "Excellent {0}";
+                        _guessField.SetTextColor(Android.Graphics.Color.Green);
+                    }
+
+                    _guessField.Text = String.Format(formatString, SelectedGestureClass.className);
                     SubmitButtonPermitted = false;
                 }
-            }
-            else // (A") We're in cued mode
-            {
-                SilentlySetClassnameSpinner(SelectedGestureClass.index);
-                string formatString;
 
-                // (B) Did the user perform the *correct* gesture?
-                if (sequence.RecognizedAsIndex != SelectedGestureClass.index)
-                {
-                    formatString = $"Not {sequence.RecognizedAsName}, {{0}}!";
-                    _guessField.SetTextColor(Android.Graphics.Color.Red);
-                }
+                _latestSampleDisplay.Visibility = ViewStates.Visible;
+                _discardSampleBtn.Enabled = SubmitButtonPermitted;
 
-                else if (sequence.RecognitionScore < 1.5)
-                {
-                    formatString = "Sloppy {0}";
-                    _guessField.SetTextColor(Android.Graphics.Color.Red);
-                }
-                else if (sequence.RecognitionScore < 2.25)
-                {
-                    formatString = "Respectable {0}";
-                    _guessField.SetTextColor(Android.Graphics.Color.Magenta);
-                }
-                else
-                {
-                    formatString = "Excellent {0}";
-                    _guessField.SetTextColor(Android.Graphics.Color.Green);
-                }
-
-                _guessField.Text = String.Format(formatString, SelectedGestureClass.className);
-                SubmitButtonPermitted = false;
-            }
-
-            _latestSampleDisplay.Visibility = ViewStates.Visible;
-            _discardSampleBtn.Enabled = SubmitButtonPermitted;
-
-            //_listView.Adapter = null;
-            //_listView.Adapter = _listAdapter;
-            Dataset.TallySequences(); // Note sure if these are still needed or not, given the existence of ButtonStates.Update()... but we'll let it stand in any event.
-            _listView.RequestLayout();
+                //_listView.Adapter = null;
+                //_listView.Adapter = _listAdapter;
+                Dataset.TallySequences(); // Note sure if these are still needed or not, given the existence of ButtonStates.Update()... but we'll let it stand in any event.
+                _listView.RequestLayout();
+            });
         }
 
         public void AssertRecognition()
@@ -962,16 +1204,6 @@ namespace Atropos.Machine_Learning
                 Dataset.TallySequences();
                 DisplaySampleInfo(MostRecentSample);
             }
-        }
-
-        public async Task<ISequence> Analyze(ISequence sequence)
-        {
-            if (Classifier != null && Classifier.MachineOnline)
-            {
-                sequence.RecognizedAsIndex = await Classifier.Recognize(sequence as Sequence<T>);
-                //sequence.TrueClassIndex = SelectedGestureClass.index;
-            }
-            return sequence;
         }
     }
 
@@ -1018,7 +1250,7 @@ namespace Atropos.Machine_Learning
             GestureClass gC = _items[position];
             if (gC == null) return v;
 
-            var ctx = (MachineLearningActivity<T>)_context;
+            var ctx = (MachineLearningPageActivity<T>)_context;
             IconField.Alpha = (ctx.SelectedGestureClass.className == gC.className) ?
                               ((ctx.TeachOnlyMode) ? 1.0f : 0.35f) : 0.25f;
             NameField.Text = gC.className;

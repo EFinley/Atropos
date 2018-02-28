@@ -31,6 +31,8 @@ namespace Atropos.Machine_Learning
     [Serializable]
     public class Classifier : ISerializable
     {
+        private static string _tag = "MachineLearning|Classifier";
+
         [NonSerialized]
         protected MulticlassSupportVectorMachine<DynamicTimeWarping> svm; 
         
@@ -40,16 +42,26 @@ namespace Atropos.Machine_Learning
 
         public const string FileExtension = "classifier";
 
+        protected int numRetries = 0;
+        protected System.Diagnostics.Stopwatch stopwatch;
+        protected int retryTimeoutMs = 15000;
+        protected int retryLimitCount = 10;
+
         // These are ONLY set inside deserialized Classifiers, and are used to check compatibility with loaded Datasets.
         public string MatchingDatasetName { get; protected set; }
-        public string[] MatchingDatasetClasses { get; protected set; }
+        public GestureClass[] MatchingDatasetClasses { get; protected set; }
         public int MatchingDatasetSequenceCount { get; protected set; }
 
         public void CreateMachine<T>(DataSet<T> dataSet) where T : struct
         {
             dataSet.CleanOutNontrainableSequences();
-            BindingList<Sequence<T>> samples = dataSet.Samples;
+            if (stopwatch == null)
+            {
+                stopwatch = new System.Diagnostics.Stopwatch();
+                stopwatch.Start();
+            }
 
+            var samples = new BindingList<Sequence<T>>(dataSet.Samples.Where(s => s.TrueClassIndex >= 0).ToList());
             double[][] inputs = new double[samples.Count][];
             try
             {
@@ -114,20 +126,38 @@ namespace Atropos.Machine_Learning
                 for (int i = 0; i < samples.Count; i++)
                 {
                     samples[i].RecognizedAsIndex = RecognizedAsClasses[i];
-                    Log.Debug("Classifier", $"Sample #{i}: True {samples[i].TrueClassName}, Recog As {samples[i].RecognizedAsName}.  Score is {Scores[i]:f2}, LogLikelihoods are {LogL[i].Select(l => l.ToString("f1")).Join()}, Probabilities {Probs[i].Select(p => p.ToString("f1")).Join()}.");
+                    //Log.Debug(_tag, $"Sample #{i}: True {samples[i].TrueClassName}, Recog As {samples[i].RecognizedAsName}.  Score is {Scores[i]:f2}, LogLikelihoods are {LogL[i].Select(l => l.ToString("f1")).Join()}, Probabilities {Probs[i].Select(p => p.ToString("f1")).Join()}.");
                 }
 
                 double error = new Accord.Math.Optimization.Losses.ZeroOneLoss(outputs).Loss(RecognizedAsClasses);
                 double loss = new Accord.Math.Optimization.Losses.CategoryCrossEntropyLoss(outputs).Loss(Probs);
-                Log.Debug("CLASSIFIER", $"Overall zero-one loss is {error:f4}, cross entropy loss is {loss:f4}, whatever the hell those are.");
+                Log.Debug(_tag, $"Overall zero-one loss is {error:f4}, cross entropy loss is {loss:f4}, whatever the hell those are.");
+                Log.Debug(_tag, $"Classifier creation complete in {stopwatch.ElapsedMilliseconds} ms.");
+                stopwatch.Stop();
+                stopwatch = null;
+                numRetries = 0;
             }
             catch (Exception e)
             {
-                Log.Error("MachineLearning|Classifier", $"Classifier error: {e.ToString()}");
-                throw;
+                Log.Error(_tag, $"Classifier error: {e.ToString()}");
+                if (stopwatch.ElapsedMilliseconds < retryTimeoutMs && numRetries < retryLimitCount)
+                {
+                    numRetries++;
+                    BaseActivity.CurrentToaster.RelayToast($"Failed creating classifier; retrying (#{numRetries} after {stopwatch.ElapsedMilliseconds} ms).");
+                    CreateMachine<T>(dataSet);
+                }
             }
         }
         
+        public async Task FastAssess<T>(DataSet<T> dataSet) where T : struct
+        {
+            List<Sequence<T>> Samples = dataSet.Samples.ToList();
+            foreach (var sample in Samples)
+            {
+                sample.RecognizedAsIndex = await Recognize(sample);
+            }
+        }
+
         public async Task Assess<T>(DataSet<T> dataSet, double percentageSampling = 100.0) where T : struct
         {
             List<Sequence<T>> Samples = dataSet.Samples.ToList();
@@ -137,7 +167,11 @@ namespace Atropos.Machine_Learning
                 Samples = Samples.Take((int)Math.Round(Samples.Count * percentageSampling / 100.0)).ToList();
             }
             //foreach (var sample in dataSet.Samples) sample.HasBeenSampled = false;
-            foreach (var gC in dataSet.ActualGestureClasses) { gC.numExamplesSampled = gC.numExamplesSampledCorrectlyRecognized = 0; }
+            foreach (var gC in dataSet.ActualGestureClasses)
+            {
+                gC.numExamplesSampled = gC.numExamplesSampledCorrectlyRecognized = 0;
+                gC.ResetMetadata();
+            }
 
             // Classify selected training instances using the (typically new/updated) classifier
             int i = 0;
@@ -154,6 +188,7 @@ namespace Atropos.Machine_Learning
                     dataSet.ActualGestureClasses[sample.TrueClassIndex].numExamplesSampled++;
                     if (sample.RecognizedAsIndex == sample.TrueClassIndex)
                         dataSet.ActualGestureClasses[sample.TrueClassIndex].numExamplesSampledCorrectlyRecognized++;
+                    dataSet.ActualGestureClasses[sample.TrueClassIndex].UpdateMetadata(sample.Metadata);
                 }
                 //sample.HasBeenSampled = true;
 
@@ -173,7 +208,7 @@ namespace Atropos.Machine_Learning
 
         public virtual async Task<int> Recognize<T>(Sequence<T> sequence) where T:struct
         {
-            if (sequence.SourcePath.Length < 8)
+            if (sequence.SourcePath.Length < (Dataset?.MinSequenceLength ?? 5))
             {
                 Log.Warn("Classifier|Recognize", $"Sequence too short ({sequence.SourcePath.Length} points) to analyze.");
                 return -1;
@@ -186,7 +221,11 @@ namespace Atropos.Machine_Learning
             }
 
             var score = svm.Score(sequence.MachineInputs, out int index);
-            sequence.RecognitionScore = score;
+            // Assign that score to the sequence's metadata.
+            var metadata = sequence.Metadata;
+            metadata.QualityScore = score;
+            sequence.Metadata = metadata;
+
             // Log.Debug("Classifier|Recognize", $"Recognized sequence as {Dataset.ClassNames[index]} ({index}), with score {score}");
 
             // If the match is too lousy, call it unknown instead of making a bad call
@@ -225,7 +264,7 @@ namespace Atropos.Machine_Learning
                 throw new System.ArgumentNullException("info");
             SerializedString = (byte[])info.GetValue("SVM_Serialized", typeof(byte[]));
             MatchingDatasetName = (string)info.GetValue("Matching_Dataset_Name", typeof(string));
-            MatchingDatasetClasses = (string[])info.GetValue("Matching_Dataset_Classes", typeof(string[]));
+            MatchingDatasetClasses = (GestureClass[])info.GetValue("Matching_Dataset_Classes", typeof(GestureClass[]));
             MatchingDatasetSequenceCount = (int)info.GetValue("Matching_Dataset_SequenceCount", typeof(int));
         }
 
@@ -235,7 +274,7 @@ namespace Atropos.Machine_Learning
                 throw new System.ArgumentNullException("info");
             info.AddValue("SVM_Serialized", SerializedString);
             info.AddValue("Matching_Dataset_Name", Dataset?.Name);
-            info.AddValue("Matching_Dataset_Classes", Dataset?.ClassNames.ToArray());
+            info.AddValue("Matching_Dataset_Classes", Dataset?.Classes.ToArray());
             info.AddValue("Matching_Dataset_SequenceCount", Dataset?.SequenceCount);
         }
     }

@@ -22,7 +22,7 @@ namespace Atropos.Machine_Learning
     {
         protected Func<List<T>, double> ScoringFunction;
         protected virtual IList<T> Data { get; set; }
-        public PeakFinder(IList<T> data, Func<List<T>, double> scoringFunction, double thresholdScore, int minLength = 5, double dropFromPeakCriterion = 0.95, int numConsecutiveDecreases = 3, CancellationToken? stopToken = null)
+        public PeakFinder(IList<T> data, Func<List<T>, double> scoringFunction, double thresholdScore, int minLength = 7, double dropFromPeakCriterion = 0.95, int numConsecutiveDecreases = 3, CancellationToken? stopToken = null)
         {
             Data = data;
             ScoringFunction = scoringFunction;
@@ -57,25 +57,25 @@ namespace Atropos.Machine_Learning
         protected double DropToPercentageBeforeLabelingMaximum;
 
         protected AsyncManualResetEvent FoundIt = new AsyncManualResetEvent();
-        public virtual async Task<int> FindPeakIndex()
+        public virtual async Task<int> FindPeakIndexAsync()
         {
             await FoundIt.WaitAsync();
             return IndexOfBestScore;
         }
-        public virtual async Task<List<T>> FindBestSequence()
+        public virtual async Task<List<T>> FindBestSequenceAsync()
         {
-            return GetListToConsider(await FindPeakIndex());
+            return GetListToConsider(await FindPeakIndexAsync());
         }
 
-        public virtual int SeekPeakIndex()
+        public virtual int FindPeakIndex()
         {
             while (IndexBeingProcessed < Data.Count && CurrentPhase != Phase.Finished)
                 ConsiderNext();
             return IndexOfBestScore;
         }
-        public virtual List<T> SeekBestSequence()
+        public virtual List<T> FindBestSequence()
         {
-            return GetListToConsider(SeekPeakIndex());
+            return GetListToConsider(FindPeakIndex());
         }
 
         // A trivial function here, not so trivial in the derived class...
@@ -84,11 +84,18 @@ namespace Atropos.Machine_Learning
             return Data.Take(index + 1).ToList();
         }
 
-        public void ConsiderNext()
+        public virtual void ConsiderNext()
+        {
+            var score = Consider();
+            Android.Util.Log.Debug("PeakFinder", $"Considered point {IndexBeingProcessed}, score is {score}, current phase is {CurrentPhase}.");
+
+            if (CurrentPhase == Phase.Finished) FoundIt.Set(); // Everything else will take care of itself in FindPeak().
+            IndexBeingProcessed++;
+        }
+        public double Consider()
         {
             // This is the meat of the matter!  Here we make sure the points provided are checked against the desired pattern,
             // and signal out once it's achieved.
-            IndexBeingProcessed++;
             if (IndexBeingProcessed >= Data.Count) throw new ArgumentOutOfRangeException("IndexBeingProcessed", $"Cannot process the next point (#{IndexBeingProcessed}) of a sequence of length {Data.Count}!");
 
             // This section is basically the phase logic, step by step.  Minimum one step at each phase (just 'cause).
@@ -97,20 +104,24 @@ namespace Atropos.Machine_Learning
             if (CurrentPhase == Phase.NotStarted)
             {
                 CurrentPhase = Phase.TooSoon;
-                return;
+                return double.NaN;
             }
 
             // Wait for a minimum number of points accumulated before you even START wasting time on calculating the score.
             if (CurrentPhase == Phase.TooSoon)
             {
                 if (IndexBeingProcessed >= MinimumNumPointsToBegin) CurrentPhase = Phase.Eligible;
-                return;
+                return double.NaN;
             }
 
             // Okay, time to actually calculate it.
             var Score = ScoringFunction(GetListToConsider(IndexBeingProcessed));
             // If you want to indicate "this is definitely not it" for some reason, use double.NaN to indicate that.
-            if (double.IsNaN(Score)) return;
+            if (double.IsNaN(Score))
+            {
+                if (CurrentPhase != Phase.PastPeak) return Score;
+                else Score = 0.0; // If we're past the peak, then "definitely not it" still counts as "worse than the last one" and therefore can't just skip the rest of this logic.
+            }
 
             // Eligible means we're allowed to check if we pass the threshold score yet.
             if (CurrentPhase == Phase.Eligible)
@@ -121,7 +132,7 @@ namespace Atropos.Machine_Learning
                     BestScoreThusFar = Score;
                     IndexOfBestScore = IndexBeingProcessed;
                 }
-                return;
+                return Score;
             }
 
             // Once we pass the threshold, we're looking for a peak, so increase the best score until you drop (noticeably) below the prior best.
@@ -136,24 +147,24 @@ namespace Atropos.Machine_Learning
                 {
                     CurrentPhase = Phase.PastPeak;
                     WorstScoreThusFar = Score;
-                    return;
+                    return Score;
                 }
                 // If it's in between these two, then don't take immediate action, but don't overwrite the peak info either - in other words, do nothing!
-                
-                return;
+
+                return Score;
             }
 
             // If we think we found a peak, look for N consecutive decreases and then declare victory.
             if (CurrentPhase == Phase.PastPeak)
             {
-                if (Score < WorstScoreThusFar)
+                if (Score <= WorstScoreThusFar)
                 {
                     NumberOfConsecutiveDecreases++;
                     WorstScoreThusFar = Score;
-                    if (NumberOfConsecutiveDecreases > MinimumConsecutiveDecreases)
+                    if (NumberOfConsecutiveDecreases >= MinimumConsecutiveDecreases)
                     {
-                        CurrentPhase = Phase.Finished; // Nothing triggers off this, but it might need to be looked at from outside to see the state of things in here.
-                        FoundIt.Set(); // Everything else will take care of itself in FindPeak().
+                        CurrentPhase = Phase.Finished;
+                        //FoundIt.Set(); // Everything else will take care of itself in FindPeak().
                     }
                 }
                 else if (Score > BestScoreThusFar) // Oops! Still goin' up!
@@ -162,7 +173,6 @@ namespace Atropos.Machine_Learning
                     BestScoreThusFar = Score;
                     CurrentPhase = Phase.PastThreshold;
                     IndexOfBestScore = IndexBeingProcessed;
-                    return;
                 }
                 else // Not an increase beyond the max, but also not a consecutive decrease; no worries.
                 {
@@ -170,40 +180,34 @@ namespace Atropos.Machine_Learning
                     WorstScoreThusFar = Score; // Okay, not the *absolute* worst score thus far, but whatevs.
                 }
             }
+
+            return Score;
         }
 
         public void ConsiderAllAvailable()
         {
-            while (IndexBeingProcessed < Data.Count) ConsiderNext();
+            while (IndexBeingProcessed < Data.Count)
+            {
+                ConsiderNext();
+                if (CurrentPhase == Phase.Finished) break;
+            }
         }
 
         /// <summary>
-        /// Looks for a peak, but looks at the LAST n points and increases n each time it's called.  Caution! Using this 'live" is possible but inadvisable, as when you
-        /// increase the length of the dataset, you run a significant chance of confusing yourself (and this class).  Recommend using this only on "dead" datasets - it doesn't
-        /// make a lot of sense otherwise, anyway, does it?
+        /// Looks for a peak, but does so by incrementing the *first* index examined, instead of the last one.
+        /// Use only on a "dead" dataset - one which isn't being added to anymore! - or all warranties are void. ;)
         /// </summary>
-        public class BackwardsCounting<Tf> : PeakFinder<Tf> where Tf : struct
+        public class IncrementingStartIndexVariant<T2> : PeakFinder<T2> where T2 : struct
         {
-            public BackwardsCounting(IList<Tf> data, Func<List<Tf>, double> scoringFunction, double thresholdScore, int minLength = 5, double dropFromPeakCriterion = 0.95, int numConsecutiveDecreases = 3, CancellationToken? stopToken = null)
+            public IncrementingStartIndexVariant(IList<T2> data, Func<List<T2>, double> scoringFunction, double thresholdScore, int minLength = 7, double dropFromPeakCriterion = 0.95, int numConsecutiveDecreases = 3, CancellationToken? stopToken = null)
                 : base(data, scoringFunction, thresholdScore, minLength, dropFromPeakCriterion, numConsecutiveDecreases, stopToken)
             {
-
+                // Nothing added, but constructor inheritance must be explicit.
             }
-
-            public override async Task<int> FindPeakIndex()
+            
+            protected override List<T2> GetListToConsider(int indexOfSkip)
             {
-                var indexBackward = await base.FindPeakIndex();
-                return Data.Count - indexBackward - 1;
-            }
-            public override async Task<List<Tf>> FindBestSequence()
-            {
-                var indexBackward = await base.FindPeakIndex();
-                return GetListToConsider(indexBackward);
-            }
-
-            protected override List<Tf> GetListToConsider(int indexBackward)
-            {
-                return Data.Skip(Data.Count - indexBackward - 1).ToList();
+                return Data.Skip(indexOfSkip).ToList();
             }
         }
     }

@@ -28,6 +28,7 @@ namespace Atropos
         {
             base.OnResume();
 
+            this.HideKeyboard();
             Task.Run(DoStartupWork);
         }
 

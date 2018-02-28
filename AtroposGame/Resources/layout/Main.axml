@@ -3,16 +3,17 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#000000">
-  <LinearLayout
-      android:layout_width="match_parent"
-      android:layout_height="match_parent"
-      android:id="@+id/linearLayout1"
-      android:orientation="vertical">
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="@android:color/holo_blue_light" />
     <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/linearLayout1"
+        android:gravity="center"
+        android:orientation="vertical">
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@android:color/holo_blue_light" />
+    <!--<LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dip"
         android:layout_weight="1"
@@ -27,11 +28,13 @@
           android:layout_width="wrap_content"
           android:layout_height="match_parent"
           android:visibility="gone">
-        <!--<ImageView
+        -->
+    <!--<ImageView
             android:id="@+id/role_samurai"
             android:src="@drawable/hitter_logo"
             android:layout_width="wrap_content"
             android:layout_height="match_parent" />-->
+    <!--
         <TextView
             android:id="@+id/role_samurai_storedNames"
             android:layout_height="wrap_content"
@@ -42,7 +45,8 @@
             android:layout_margin="3dip"
             android:textColor="#ffffff"/>
       </RelativeLayout>
-      <!--<LinearLayout
+      -->
+    <!--<LinearLayout
           android:layout_height="match_parent"
           android:layout_width="wrap_content"
           android:minWidth="22dip"
@@ -56,6 +60,7 @@
             android:textSize="20dip"
             android:textAlignment="center"/>
         </LinearLayout>-->
+    <!--
         <TextView
             android:id="@+id/role_samurai_createBtn"
             android:layout_width="wrap_content"
@@ -64,24 +69,38 @@
             android:textSize="20dip"
             android:textAlignment="center"
             android:background="@android:drawable/alert_dark_frame"/>
-      </LinearLayout>
-      <ImageView
-          android:id="@+id/role_decker"
-          android:layout_width="wrap_content"
-          android:layout_height="0dip"
-          android:layout_weight="1"
-          android:layout_margin="5dp" />
-      <ImageView
-          android:id="@+id/role_mage"
-          android:layout_width="wrap_content"
-          android:layout_height="0dip"
-          android:layout_weight="1"
-          android:layout_margin="5dp" />
-      <ImageView
-          android:id="@+id/role_operative"
-          android:layout_width="wrap_content"
-          android:layout_height="0dip"
-          android:layout_weight="1"
-          android:layout_margin="5dp" />
-  </LinearLayout>
+      </LinearLayout>-->
+        <ImageView
+            android:id="@+id/role_samurai"
+            android:layout_width="match_parent"
+            android:layout_height="0dip"
+            android:layout_weight="1"
+            android:layout_margin="5dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/hitter_logo"/>
+        <ImageView
+            android:id="@+id/role_decker"
+            android:layout_width="match_parent"
+            android:layout_height="0dip"
+            android:layout_weight="1"
+            android:layout_margin="5dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/hacker_logo" />
+        <ImageView
+            android:id="@+id/role_mage"
+            android:layout_width="match_parent"
+            android:layout_height="0dip"
+            android:layout_weight="1"
+            android:layout_margin="5dp" 
+            android:scaleType="fitCenter"
+            android:src="@drawable/sorcerer_logo"/>
+        <ImageView
+            android:id="@+id/role_operative"
+            android:layout_width="match_parent"
+            android:layout_height="0dip"
+            android:layout_weight="1"
+            android:layout_margin="5dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/spy_logo" />
+    </LinearLayout>
 </LinearLayout>

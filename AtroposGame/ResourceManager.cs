@@ -142,7 +142,7 @@ namespace Atropos
             {
                 _numSensors = value;
                 //if (_numSensors > 5) Android.Util.Log.Debug("NumSensors", $"Number of sensors listening: {_numSensors}.");
-                Android.Util.Log.Debug("NumSensors", $"Number of sensors listening: {_numSensors}.");
+                //Android.Util.Log.Debug("NumSensors", $"Number of sensors listening: {_numSensors}.");
             }
         }
     }

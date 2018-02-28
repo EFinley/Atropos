@@ -295,7 +295,7 @@ namespace Atropos
         protected override void SetUpButtons()
         {
             SetupButton(typeof(GunfightActivity), "Shoot", Resource.Drawable.assault_shotgun_image, Color.MediumPurple);
-            SetupButton(typeof(Machine_Learning.MeleeAlphaActivity), "Melee", Resource.Drawable.katana_image, Color.Red);
+            SetupButton(typeof(Melee.MeleeBetaActivity), "Melee", Resource.Drawable.katana_image, Color.Red);
         }
     }
 

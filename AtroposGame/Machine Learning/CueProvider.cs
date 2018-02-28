@@ -17,10 +17,10 @@ using Android.Widget;
 
 namespace Atropos.Machine_Learning
 {
-    public class CuePrompter<T> where T : struct
+    public abstract class CuePrompter<T> where T : struct
     {
-        private MachineLearningActivity<T> Current;
-        public CuePrompter(MachineLearningActivity<T> parentActivity)
+        private MachineLearningActivity<T>.IMachineLearningActivity Current;
+        public CuePrompter(MachineLearningActivity<T>.IMachineLearningActivity parentActivity)
         {
             Current = parentActivity;
             //cueEffect = new Effect("Cue sound", Resource.Raw._215028_shing);
@@ -30,13 +30,16 @@ namespace Atropos.Machine_Learning
         //private CancellationTokenSource _cts;
         private CancelableTimer cancelableTimer;
         public bool ListeningForFalseStart { get; set; } = false;
+        private TimeSpan? _overrideTimeElapsed;
+        public TimeSpan TimeElapsed { get { return _overrideTimeElapsed ?? Stopwatch.Elapsed; } set { _overrideTimeElapsed = value; } }
 
         //public IEffect cueEffect;
 
+        public abstract void SetButtonEnabledState(bool state);
+
         public async void DoOnFalseStart()
         {
-            var button = Current.FindViewById<Button>(Resource.Id.mlrn_cue_button);
-            button.Enabled = false;
+            SetButtonEnabledState(false);
             if (cancelableTimer == null) // First time only
             {
                 await Speech.SayAllOf("False start!");
@@ -45,26 +48,30 @@ namespace Atropos.Machine_Learning
 
             await cancelableTimer.Delay( 1000, () => 
             {
-                    ListeningForFalseStart = false;
-                    button.Enabled = true;
+                ListeningForFalseStart = false;
+                SetButtonEnabledState(true);
             });
         }
 
-        public async Task SetAndProvideCue(GestureClass gestureClass = null, int millisecondTimeBase = 1250)
+        public async Task WaitBeforeCue(int millisecondTimeBase = 1250, int millisecondTimeSigma = 500)
         {
-            if (gestureClass == null) gestureClass = Current.SelectedGestureClass = Current.Dataset.Classes.GetRandom();
             ListeningForFalseStart = true;
-            Current.FindViewById<Button>(Resource.Id.mlrn_cue_button).Enabled = false;
+            SetButtonEnabledState(false);
 
-            var milliSecDelay = millisecondTimeBase * Res.GetRandomCoefficient(0.5);
+            var milliSecDelay = Res.GetRandomCoefficient(millisecondTimeBase, millisecondTimeSigma);
             await Task.Delay((int)milliSecDelay);
 
             //await Speech.SayAllOf(gestureClass.className, speakRate: 2.0);
-            Speech.Say(gestureClass.className, speakRate: 2.0);
             //await Task.Delay(400);
             //cueEffect.Play();
 
             ListeningForFalseStart = false;
+        }
+
+        public void ProvideCue(GestureClass gestureClass = null)
+        {
+            Current.SelectedGestureClass = gestureClass ?? Current.Dataset.Classes.GetRandom();
+            Speech.Say(gestureClass.className, speakRate: 2.0);
             Stopwatch.Start();
         }
 
@@ -73,21 +80,34 @@ namespace Atropos.Machine_Learning
             Stopwatch.Stop();
         }
 
-        public async void ReactToFinalizedGesture(ISequence sequence)
-        {
-            var Seq = sequence as Sequence<T>;
-            if (Seq == null) throw new ArgumentException("ISequence not convertible to Sequence<T>");
+        public abstract void ReactToFinalizedGesture(Sequence<T> Seq);
+    }
 
+    public class MlrnCuePrompter<T> : CuePrompter<T> where T : struct
+    {
+        private MachineLearningActivity<T> Current;
+        public MlrnCuePrompter(MachineLearningActivity<T> parentActivity) : base(parentActivity)
+        {
+            Current = parentActivity;
+        }
+
+        public override void SetButtonEnabledState(bool state)
+        {
+            Current.FindViewById<Button>(Resource.Id.mlrn_cue_button).Enabled = state;
+        }
+
+        public override async void ReactToFinalizedGesture(Sequence<T> Seq)
+        {
+            SetButtonEnabledState(true);
             var button = Current.FindViewById<Button>(Resource.Id.mlrn_cue_button);
-            button.Enabled = true;
 
             if (Seq.RecognizedAsIndex < 0) button.Text = "(Unrecognized?!?) ...Again!";
             else if (Seq.RecognizedAsIndex != Current.SelectedGestureClass.index) button.Text = $"(Looked like {Seq.RecognizedAsName}!) ...Again!";
             else
             {
                 var score = Seq.RecognitionScore;
-                var interval = Stopwatch.Elapsed;
-                button.Text = $"({score:f2} pts / {interval.TotalSeconds:f1}s) ...Again!";
+                //var interval = Stopwatch.Elapsed;
+                button.Text = $"({score:f2} pts / {TimeElapsed.TotalMilliseconds:f0} ms) ...Again!";
             }
 
             if (button.Visibility == ViewStates.Visible && Current.FindViewById<CheckBox>(Resource.Id.mlrn_cue_repeat_checkbox).Checked)

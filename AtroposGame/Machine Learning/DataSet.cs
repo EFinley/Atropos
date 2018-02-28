@@ -26,6 +26,7 @@ namespace Atropos.Machine_Learning
         void AddClass(string newClassName);
         void TallySequences(bool RedoFromStart = false);
         bool HasChanged { get; set; }
+        int MinSequenceLength { get; }
     }
 
     [Serializable]
@@ -106,6 +107,7 @@ namespace Atropos.Machine_Learning
         public abstract void AddClass(string newClassName);
         public abstract void TallySequences(bool RedoFromStart = false);
         public virtual int SequenceCount { get; } = -1;
+        public virtual int MinSequenceLength { get { return 5; } } // May eventually be replaced by some function of the average length
 
         public bool HasChanged { get; set; } = false;
 
@@ -269,6 +271,7 @@ namespace Atropos.Machine_Learning
 
         public override void AddSequence(ISequence sample, string classLabel = null, bool skipBitmap = false)
         {
+            if ((sample as Sequence<T>).SourcePath.Count() < MinSequenceLength) return;
             //classLabel = classLabel ?? sample.TrueClassName; // Probably unnecessary?  Depends on order of adding new class vs. doing its first gesture.
             AddClass(classLabel); // No-op if it's already present
 
@@ -365,7 +368,7 @@ namespace Atropos.Machine_Learning
 
         protected void TallySequence(Sequence<T> seq)
         {
-            if (seq.HasContributedToClassifier)
+            if (seq.HasContributedToClassifier && seq.TrueClassIndex >= 0)
             {
                 Classes[seq.TrueClassIndex].numExamples++;
                 if (seq.TrueClassIndex == seq.RecognizedAsIndex) Classes[seq.TrueClassIndex].numExamplesCorrectlyRecognized++;

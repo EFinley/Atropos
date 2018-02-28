@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_margin="20dp">
+    <Button
+        android:text="User Training"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/melee_user_training_btn" />
+    <Button
+        android:text="Cued (Single)"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/melee_cued_single_btn" />
+    <Button
+        android:text="Cued (Series)"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/melee_cued_series_btn" />
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="bottom">
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <TextView
+                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:layout_weight="1.5"
+                android:textAlignment="center"
+                android:textStyle="bold"
+                android:textColor="@android:color/holo_purple"
+                android:id="@+id/melee_gc_label" />
+            <TextView
+                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:textAlignment="center"
+                android:text="This" />
+            <TextView
+                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:textAlignment="center"
+                android:text="Avg" />
+            <TextView
+                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:textAlignment="center"
+                android:text="Ratio" />
+        </LinearLayout>
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <TextView
+                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:layout_weight="1.5"
+                android:textAlignment="center"
+                android:text="Quality" />
+            <TextView
+                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:textAlignment="center"
+                android:id="@+id/melee_qual_this" />
+            <TextView
+                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:textAlignment="center"
+                android:alpha="0.75"
+                android:id="@+id/melee_qual_avg" />
+            <TextView
+                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:textAlignment="center"
+                android:id="@+id/melee_qual_ratio" />
+        </LinearLayout>
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <TextView
+                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:layout_weight="1.5"
+                android:textAlignment="center"
+                android:text="Delay" />
+            <TextView
+                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:textAlignment="center"
+                android:id="@+id/melee_delay_this" />
+            <TextView
+                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:textAlignment="center"
+                android:alpha="0.75"
+                android:id="@+id/melee_delay_avg" />
+            <TextView
+                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:textAlignment="center"
+                android:id="@+id/melee_delay_ratio" />
+        </LinearLayout>
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp">
+            <TextView
+                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:layout_weight="1.5"
+                android:textAlignment="center"
+                android:text="Duration" />
+            <TextView
+                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:textAlignment="center"
+                android:id="@+id/melee_dur_this" />
+            <TextView
+                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:textAlignment="center"
+                android:alpha="0.75"
+                android:id="@+id/melee_dur_avg" />
+            <TextView
+                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:textAlignment="center"
+                android:id="@+id/melee_dur_ratio" />
+        </LinearLayout>
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <TextView
+                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:layout_weight="1.5"
+                android:textAlignment="center"
+                android:text="#Points" />
+            <TextView
+                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:textAlignment="center"
+                android:id="@+id/melee_numpts_this" />
+            <TextView
+                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:textAlignment="center"
+                android:alpha="0.75"
+                android:id="@+id/melee_numpts_avg" />
+            <TextView
+                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:textAlignment="center"
+                android:id="@+id/melee_numpts_ratio" />
+        </LinearLayout>
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp">
+          <TextView
+              android:layout_height="wrap_content"
+              android:layout_width="0dp"
+              android:layout_weight="1.5"
+              android:textAlignment="center"
+              android:text="Peak Accel" />
+          <TextView
+              android:layout_height="wrap_content"
+              android:layout_width="0dp"
+              android:layout_weight="1"
+              android:textAlignment="center"
+              android:id="@+id/melee_pkaccel_this" />
+          <TextView
+              android:layout_height="wrap_content"
+              android:layout_width="0dp"
+              android:layout_weight="1"
+              android:textAlignment="center"
+              android:alpha="0.75"
+              android:id="@+id/melee_pkaccel_avg" />
+          <TextView
+              android:layout_height="wrap_content"
+              android:layout_width="0dp"
+              android:layout_weight="1"
+              android:textAlignment="center"
+              android:id="@+id/melee_pkaccel_ratio" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

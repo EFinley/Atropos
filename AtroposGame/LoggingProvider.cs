@@ -57,7 +57,8 @@ namespace Atropos
         protected override void DoWhenAllDataIsReady()
         {
             LoggedData.Add(Provider.Data);
-            Timestamps.Add(Intervals.LastOrDefault() + Provider.Interval);
+            //Timestamps.Add(Timestamps.LastOrDefault() + Provider.Interval);
+            Timestamps.Add(Provider.RunTime);
             Intervals.Add(Provider.Interval);
         }
 
@@ -92,7 +93,8 @@ namespace Atropos
         protected override void DoWhenAllDataIsReady()
         {
             _smoothedData.Add(Provider.Data);
-            Timestamps.Add(Intervals.LastOrDefault() + providers[0].Interval);
+            //Timestamps.Add(Timestamps.LastOrDefault() + providers[0].Interval);
+            Timestamps.Add(providers[0].RunTime);
             Intervals.Add(Provider.Interval);
         }
     }
@@ -174,8 +176,9 @@ namespace Atropos
         protected override void DoWhenAllDataIsReady()
         {
             LoggedData.Add(new Datapoint<T1, T2>() { Value1 = (providers[0] as IProvider<T1>).Data, Value2 = (providers[1] as IProvider<T2>).Data });
-            if (LoggedData.All(d => d.Magnitude() < 1e-10) && LoggedData.Count > 5) throw new Exception("Caught another zero list of data... WHY???");
-            Timestamps.Add(Intervals.LastOrDefault() + providers[0].Interval);
+            //if (LoggedData.All(d => d.Magnitude() < 1e-10) && LoggedData.Count > 5) throw new Exception("Caught another zero list of data... WHY???");
+            //Timestamps.Add(Timestamps.LastOrDefault() + providers[0].Interval);
+            Timestamps.Add(providers[0].RunTime);
             Intervals.Add(providers[0].Interval);
         }
     }
@@ -205,7 +208,8 @@ namespace Atropos
         protected override void DoWhenAllDataIsReady()
         {
             _smoothedData.Add(new Datapoint<T1, T2>() { Value1 = (providers[0] as IProvider<T1>).Data, Value2 = (providers[1] as IProvider<T2>).Data });
-            Timestamps.Add(Intervals.LastOrDefault() + providers[0].Interval);
+            //Timestamps.Add(Timestamps.LastOrDefault() + providers[0].Interval);
+            Timestamps.Add(providers[0].RunTime);
             Intervals.Add(providers[0].Interval);
         }
     }

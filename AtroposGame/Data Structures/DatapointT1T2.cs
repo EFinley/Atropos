@@ -193,81 +193,111 @@ namespace Atropos.DataStructures
         }
     }
 
-    //// And, for bonus points, here's how to extend the concept into arbitrarily large feature vectors...
-    //public struct Datapoint<T1, T2, T3> : IDatapoint
-    //    where T1 : struct
-    //    where T2 : struct
-    //    where T3 : struct
-    //{
-    //    public T1 Value1;
-    //    public T2 Value2;
-    //    public T3 Value3;
-    //    private static int[] dimensions { get; set; }
-    //    public static int Dimensions
-    //    {
-    //        get { return dimensions.Sum(); }
-    //    }
-    //    int IDatapoint.Dimensions { get { return Dimensions; } }
+    // And, for bonus points, here's how to extend the concept into arbitrarily large feature vectors...
+    public struct Datapoint<T1, T2, T3> : IDatapoint
+        where T1 : struct
+        where T2 : struct
+        where T3 : struct
+    {
+        private T1? _v1;
+        //private Nullable<T1> _v1;
+        public T1 Value1
+        {
+            get
+            {
+                _v1 = (_v1 != null && _v1.HasValue) ? _v1.Value : Datapoint.DefaultOrIdentity<T1>();
+                return _v1.Value;
+            }
+            set { _v1 = value; }
+        }
+        private T2? _v2;
+        //private Nullable<T1> _v1;
+        public T2 Value2
+        {
+            get
+            {
+                _v2 = (_v2 != null && _v2.HasValue) ? _v2.Value : Datapoint.DefaultOrIdentity<T2>();
+                return _v2.Value;
+            }
+            set { _v2 = value; }
+        }
+        private T3? _v3;
+        //private Nullable<T3> _v3;
+        public T3 Value3
+        {
+            get
+            {
+                _v3 = (_v3 != null && _v3.HasValue) ? _v3.Value : Datapoint.DefaultOrIdentity<T3>();
+                return _v3.Value;
+            }
+            set { _v3 = value; }
+        }
+        private static int[] dimensions { get; set; }
+        public static int Dimensions
+        {
+            get { return dimensions.Sum(); }
+        }
+        int IDatapoint.Dimensions { get { return Dimensions; } }
 
-    //    public float[] AsArray()
-    //    {
-    //        return ((IDatapoint)Value1).AsArray()
-    //                .Concat(((IDatapoint)Value2).AsArray())
-    //                .Concat(((IDatapoint)Value3).AsArray())
-    //                .ToArray();
-    //    }
-    //    public float Magnitude()
-    //    {
-    //        return ((Datapoint<Datapoint<T1, T2>, T3>)this).Magnitude();
-    //    }
+        public float[] AsArray()
+        {
+            return ((IDatapoint)Value1).AsArray()
+                    .Concat(((IDatapoint)Value2).AsArray())
+                    .Concat(((IDatapoint)Value3).AsArray())
+                    .ToArray();
+        }
+        public float Magnitude()
+        {
+            return ((Datapoint<Datapoint<T1, T2>, T3>)this).Magnitude();
+        }
 
-    //    public IDatapoint FromArray(float[] sourceArray)
-    //    {
-    //        var sublistA = sourceArray.Take(dimensions[0] + dimensions[1]);
-    //        var sublistB = sourceArray.Skip(dimensions[0] + dimensions[1])
-    //                                  .Take(dimensions[2]);
-    //        return (Datapoint<T1,T2,T3>)new Datapoint<Datapoint<T1, T2>, T3>()
-    //        {
-    //            Value1 = (Datapoint<T1,T2>)new Datapoint<T1, T2>().FromArray(sublistA.ToArray()),
-    //            Value2 = (T3)new Datapoint<T3>().FromArray(sublistB.ToArray())
-    //        };
-    //    }
+        public IDatapoint FromArray(float[] sourceArray)
+        {
+            var sublistA = sourceArray.Take(dimensions[0] + dimensions[1]);
+            var sublistB = sourceArray.Skip(dimensions[0] + dimensions[1])
+                                      .Take(dimensions[2]);
+            return (Datapoint<T1, T2, T3>)new Datapoint<Datapoint<T1, T2>, T3>()
+            {
+                Value1 = new Datapoint<T1, T2>().FromArray(sublistA.ToArray()),
+                Value2 = (T3)new Datapoint<T3>().FromArray(sublistB.ToArray())
+            };
+        }
 
-    //    static Datapoint()
-    //    {
-    //        //dimensions = new Type[] { typeof(T1), typeof(T2), typeof(T3) }
-    //        //    .Select(t => (t as IDatapoint).Dimensions)
-    //        //    .ToArray();
-    //        dimensions = new int[]
-    //        {
-    //            (default(Datapoint<T1>) as IDatapoint).Dimensions,
-    //            (default(Datapoint<T2>) as IDatapoint).Dimensions,
-    //            (default(Datapoint<T3>) as IDatapoint).Dimensions
-    //        };
-    //    }
+        static Datapoint()
+        {
+            //dimensions = new Type[] { typeof(T1), typeof(T2), typeof(T3) }
+            //    .Select(t => (t as IDatapoint).Dimensions)
+            //    .ToArray();
+            dimensions = new int[]
+            {
+                (default(Datapoint<T1>) as IDatapoint).Dimensions,
+                (default(Datapoint<T2>) as IDatapoint).Dimensions,
+                (default(Datapoint<T3>) as IDatapoint).Dimensions
+            };
+        }
 
-    //    // We can convert to (or from) a more conventional Datapoint<Tone,Ttwo> type by grouping T1 & T2.
-    //    // This should allow for as much expansion as necessary, chaining these together.
-    //    public static implicit operator Datapoint<Datapoint<T1,T2>,T3>(Datapoint<T1,T2,T3> original)
-    //    {
-    //        return new Datapoint<Datapoint<T1, T2>, T3>()
-    //        {
-    //            Value1 = new Datapoint<T1, T2>()
-    //            {
-    //                Value1 = original.Value1,
-    //                Value2 = original.Value2
-    //            },
-    //            Value2 = original.Value3
-    //        };
-    //    }
-    //    public static implicit operator Datapoint<T1,T2,T3>(Datapoint<Datapoint<T1,T2>,T3> original)
-    //    {
-    //        return new Datapoint<T1, T2, T3>()
-    //        {
-    //            Value1 = original.Value1.Value1,
-    //            Value2 = original.Value1.Value2,
-    //            Value3 = original.Value2
-    //        };
-    //    }
-    //}
+        // We can convert to (or from) a more conventional Datapoint<Tone,Ttwo> type by grouping T1 & T2.
+        // This should allow for as much expansion as necessary, chaining these together.
+        public static implicit operator Datapoint<Datapoint<T1, T2>, T3>(Datapoint<T1, T2, T3> original)
+        {
+            return new Datapoint<Datapoint<T1, T2>, T3>()
+            {
+                Value1 = new Datapoint<T1, T2>()
+                {
+                    Value1 = original.Value1,
+                    Value2 = original.Value2
+                },
+                Value2 = original.Value3
+            };
+        }
+        public static implicit operator Datapoint<T1, T2, T3>(Datapoint<Datapoint<T1, T2>, T3> original)
+        {
+            return new Datapoint<T1, T2, T3>()
+            {
+                Value1 = original.Value1.Value1,
+                Value2 = original.Value1.Value2,
+                Value3 = original.Value2
+            };
+        }
+    }
 }

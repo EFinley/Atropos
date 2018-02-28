@@ -39,6 +39,7 @@ namespace Atropos.Machine_Learning
         //bool HasBeenTallied { get; set; }
         bool HasBeenSampled { get; set; }
         double RecognitionScore { get; }
+        SequenceMetadata Metadata { get; set; }
     }
 
     [Serializable]
@@ -68,24 +69,14 @@ namespace Atropos.Machine_Learning
         public bool HasBeenSampled { get; set; } = false;
         //bool HasBeenTallied { get; set; } = false;
 
-        public double RecognitionScore { get; set; } = 0.0;
+        public double RecognitionScore { get { return Metadata.QualityScore; } }
+        public SequenceMetadata Metadata { get; set; }
 
         public Sequence()
         {
             TypeName = typeof(T).Name;
         }
 
-        public Sequence(T[] sourceData) : this()
-        {
-            //if (typeof(T).Implements<IDatapoint>())
-            //    SourcePath = sourceData.Cast<IDatapoint>().ToArray();
-            //else
-            //    SourcePath = sourceData
-            //                .Select(t => (Datapoint<T>)t) // Convert these T's to Datapoint<T>'s
-            //                .Cast<IDatapoint>() // ... and point out that therefore this is an array of IDatapoints (since Datapoint<T> implements it) as desired
-            //                .ToArray();
-            SourcePath = sourceData;
-        }
         protected Sequence(SerializationInfo info, StreamingContext context) : this()
         {
             if (info == null)
@@ -386,5 +377,32 @@ namespace Atropos.Machine_Learning
         }
     }
 
+    [Serializable]
+    public struct SequenceMetadata
+    {
+        public double QualityScore;
+        public TimeSpan Delay;
+        public TimeSpan Duration;
+        public double NumPoints;
+        public double PeakAccel;
 
+        public static double GetOverallMagnitude<T>(T datum) where T : struct
+        {
+            return Datapoint.From(datum).Magnitude();
+        }
+
+        public static double GetSubvectorOneMagnitude<T, T1, T2>(T datum) where T : struct where T1 : struct where T2 : struct
+        {
+            if (typeof(T) != typeof(Datapoint<T1, T2>)) return -1;
+            var datumAs = Operator.Convert<T, Datapoint<T1, T2>>(datum);
+            return Datapoint.From(datumAs.Value1).Magnitude();
+        }
+
+        public static double GetSubvectorTwoMagnitude<T, T1, T2>(T datum) where T : struct where T1 : struct where T2 : struct
+        {
+            if (typeof(T) != typeof(Datapoint<T1, T2>)) return -1;
+            var datumAs = Operator.Convert<T, Datapoint<T1, T2>>(datum);
+            return Datapoint.From(datumAs.Value2).Magnitude();
+        }
+    }
 }

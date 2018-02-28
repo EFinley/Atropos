@@ -58,8 +58,8 @@ namespace Atropos
             private SensorListener(SensorType sensortype)
             {
                 sensorType = sensortype;
-                var sList = sensorManager.GetSensorList(sensortype);
-                var dList = sensorManager.GetDynamicSensorList(sensortype);
+                //var sList = sensorManager.GetSensorList(sensortype);
+                //var dList = sensorManager.GetDynamicSensorList(sensortype);
                 sensor = sensorManager.GetDefaultSensor(sensorType);
             }
             // Public factory function which invokes the ctor only if it needs to.
@@ -158,6 +158,10 @@ namespace Atropos
         protected long startNanoseconds;
         protected long previousNanoseconds = (long)-5e7; // Fifty milliseconds "ago"
 
+        protected TimeSpan previousElapsed = TimeSpan.Zero;
+        protected TimeSpan elapsed = TimeSpan.Zero;
+        protected System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
+
         protected AsyncManualResetEvent dataReadyEvent = new AsyncManualResetEvent(true);
 
         /// <summary>
@@ -182,8 +186,9 @@ namespace Atropos
         {
             get
             {
-                if (!hasTakenData) return TimeSpan.FromMilliseconds(20); // Default value - SensorDelay.Game - in real terms.
-                return TimeSpan.FromMilliseconds((nanosecondsElapsed - previousNanoseconds) / 1e6);
+                //if (!hasTakenData) return TimeSpan.FromMilliseconds(20); // Default value - SensorDelay.Game - in real terms.
+                //return TimeSpan.FromMilliseconds((nanosecondsElapsed - previousNanoseconds) / 1e6);
+                return elapsed - previousElapsed;
             }
         }
         public TimeSpan RunTime
@@ -191,7 +196,8 @@ namespace Atropos
             get
             {
                 if (!hasTakenData) return TimeSpan.Zero;
-                return TimeSpan.FromMilliseconds((nanosecondsElapsed - startNanoseconds) / 1e6);
+                //return TimeSpan.FromMilliseconds((nanosecondsElapsed - startNanoseconds) / 1e6);
+                return elapsed;
             }
         }
 
@@ -249,6 +255,7 @@ namespace Atropos
 
             sensorListener.StartListening(this);
             sensorListener.SensorChanged += OnSensorChanged;
+            stopwatch.Start();
 
             //sensorManager.RegisterListener(this, sensor, chosenDelay, maxReportLatencyUs: 50000);
             //// The maxReportLatency allows it to batch some reads.  Should help responsiveness (I think).
@@ -268,11 +275,13 @@ namespace Atropos
             if (!hasTakenData)
             {
                 startTime = DateTime.Now;
-                startNanoseconds = e.Timestamp;
+                //startNanoseconds = e.Timestamp;
                 hasTakenData = true;
             }
-            previousNanoseconds = nanosecondsElapsed;
-            nanosecondsElapsed = e.Timestamp;
+            //previousNanoseconds = nanosecondsElapsed;
+            //nanosecondsElapsed = e.Timestamp;
+            previousElapsed = elapsed;
+            elapsed = stopwatch.Elapsed;
         }
 
         //// Not doing anything; required by interface, but irrelevant to us here.
@@ -1032,6 +1041,59 @@ namespace Atropos
         {
             totalAngle += angleStep(gravityAxis, GyroProvider.Vector);
         }
+    }
+
+    /// <summary>
+    /// Allows us to put a 'using DataStructures' local to /just/ the entries in this section.
+    /// </summary>
+    namespace AdvancedProviders
+    {
+        using DataStructures;
+
+        public class ABCgestureCharacterizationProvider : MultiSensorProvider<Datapoint<float, float, float>>
+        {
+            protected Vector3Provider LinearAccel, Grav, Gyro;
+            private float A, B, C;
+            private float EPSILON = 0.01f; // Threshold to reject noise & allow normalization - note that here this NEEDS to stay small, as A/B/C will be non-updated whenever we cross this threshold.
+
+            public Vector3 RotationAxis;
+            public RollingAverage<Vector3> AverageRollingAxis;
+
+            public ABCgestureCharacterizationProvider()
+                : base(new Vector3Provider(SensorType.LinearAcceleration), new Vector3Provider(SensorType.Gravity), new Vector3Provider(SensorType.Gyroscope))
+            {
+                LinearAccel = providers[0] as Vector3Provider;
+                Grav = providers[1] as Vector3Provider;
+                Gyro = providers[2] as Vector3Provider;
+
+                AverageRollingAxis = new RollingAverage<Vector3>(5);
+            }
+
+            protected override void DoWhenAllDataIsReady()
+            {
+                if (Gyro.Vector.Length() > EPSILON)
+                {
+                    //AverageRollingAxis.Update(Gyro.Vector.Normalize());
+                    //RotationAxis = AverageRollingAxis.Average; // Arguably, should more properly be re-normalized, but I'm already doing more math here than I like.
+                    RotationAxis = Gyro.Vector.Normalize();
+                    var AccelPerp = LinearAccel.Vector.Dot(RotationAxis);
+                    A = Gyro.Vector.LengthSquared() / (LinearAccel.Vector - RotationAxis * AccelPerp).Length(); // One over radius of curvature - radial component of accel divided by angular velocity squared - because 1/R is much more usefully bounded than R, as radii can become large.
+                    B = RotationAxis.Dot(Grav.Vector); // Axis dot gravity tells the difference between a vertical stroke (near zero), a left one (near -g), and a right one (near +g)
+                    C = AccelPerp; // Perpendicular component of acceleration
+                }
+                else // Little or no rotation... radius is infinity, axis dot grav is meaningless, and perpendicular accel is all of it.  But it can't handle any of that properly, so here's some estimates...
+                {
+                    A = 0;
+                    B = B * 0.95f; // Decay our certainty here slightly (though arguably we'd be just as happy decaying it /away/ from zero, since zero has a meaning too).
+                    C = LinearAccel.Vector.Length();
+                }
+            }
+
+            protected override Datapoint<float, float, float> toImplicitType()
+            {
+                return new Datapoint<float, float, float>() { Value1 = A, Value2 = B, Value3 = C };
+            }
+        } 
     }
 
     // From the original Sensor Fusion code - TODO - provide proper credit.

@@ -117,7 +117,7 @@ namespace Atropos.TextToSpeech
                     // TODO: need to wait lock so not to break people using queuing mechanism
                     // Dealt with by using LockAsync() ???
                     //await Init();
-                    await Speak(cancelToken);
+                    await Speak(cancelToken).SwallowCancellations();
                 }
             }
             finally
