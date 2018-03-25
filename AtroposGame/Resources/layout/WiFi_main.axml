@@ -3,215 +3,239 @@
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
+  <TextView
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:gravity="center_vertical"
+      android:text="@string/label_me" />
+  <View
+      android:layout_width="match_parent"
+      android:layout_height="1dp"
+      android:background="@android:color/holo_blue_light" />
+<!-- Self information (including device name change options) -->
+  <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:background="?android:attr/activatedBackgroundIndicator"
+      android:padding="3dip">
+    <ImageView
+        android:id="@+id/icon"
+        android:layout_width="0dip"
+        android:layout_weight="1"
+        android:layout_height="?android:attr/listPreferredItemHeight"
+        android:layout_marginRight="2dp"
+        android:src="@drawable/team_icon" />
     <LinearLayout
-        android:layout_width="match_parent"
-        android:id="@+id/linearLayout1"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
-    <!--<fragment
-            class="Atropos.android.wifidirect.DeviceListFragment"
-            android:id="@+id/frag_list"
-            android:layout_width="match_parent"
-            android:layout_height="200dip">
-            -->
-    <!-- Preview: layout=@layout/row_devices -->
-    <!--
-        </fragment>-->
-        <LinearLayout
-            android:id="@+id/wifi_frag_list"
-            android:orientation="vertical"
+        android:orientation="vertical"
+        android:layout_width="0dp"
+        android:layout_weight="3"
+        android:layout_height="match_parent">
+      <LinearLayout
+          android:orientation="horizontal"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:gravity="center_vertical">
+        <TextView
+            android:id="@+id/my_name"
+            android:layout_height="match_parent"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:textStyle="bold"
+            android:layout_marginTop="5dp"
+            android:textSize="@dimen/abc_text_size_large_material"/>
+        <Button
+            android:layout_gravity="right"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Change"
+            android:id="@+id/my_name_changeBtn"
+            android:textSize="@dimen/abc_text_size_small_material"/>
+        <EditText
+            android:id="@+id/my_name_editbox"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:paddingTop="3dp">
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:text="@string/label_me" />
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="@android:color/holo_blue_light" />
-        <!-- Self information -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="?android:attr/listPreferredItemHeight"
-                android:background="?android:attr/activatedBackgroundIndicator"
-                android:padding="3dip">
-                <ImageView
-                    android:id="@+id/icon"
-                    android:layout_width="0dip"
-                    android:layout_weight="1"
-                    android:layout_height="match_parent"
-                    android:layout_marginRight="2dp"
-                    android:src="@drawable/team_icon" />
-                <LinearLayout
-                    android:orientation="vertical"
-                    android:layout_width="0dp"
-                    android:layout_weight="3"
-                    android:layout_height="match_parent">
-                    <TextView
-                        android:id="@+id/my_name"
-                        android:layout_width="match_parent"
-                        android:layout_height="0dp"
-                        android:layout_weight="1"
-                        android:gravity="center_vertical"
-                        android:textStyle="bold" />
-                    <TextView
-                        android:id="@+id/my_status"
-                        android:layout_width="match_parent"
-                        android:layout_height="0dp"
-                        android:layout_weight="1"
-                        android:singleLine="true"
-                        android:ellipsize="marquee" />
-                </LinearLayout>
-            </LinearLayout>
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:text="@string/label_peers" />
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="@android:color/holo_blue_light" />
-        <!-- Available peers -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="200dip">
-                <ListView
-                    android:id="@+id/wifi_peerslist"
-                    android:layout_width="match_parent"
-                    android:layout_height="200dip" />
-                <TextView
-                    android:id="@+id/wifi_nopeersfound"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:text="@string/empty_message" />
-            </LinearLayout>
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:id="@+id/status_bar"
-                android:orientation="vertical"
-                android:layout_gravity="bottom"
-                android:layout_height="30dp"
-                android:layout_marginBottom="3dp"
-                android:layout_margin="5dip"
-                android:background="#555555">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:layout_gravity="center"
-                    android:layout_margin="5dp"
-                    android:textColor="@android:color/holo_blue_dark"
-                    android:id="@+id/status_text" />
-            </LinearLayout>
-        <!-- Connection detail information (pulled outside of wifi_detail_frag for debugging) -->
-            <LinearLayout
-                android:orientation="horizontal"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:visibility="visible">
-                <Button
-                    android:id="@+id/btn_connect"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Connect"
-                    android:visibility="gone" />
-                <Button
-                    android:id="@+id/btn_disconnect"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Disconnect"
-                    android:visibility="gone" />
-                <Button
-                    android:id="@+id/btn_start_client"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Test"
-                    android:visibility="gone" />
-            </LinearLayout>
-            <!--<ScrollView
-                android:layout_width="match_parent"
-                android:layout_height="0dip"
-                android:layout_weight="1">-->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Selected device:"/>
-                <TextView
-                    android:id="@+id/selected_device_name"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content" 
-                    android:textStyle="bold"/>
-                <TextView
-                    android:id="@+id/selected_device_info"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:id="@+id/wifi_groupInfo"
-                    android:visibility="gone">
-                  <TextView
-                      android:layout_width="match_parent"
-                      android:layout_height="wrap_content"
-                      android:layout_marginTop="10dip"
-                      android:text="P2P Group:"/>
-                  <TextView
-                      android:id="@+id/group_owner"
-                      android:layout_width="match_parent"
-                      android:layout_height="wrap_content" />
-                  <TextView
-                      android:id="@+id/group_ip"
-                      android:layout_width="match_parent"
-                      android:layout_height="wrap_content"
-                      android:textStyle="italic" />
-                </LinearLayout>
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:id="@+id/wifi_serverInfo"
-                    android:visibility="gone">
-                  <TextView
-                      android:layout_width="match_parent"
-                      android:layout_height="wrap_content"
-                      android:layout_marginTop="10dip"
-                      android:text="Message server:"/>
-                  <TextView
-                      android:id="@+id/wifi_serverTextField"
-                      android:layout_width="match_parent"
-                      android:layout_height="wrap_content" />
-                </LinearLayout>
-            </LinearLayout>
-            <!--</ScrollView>-->
-        </LinearLayout>
-    <!--<fragment
-            class="Atropos.android.wifidirect.DeviceDetailFragment"
-            android:id="@+id/frag_detail"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-            -->
-    <!-- Preview: layout=@layout/device_detail -->
-    <!--
-        </fragment>-->
-        <LinearLayout
-            android:id="@+id/wifi_frag_detail"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-        <!--android:background="@drawable/details_view"-->
-            <LinearLayout
-                android:orientation="vertical"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent">
-            <!-- Stuff pulled out of this space, to above. -->
-            </LinearLayout>
-        </LinearLayout>
+            android:gravity="center_vertical"
+            android:textStyle="bold"
+            android:visibility="gone"
+            android:singleLine="true"
+            android:inputType="textCapWords"
+            android:imeOptions="actionDone"/>
+      </LinearLayout>
+      <TextView
+          android:id="@+id/my_status"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:singleLine="true"
+          android:ellipsize="marquee" />
     </LinearLayout>
+  </LinearLayout>
+<!-- Status bar / Info display -->
+  <LinearLayout
+      android:layout_width="match_parent"
+      android:id="@+id/status_bar"
+      android:orientation="vertical"
+      android:layout_gravity="bottom"
+      android:layout_height="wrap_content"
+      android:layout_marginBottom="3dp"
+      android:layout_margin="5dip"
+      android:background="#555555">
+      <TextView
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_gravity="center"
+          android:layout_margin="5dp"
+          android:textColor="@android:color/holo_blue_dark"
+          android:text="Ready"
+          android:id="@+id/status_text" />
+  </LinearLayout>
+<!-- Scan / Listen dichotomy -->
+  <LinearLayout
+      android:orientation="horizontal"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:gravity="center">
+    <Button
+        android:id="@+id/bluetooth_listenBtn"
+        android:layout_height="wrap_content"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:text="Listen"/>
+    <TextView
+        android:id="@+id/bluetooth_scanningStatusText"
+        android:layout_height="wrap_content"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:text="Scanning"
+        android:textAlignment="gravity"
+        android:textColor="@android:color/holo_blue_dark"
+        android:background="@android:drawable/alert_dark_frame"
+        android:visibility="gone"/>
+    <TextView
+        android:id="@+id/bluetooth_listeningStatusText"
+        android:layout_height="wrap_content"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:text="Listening"
+        android:textAlignment="gravity"
+        android:textColor="@android:color/holo_blue_dark"
+        android:background="@android:drawable/alert_dark_frame"
+        android:visibility="gone"/>
+    <Button
+        android:id="@+id/bluetooth_scanBtn"
+        android:layout_height="wrap_content"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:text="Scan"/>
+  </LinearLayout>
+  <TextView
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:gravity="center_vertical"
+      android:text="@string/label_peers" />
+  <View
+      android:layout_width="match_parent"
+      android:layout_height="1dp"
+      android:background="@android:color/holo_blue_light" />
+    
+  <!-- Available peers -->
+  <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="0dip"
+      android:layout_weight="1"
+      android:orientation="vertical">
+      <ListView
+          android:id="@+id/bluetooth_peerslist"
+          android:layout_width="match_parent"
+          android:layout_height="0dip"
+          android:layout_weight="1"/>
+      <TextView
+          android:id="@+id/bluetooth_nopeersfound"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:text="No peers found"
+          android:layout_margin="10dip"/>
+  </LinearLayout>
+    
+<!-- Connection detail information (currently blanked due to using row_devices for this instead) -->
+  <LinearLayout
+      android:orientation="horizontal"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:visibility="gone">
+      <Button
+          android:id="@+id/btn_connect"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="Connect"
+          android:visibility="gone" />
+      <Button
+          android:id="@+id/btn_disconnect"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="Disconnect"
+          android:visibility="gone" />
+      <Button
+          android:id="@+id/btn_test"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="Test"
+          android:visibility="gone" />
+  </LinearLayout>
+  <!-- Selected device information - currently blanked out -->
+  <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:orientation="vertical"
+      android:visibility="gone">
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Selected device:"/>
+    <TextView
+        android:id="@+id/selected_device_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" 
+        android:textStyle="bold"/>
+    <TextView
+        android:id="@+id/selected_device_info"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:id="@+id/wifi_groupInfo"
+        android:visibility="gone">
+      <TextView
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:layout_marginTop="10dip"
+          android:text="P2P Group:"/>
+      <TextView
+          android:id="@+id/group_owner"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content" />
+      <TextView
+          android:id="@+id/group_ip"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:textStyle="italic" />
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:id="@+id/wifi_serverInfo"
+        android:visibility="gone">
+      <TextView
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:layout_marginTop="10dip"
+          android:text="Message server:"/>
+      <TextView
+          android:id="@+id/wifi_serverTextField"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content" />
+    </LinearLayout>
+  </LinearLayout>
 </LinearLayout>

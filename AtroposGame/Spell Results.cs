@@ -17,7 +17,7 @@ namespace Atropos
 {
     class Spell_Results
     {
-        public static async Task SonarDemo(object state)
+        public static async Task SonarDemo(object ignored)
         {
             var m = MasterSpellLibrary.SpellSFX["Magic.SonarAlert"] as Effect;
             await m.PlayFromTo(20, 38.5);

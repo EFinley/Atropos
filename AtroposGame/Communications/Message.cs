@@ -19,109 +19,141 @@ using System.Reflection;
 
 using System.Text.RegularExpressions;
 
+using Atropos.Communications.Bluetooth;
+using static Atropos.Communications.Bluetooth.BluetoothCore;
+
 namespace Atropos.Communications
 {
+    public enum MsgType
+    {
+        Ack,
+        Query,
+        Notify,
+        PushSFX,
+        PushSpeech,
+        PushEffect,
+        SetScenarioVariable,
+        LaunchActivity,
+        Reply
+    }
+
     public interface IMessage
     {
-        string Content { get; set; }
-        string To { get; set; }
         string From { get; set; }
-        string ReferredToAs { get; set; }
+        MsgType Type { get; set; }
+        string ID { get; set; }
+        string Content { get; set; }
     }
 
     public struct Message : IMessage
     {
-        public string Content { get; set; }
-        //public IMessageReceiver ReturnAddress; // If null, just means "myself" - this is the most common case.  Will be filled in upon Send()ing.
-        //public MessageTarget Recipient; // Ditto (although less commonly null, of course).
-        public string To { get; set; }
-        public string ReferredToAs { get; set; }
         public string From { get; set; }
+        public MsgType Type { get; set; }
+        public string ID { get; set; }
+        public string Content { get; set; }
+
+        public Message(MsgType type, string content) : this(type, string.Empty, content)
+        {
+            ID = Guid.NewGuid().ToString();
+        }
+
+        public Message(MsgType type, string id, string content)
+        {
+            From = BluetoothMessageCenter.Server.MyMACaddress;
+            Type = type;
+            ID = id;
+            Content = content;
+        }
 
         public string ToCharStream()
         {
-            if (!String.IsNullOrEmpty(ReferredToAs))
-                return $"{To}<{ReferredToAs}>|{From}|{Content}";
-            else
-                return $"{To}|{From}|{Content}";
+            return $"{(int)Type}{NEXT}{ID}{NEXT}{Content}";
         }
 
-        public static Message FromCharStream(string charStream)
+        public static Message FromCharStream(string MACaddress, string charStream)
         {
             var result = new Message();
+            result.From = MACaddress;
 
-            var pieces = charStream.Split("|".ToCharArray(), 3);
-            var regEx = Regex.Match(pieces[0], @"^(?'To'[^<>]*)<(?'As'[^<>]*)>$");
-            if (!regEx.Success)
+            var pieces = charStream.Split(onNEXT, 3);
+            //var regEx = Regex.Match(pieces[0], @"^(?'To'[^<>]*)<(?'As'[^<>]*)>$");
+            //if (!regEx.Success)
+            //{
+            //    result.To = pieces[0];
+            //    result.ReferredToAs = null;
+            //}
+            //else
+            //{
+            //    result.To = regEx.Groups["To"].Value;
+            //    result.ReferredToAs = regEx.Groups["As"].Value;
+            //}
+            //result.From = pieces[1];
+            try
             {
-                result.To = pieces[0];
-                result.ReferredToAs = null;
+                result.Type = (MsgType)int.Parse(pieces[0]);
             }
-            else
+            catch (Exception e)
             {
-                result.To = regEx.Groups["To"].Value;
-                result.ReferredToAs = regEx.Groups["As"].Value;
+                Log.Error("Message.FromCharStream", $"{e}");
             }
-            result.From = pieces[1];
+            result.ID = pieces[1];
             result.Content = pieces[2];
             return result;
         }
-
-        public List<Message> SubMessages;
-
-        //public static string MSG = "MSG";
-
-        //public void Send(MessageTarget To)
-        //{
-        //    Recipient = To;
-        //    ReturnAddress = From;
-
-        //    if (Recipient is Team)
-        //    {
-        //        SubMessages = new List<Message>();
-        //        foreach (var member in (Recipient as Team).Members)
-        //        {
-        //            var subMessage = new Message() { Content = this.Content };
-        //            SubMessages.Add(subMessage);
-        //            subMessage.Send(From, To);
-        //        }
-        //    }
-        //    else
-        //    {
-        //        // TODO: This needs the real logic! Includes wait-for-ack.
-        //        // DoStuffWith(message.Content);
-        //        // MakeSureToIncludeTransmitOf(message.IDnumber);
-        //        // AlsoSupplyTheTeamMemberAs(message.Recipient) & YourselfAs(message.ReturnAddress);
-
-        //    }
-        //}
 
         public static implicit operator string(Message m)
         {
             return m.Content;
         }
-        public static implicit operator Message(string str)
+
+        #region Equality checking (only compares IDnumber)
+        public static bool operator ==(Message m1, Message m2)
         {
-            return new Message() { Content = str };
+            return m1.ID == m2.ID;
+        }
+        public static bool operator !=(Message m1, Message m2)
+        {
+            return m1.ID != m2.ID;
+        }
+        public override bool Equals(object obj)
+        {
+            return (obj is Message) ? (this == (Message)obj) : base.Equals(obj);
+        }
+        public override int GetHashCode()
+        {
+            return ID.GetHashCode();
+        }
+        #endregion
+    }
+
+    public struct MessageSet : IMessage
+    {
+        public CommsGroup To { get; set; }
+        public string From { get; set; }
+        public MsgType Type { get; set; }
+        public string ID { get; set; }
+        public string Content { get; set; }
+
+        public List<Message> submessages { get; set; }
+
+        public MessageSet(CommsGroup to, MsgType type, string content) : this(to, type, null, content)
+        {
+            ID = Guid.NewGuid().ToString();
         }
 
-        //#region Equality checking (only compares IDnumber)
-        //public static bool operator==(Message m1, Message m2)
-        //{
-        //    return m1.IDnumber == m2.IDnumber;
-        //}
-        //public static bool operator !=(Message m1, Message m2)
-        //{
-        //    return m1.IDnumber != m2.IDnumber;
-        //}
-        //public override bool Equals(object obj)
-        //{
-        //    return (obj is Message) ? (this == (Message)obj) : base.Equals(obj);
-        //}
-        //public override int GetHashCode()
-        //{
-        //    return IDnumber.GetHashCode();
-        //}
-        //#endregion
+        public MessageSet(CommsGroup to, MsgType type, string id, string content)
+        {
+            To = to;
+            Type = type;
+            ID = id;
+            Content = content;
+            From = BluetoothMessageCenter.Server.MyMACaddress;
+
+            submessages = new List<Message>();
+            foreach (var teammate in To.Contacts)
+            {
+                submessages.Add(new Message(Type, Content));
+            }
+        }
     }
 }

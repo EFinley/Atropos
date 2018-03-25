@@ -28,51 +28,51 @@ namespace Atropos.DataStructures
 
     public class DatapointSpecialVariants
     {
-        /// <summary>
-        /// Special-purpose type... distinct from a <see cref="Datapoint{T1, T2}"/> where each of T1 and T2 is a <see cref="Datapoint{float,float}"/>,
-        /// because... reasons.  Which I think don't actually obtain here. Dammit.
-        /// </summary>
-        public struct Datapoint4f : IDatapoint<Datapoint<Datapoint<float>, Datapoint<float>>, Datapoint<Datapoint<float>, Datapoint<float>>>
-        {
-            public Datapoint<Datapoint<float>, Datapoint<float>> Value1
-            {
-                get; set;
-            }
-            public Datapoint<Datapoint<float>, Datapoint<float>> Value2
-            {
-                get; set;
-            }
+        ///// <summary>
+        ///// Special-purpose type... distinct from a <see cref="Datapoint{T1, T2}"/> where each of T1 and T2 is a <see cref="Datapoint{float,float}"/>,
+        ///// because... reasons.  Which I think don't actually obtain here. Dammit.
+        ///// </summary>
+        //public struct Datapoint4f : IDatapoint<Datapoint<Datapoint<float>, Datapoint<float>>, Datapoint<Datapoint<float>, Datapoint<float>>>
+        //{
+        //    public Datapoint<Datapoint<float>, Datapoint<float>> Value1
+        //    {
+        //        get; set;
+        //    }
+        //    public Datapoint<Datapoint<float>, Datapoint<float>> Value2
+        //    {
+        //        get; set;
+        //    }
 
-            public static int Dimensions = 4;
-            int IDatapoint.Dimensions => 4;
+        //    public static int Dimensions = 4;
+        //    int IDatapoint.Dimensions => 4;
 
-            float[] IDatapoint.AsArray()
-            {
-                return new float[] { Value1.Value1, Value1.Value2, Value2.Value1, Value2.Value1 };
-            }
+        //    float[] IDatapoint.AsArray()
+        //    {
+        //        return new float[] { Value1.Value1, Value1.Value2, Value2.Value1, Value2.Value1 };
+        //    }
 
-            IDatapoint IDatapoint.FromArray(float[] sourceArray)
-            {
-                return new Datapoint<Datapoint<Datapoint<float>, Datapoint<float>>, Datapoint<Datapoint<float>, Datapoint<float>>>()
-                {
-                    Value1 = new Datapoint<Datapoint<float>, Datapoint<float>>()
-                    {
-                        Value1 = new Datapoint<float>() { Value = sourceArray[0] },
-                        Value2 = new Datapoint<float>() { Value = sourceArray[1] }
-                    },
-                    Value2 = new Datapoint<Datapoint<float>, Datapoint<float>>()
-                    {
-                        Value1 = new Datapoint<float>() { Value = sourceArray[2] },
-                        Value2 = new Datapoint<float>() { Value = sourceArray[3] }
-                    }
-                };
-            }
+        //    IDatapoint IDatapoint.FromArray(float[] sourceArray)
+        //    {
+        //        return new Datapoint<Datapoint<Datapoint<float>, Datapoint<float>>, Datapoint<Datapoint<float>, Datapoint<float>>>()
+        //        {
+        //            Value1 = new Datapoint<Datapoint<float>, Datapoint<float>>()
+        //            {
+        //                Value1 = new Datapoint<float>() { Value = sourceArray[0] },
+        //                Value2 = new Datapoint<float>() { Value = sourceArray[1] }
+        //            },
+        //            Value2 = new Datapoint<Datapoint<float>, Datapoint<float>>()
+        //            {
+        //                Value1 = new Datapoint<float>() { Value = sourceArray[2] },
+        //                Value2 = new Datapoint<float>() { Value = sourceArray[3] }
+        //            }
+        //        };
+        //    }
 
-            float IDatapoint.Magnitude()
-            {
-                return (float)Math.Sqrt(Value1.Magnitude() * Value1.Magnitude() + Value2.Magnitude() * Value2.Magnitude());
-            }
-        }
+        //    float IDatapoint.Magnitude()
+        //    {
+        //        return (float)Math.Sqrt(Value1.Magnitude() * Value1.Magnitude() + Value2.Magnitude() * Value2.Magnitude());
+        //    }
+        //}
     }
     
 }

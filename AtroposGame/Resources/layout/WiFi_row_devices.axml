@@ -6,10 +6,10 @@
     android:padding="6dip">
     <ImageView
         android:id="@+id/icon"
-        android:layout_width="0dip"
-        android:layout_weight="1"
+        android:layout_width="?android:attr/listPreferredItemHeight"
         android:layout_height="?android:attr/listPreferredItemHeight"
-        android:layout_marginRight="2dip"
+        android:layout_marginRight="10dip"
+        android:layout_marginLeft="3dip"
         android:src="@drawable/team_icon" />
     <LinearLayout
         android:orientation="vertical"
@@ -31,4 +31,25 @@
             android:singleLine="true"
             android:ellipsize="marquee" />
     </LinearLayout>
+    <Button
+        android:id="@+id/device_connect_button"
+        android:visibility="gone"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:text="Connect"
+        android:textSize="@dimen/abc_text_size_small_material" />
+    <Button
+        android:id="@+id/device_disconnect_button"
+        android:visibility="gone"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:text="Disconnect"
+        android:textSize="@dimen/abc_text_size_small_material" />
+    <Button
+        android:id="@+id/device_test_button"
+        android:visibility="gone"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:text="Test"
+        android:textSize="@dimen/abc_text_size_small_material" />
 </LinearLayout>

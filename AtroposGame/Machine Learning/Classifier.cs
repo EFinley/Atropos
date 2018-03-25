@@ -52,7 +52,10 @@ namespace Atropos.Machine_Learning
         public GestureClass[] MatchingDatasetClasses { get; protected set; }
         public int MatchingDatasetSequenceCount { get; protected set; }
 
-        public void CreateMachine<T>(DataSet<T> dataSet) where T : struct
+        // These are used for preprocessing the sequence data before trying to classify it.
+        public PreprocessorCoefficients preprocessorCoefficients { get; set; }
+
+        public void CreateMachine<T>(DataSet<T> dataSet, bool overridePreprocessorFunction = true) where T : struct
         {
             dataSet.CleanOutNontrainableSequences();
             if (stopwatch == null)
@@ -67,10 +70,18 @@ namespace Atropos.Machine_Learning
             {
                 int[] outputs = new int[samples.Count];
 
+                if (overridePreprocessorFunction)
+                {
+                    preprocessorCoefficients = Sequence<T>.GetPreprocessorCoefficients(samples);
+                    var closure = Sequence<T>.CreatePreprocessorFunction(preprocessorCoefficients);
+                    foreach (var seq in samples) { seq.PreprocessorFunction = closure; seq.ResetMachineInputs(); }
+                }
+
                 for (int i = 0; i < inputs.Length; i++)
                 {
                     inputs[i] = samples[i].MachineInputs;
                     outputs[i] = samples[i].TrueClassIndex;
+                    samples[i].PreprocessorFunction = null;
                 }
 
                 // Zero as the length of an input seq. means that it should accept variable numbers of points in an input sequence

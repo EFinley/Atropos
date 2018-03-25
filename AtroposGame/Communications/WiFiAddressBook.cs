@@ -47,21 +47,21 @@ namespace Atropos.Communications
             if (i != -1)
             {
                 Targets[i] = target;
-                if (target is TeamMember) Roles[i] = (target as TeamMember).Roles.ToArray();
-                else if (Roles[i] == null || Roles[i].Length == 0) Roles[i] = new Role[] { Role.Any };
+                if (target is CommsContact t) Roles[i] = t.Roles?.ToArray();
+                if (Roles[i] == null || Roles[i].Length == 0) Roles[i] = new Role[] { Role.Any };
                 IPaddresses[i] = target.IPaddress;
             }
             else
             {
                 Targets.Add(target);
                 Names.Add(target.Name);
-                if (target is TeamMember) Roles.Add( (target as TeamMember).Roles.ToArray());
+                if (target is CommsContact t) Roles.Add(t.Roles?.ToArray() ?? new Role[] { Role.Any });
                 else Roles.Add(new Role[] { Role.Any });
                 IPaddresses.Add(target.IPaddress);
             }
 
             // Also, add it to the master list under Runners.
-            HeyYou.Everybody.Members.Add((SenderAndReceiver)target);
+            HeyYou.Everybody.Members.Add((MessageTarget)target);
         }
 
         public static MessageTarget Resolve(string identifier)
@@ -79,9 +79,9 @@ namespace Atropos.Communications
                     if (tmAKA?.ReferredToAs == identifier) return tmAKA;
                 }
             }
-            var result = (i >= 0) ? Targets[i] : TeamMember.Nobody;
-            if ((result as TeamMember)?.Name == identifier) return result;
-            else return new TeamMemberAKA((result as TeamMember), identifier);
+            var result = (i >= 0) ? Targets[i] : CommsContact.Nobody;
+            if ((result as CommsContact)?.Name == identifier) return result;
+            else return new TeamMemberAKA((result as CommsContact), identifier);
         }
     }
 }

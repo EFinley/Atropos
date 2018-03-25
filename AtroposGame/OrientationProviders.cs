@@ -361,9 +361,27 @@ namespace Atropos
         protected IProvider keyProvider;
         protected object synchronizationToken = new object();
 
-        public TimeSpan Interval { get { return keyProvider?.Interval ?? TimeSpan.FromMilliseconds(20); } }
-        public TimeSpan RunTime { get { return keyProvider?.RunTime ?? TimeSpan.Zero; } }
-        public DateTime Timestamp { get { return keyProvider?.Timestamp ?? DateTime.Now; } }
+        protected TimeSpan previousElapsed = TimeSpan.Zero;
+        protected TimeSpan elapsed = TimeSpan.Zero;
+        protected System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
+        
+        public DateTime Timestamp { get { return keyProvider.Timestamp; } } // Not used much, so delegated instead of recoded here.
+        public TimeSpan Interval
+        {
+            get
+            {
+                //if (!hasTakenData) return TimeSpan.FromMilliseconds(20); // Default value - SensorDelay.Game - in real terms.
+                //return TimeSpan.FromMilliseconds((nanosecondsElapsed - previousNanoseconds) / 1e6);
+                return elapsed - previousElapsed;
+            }
+        }
+        public TimeSpan RunTime
+        {
+            get
+            {
+                return elapsed;
+            }
+        }
 
         protected AsyncManualResetEvent dataReadyEvent = new AsyncManualResetEvent(true);
 
@@ -415,6 +433,9 @@ namespace Atropos
                 //using (await new AsyncLock().LockAsync(StopToken))
                 //{
                     await Task.WhenAny(allDataReady, StopToken.AsTask());
+
+                    previousElapsed = elapsed;
+                    elapsed = stopwatch.Elapsed;
 
                     DoWhenAllDataIsReady();
                     //await DoWhenAllDataIsReadyAsync();
@@ -1094,6 +1115,34 @@ namespace Atropos
                 return new Datapoint<float, float, float>() { Value1 = A, Value2 = B, Value3 = C };
             }
         } 
+
+        public class GrabItAllSensorProvider : MultiSensorProvider<Datapoint<Vector3, Vector3, Vector3, Quaternion, double>>
+        {
+            protected Vector3Provider LinAccel, Grav, Gyro;
+            protected OrientationSensorProvider Orientation;
+
+            protected Datapoint<Vector3, Vector3, Vector3, Quaternion, double> data;
+
+            public GrabItAllSensorProvider(OrientationSensorProvider orientation)
+                : base(new Vector3Provider(SensorType.LinearAcceleration), new Vector3Provider(SensorType.Gravity), new Vector3Provider(SensorType.Gyroscope), orientation)
+            {
+                LinAccel = providers[0] as Vector3Provider;
+                Grav = providers[1] as Vector3Provider;
+                Gyro = providers[2] as Vector3Provider;
+                Orientation = providers[3] as OrientationSensorProvider;
+            }
+
+            protected override void DoWhenAllDataIsReady()
+            {
+                data = new Datapoint<Vector3, Vector3, Vector3, Quaternion, double>
+                    (LinAccel.Vector, Grav.Vector, Gyro.Vector, Orientation.Quaternion, Interval.TotalMilliseconds);
+            }
+
+            protected override Datapoint<Vector3, Vector3, Vector3, Quaternion, double> toImplicitType()
+            {
+                return data;
+            }
+        }
     }
 
     // From the original Sensor Fusion code - TODO - provide proper credit.

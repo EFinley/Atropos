@@ -149,7 +149,7 @@ namespace Atropos.Characters
         {
             Name = name;
             ShortDesc = shortDesc;
-            LongDesc = longDesc ?? "(Long description here.)";
+            LongDesc = longDesc ?? $"{shortDesc} (Longer description to be added.)";
             OnApply = onApply ?? (() => { });
         }
 

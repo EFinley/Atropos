@@ -17,16 +17,18 @@ using Nito.AsyncEx;
 using System.Threading;
 using System.Reflection;
 
-using static Atropos.Communications.WifiCore;
+using static Atropos.Communications.Bluetooth.BluetoothCore;
+using Atropos.Communications.Bluetooth;
 
 namespace Atropos.Communications
 {
 
     public abstract class DataRequest : ActivatorBase, IEquatable<DataRequest>
     {
+        public MessageTarget Target;
         public DataRequest() : base() { Activate(); }
-        public Message RequestMessage;
-        public void Send() { WiFiMessageCenter.Client?.SendMessage(RequestMessage); }
+        public IMessage RequestMessage;
+        public void Send() { Target?.SendMessage((Message)RequestMessage); }
 
         #region Equality checking - Tricksy: Does NOT compare the resulting data, only the Message (which in turn only compares the ID number)
         public override bool Equals(object obj)
@@ -57,56 +59,40 @@ namespace Atropos.Communications
     }
     public class DataRequest<Tdata> : DataRequest
     {
-        #region Thread-safe ID number generator
-        private static int _idCounter = 10000; // Just to get us out of range of easily-confused with anything else.
-        private int _idNumber;
-        public int IDnumber
-        {
-            get
-            {
-                if (_idNumber == default(int))
-                {
-                    _idNumber = Interlocked.Increment(ref _idCounter);
-                    _idNumber = Interlocked.CompareExchange(ref _idCounter, 10000, int.MaxValue - 1);
-                }
-                return _idNumber;
-            }
-        }
-        #endregion
-
         public Tdata Data;
-        public DataRequest(Message requestMessage) : base()
+        public DataRequest(CommsContact target, IMessage requestMessage) : base()
         {
             if (requestMessage == null) return; // Will be used in the group version since there we don't want to register the following callback for the group, just for the individual sub-requests.
 
-            RequestMessage = requestMessage + $"{NEXT}{IDnumber}";
+            Target = target;
+            RequestMessage = requestMessage;
             DoOnReceiptFunc = GenerateReceiptFunc();
-            WiFiMessageCenter.OnReceiveMessage += DoOnReceiptFunc;
+            BluetoothMessageCenter.OnReceiveMessage += DoOnReceiptFunc;
         }
 
-        private EventHandler<EventArgs<Message>> DoOnReceiptFunc;
+        private EventHandler<EventArgs<Message>> DoOnReceiptFunc; // Note the distinction between these two lines - this one is an event handler, the next a generator *function* returning an event handler.
         private EventHandler<EventArgs<Message>> GenerateReceiptFunc()
         {
             return (o, e) =>
             {
-                var prefixString = $"AsRequested{NEXT}{IDnumber}{NEXT}";
-                if (e.Value == RequestMessage && e.Value.Content.StartsWith(prefixString))
+                if (e.Value.Type == MsgType.Reply && e.Value.ID == RequestMessage.ID)
                 {
-                    Data = Serializer.Deserialize<Tdata>(e.Value.Content.Substring(prefixString.Length)); // That is, "skip that many chars" - IMO substring's one-arg version ought to be (count), not (startIndex), but I wasn't consulted.
+                    Data = Serializer.Deserialize<Tdata>(e.Value.Content);
                     OnRequestedDataAvailable?.Invoke(o, new EventArgs<Tdata>(Data));
 
-                    WiFiMessageCenter.OnReceiveMessage -= DoOnReceiptFunc;
+                    BluetoothMessageCenter.OnReceiveMessage -= DoOnReceiptFunc;
                 }
             };
         }
 
         // Factory function to create either a simple, or a group, DataRequest, as appropriate.
-        public static DataRequest<Tdata> CreateFrom(Message requestMessage)
+        public static DataRequest<Tdata> CreateFrom(MessageTarget target, IMessage requestMessage)
         {
-            if (requestMessage.SubMessages == null || requestMessage.SubMessages.Count == 0)
-                return new DataRequest<Tdata>(requestMessage);
-            else
-                return new GroupDataRequest<Tdata>(requestMessage);
+            if (requestMessage is Message message && target is CommsContact recipient)
+                return new DataRequest<Tdata>(recipient, message);
+            else if (requestMessage is MessageSet mSet)
+                return new GroupDataRequest<Tdata>(target, mSet);
+            else throw new ArgumentException($"Request message {requestMessage.ID} is neither singular nor plural. Whassup?!?");
         }
         
         public event EventHandler<EventArgs<Tdata>> OnRequestedDataAvailable; // Will probably mostly only be used internally, by AwaitResponse().
@@ -127,16 +113,16 @@ namespace Atropos.Communications
     {
         private List<DataRequest<Tdata>> requests;
         
-        public GroupDataRequest(Message requestMessage) : base(null)
+        public GroupDataRequest(MessageTarget targets, MessageSet requestMessage) : base(null, requestMessage)
         {
             RequestMessage = requestMessage;
 
-            var subMsgs = requestMessage.SubMessages;
+            var subMsgs = requestMessage.submessages;
             if (subMsgs == null || subMsgs.Count == 0)
-                requests = new List<DataRequest<Tdata>>() { DataRequest<Tdata>.CreateFrom(requestMessage) };
+                requests = new List<DataRequest<Tdata>>() { DataRequest<Tdata>.CreateFrom(targets, requestMessage) };
             else
                 requests = subMsgs
-                            .Select(m => DataRequest<Tdata>.CreateFrom(m))
+                            .Zip(requestMessage.To.Members, (m, to) => DataRequest<Tdata>.CreateFrom(to, m))
                             .ToList();
         }
 
@@ -165,10 +151,9 @@ namespace Atropos.Communications
         {
             // One: Parse out the instructions in the message
             var substrings = message.Content.Split(onNEXT);
-            if (substrings[0] != "RequestData") return null;
-            var dataRequestSpecifics = substrings[1];
-            var typeName = substrings[2];
-            var requestIDnumber = substrings[3];
+            if (message.Type != MsgType.Query) return default(Message);
+            var dataRequestSpecifics = substrings[0];
+            var typeName = substrings[1];
             var rootElementName = dataRequestSpecifics.Split('.')[0]; // Oh, for a proper slice notation!
             var memberNames = dataRequestSpecifics.Split('.').Skip(1).ToArray();
 
@@ -181,8 +166,8 @@ namespace Atropos.Communications
             var serialForm = serializer.InvokeStaticMethod<string>("Serialize", Result);
 
             // Four: Alter the content on the Message (but leave its ID number the same) and prep it to be sent back.
-            var sender = message.From;
-            message.Content = $"AsRequested|{requestIDnumber}|{serialForm}";
+            message.Type = MsgType.Reply;
+            message.Content = serialForm;
             return message;
         }
 

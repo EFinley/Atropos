@@ -57,11 +57,11 @@ namespace Atropos
             SetupButton(StartScanning, "Interact", Resource.Drawable.qr_example_dark, Color.DodgerBlue);
             SetUpButtons();
 
-            // Feedback on whether our networking info is carrying through changeover...
-            if (WiFiMessageCenter.Client != null)
-            {
-                Toast.MakeText(this, $"Found WifiClient, {(WiFiMessageCenter.Client.IsConnected ? "connected" : "disconnected")}, with {AddressBook.Names.Join()} in the address book.", ToastLength.Long).Show();
-            }
+            //// Feedback on whether our networking info is carrying through changeover...
+            //if (WiFiMessageCenter.Client != null)
+            //{
+            //    Toast.MakeText(this, $"Found WifiClient, {(WiFiMessageCenter.Client.IsConnected ? "connected" : "disconnected")}, with {AddressBook.Names.Join()} in the address book.", ToastLength.Long).Show();
+            //}
         }
 
         protected override void OnResume()
@@ -113,7 +113,7 @@ namespace Atropos
                 //    Toast.MakeText(this, Resource.String.popup_placeholder_nfc, ToastLength.Short).Show();
                 //    return true;
                 case Resource.Id.menuaction_wifi:
-                    intent = new Intent(this, typeof(Communications.WiFiDirectActivity));
+                    intent = new Intent(this, typeof(Communications.Bluetooth.BTDirectActivity));
                     intent.AddFlags(ActivityFlags.SingleTop);
                     intent.AddFlags(ActivityFlags.NewTask);
                     StartActivity(intent);

@@ -13,8 +13,8 @@ namespace Atropos
     using Android.OS;
     using Android.Widget;
     using Android.Util;
-    //using DeviceMotion.Plugin;
-    //using DeviceMotion.Plugin.Abstractions;
+    //
+    //
     //using Accord.Math;
     //using Accord.Statistics;
     using Android.Content;

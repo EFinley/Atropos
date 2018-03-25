@@ -14,8 +14,6 @@ using Android.Widget;
 //using Accord.MachineLearning.VectorMachines;
 //using Accord.Statistics.Filters;
 //using Accord.Math;
-using DeviceMotion.Plugin;
-using DeviceMotion.Plugin.Abstractions;
 using System.Threading;
 using System.Threading.Tasks;
 using Nito.AsyncEx;

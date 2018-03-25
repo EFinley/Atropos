@@ -34,6 +34,11 @@ namespace Atropos.Machine_Learning
             return CrosslinkAxesImpl<T>.Apply(inputs);
         }
 
+        public static Func<double[], double[]> None
+        {
+            get { return t => t; }
+        }
+
         private static class CrosslinkAxesImpl<T>
         where T : struct
         {

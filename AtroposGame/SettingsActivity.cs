@@ -26,6 +26,7 @@ namespace Atropos
             base.OnCreate(savedInstanceState);
 
             // Link the checkboxes and buttons and such
+            SetupButton(Resource.Id.btn_launch_experimental_mode, typeof(Atropos.Machine_Learning.MachineLearningActivityABCVariant));
             SetupButton(Resource.Id.btn_dev_hotbutton, typeof(FunctionalityTestActivity));
             SetupButton(Resource.Id.btn_train_spells, typeof(SpellTrainingActivity));
             SetupButton(Resource.Id.btn_train_locks, () => { }, null, false);
@@ -39,7 +40,6 @@ namespace Atropos
             allowNfc.Checked = Res.AllowNfc;
             allowNfc.Click += (o, e) => { Res.AllowNfc = allowNfc.Checked; };
 
-            SetupButton(Resource.Id.btn_launch_experimental_mode, typeof(Atropos.Machine_Learning.MachineLearningActivity));
             SetupButton(Resource.Id.btn_export_run_data, () => { }, null, false);
             SetupButton(Resource.Id.btn_import_run_data, () => { }, null, false);
 
@@ -109,7 +109,9 @@ namespace Atropos
                 //    Toast.MakeText(this, Resource.String.popup_placeholder_nfc, ToastLength.Short).Show();
                 //    return true;
                 case Resource.Id.menuaction_wifi:
-                    LaunchDirectly(typeof(Communications.WiFiDirectActivity));
+                    //LaunchDirectly(typeof(Communications.WiFiDirectActivity));
+                    //LaunchDirectly(typeof(Communications.BLECommsActivity));
+                    LaunchDirectly(typeof(Communications.Bluetooth.BTDirectActivity));
                     return true;
                 case Resource.Id.menuaction_settings:
                     LaunchDirectly(typeof(SettingsActivity));

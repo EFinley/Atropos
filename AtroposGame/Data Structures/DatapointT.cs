@@ -39,10 +39,10 @@ namespace Atropos.DataStructures
     /// </summary>
     /// <typeparam name="T"></typeparam>
     [Serializable]
-    public struct Datapoint<T> : IDatapoint<T> 
+    public struct Datapoint<T> : IDatapoint, ISerializable // IDatapoint<T>
         where T : struct
     {
-        private T? _value;
+        [NonSerialized] private T? _value;
         //private Nullable<T> _value;
         public T Value
         {
@@ -64,11 +64,11 @@ namespace Atropos.DataStructures
         public float Magnitude() { return _magnitude?.Invoke(Value) ?? float.NaN; }
 
         [NonSerialized] private static Func<float[], IDatapoint> _fromArray;
-        IDatapoint IDatapoint.FromArray(float[] sourceArray) // Normally this wouldn't be an instance method, but it just works out SO much easier, elsewhere, if it is.
-        {
-            return _fromArray(sourceArray);
-        }
-        public Datapoint<T> FromArray(float[] sourceArray)
+        //IDatapoint IDatapoint.FromArray(float[] sourceArray) // Normally this wouldn't be an instance method, but it just works out SO much easier, elsewhere, if it is.
+        //{
+        //    return _fromArray(sourceArray);
+        //}
+        public IDatapoint FromArray(float[] sourceArray)
         {
             return (Datapoint<T>)_fromArray(sourceArray);
         }
@@ -91,14 +91,33 @@ namespace Atropos.DataStructures
                 _magnitude = (val) => (val as IDatapoint).Magnitude();
                 _asArray = (val) => (val as IDatapoint).AsArray();
                 //_fromArray = (vals) => typeT.InvokeStaticMethod<Datapoint<T>>("FromArray", vals);
-                _fromArray = (vals) => (default(T) as IDatapoint).FromArray(vals);
+                if (typeT.GetGenericTypeDefinition() == typeof(Datapoint<,>)) 
+                {
+                    var dT1T2 = typeof(Datapoint<,>).MakeGenericType(typeT.GetGenericArguments());
+                    var instance = System.Activator.CreateInstance(dT1T2);
+                    var methInfo = dT1T2.GetMethod("FromArray");
+                    _fromArray = (vals) =>
+                    {
+                        //dynamic dyn = dT1T2.InvokeStaticMethod<T>("FromArray", vals);
+                        //return (IDatapoint)dyn;
+                        var parameters = new object[] { vals };//vals.Select(v => (object)v).ToList().ToArray();
+                        dynamic dyn = methInfo.Invoke(instance, parameters);
+                        return (IDatapoint)dyn;
+                    };
+                }
+                else _fromArray = (vals) => (default(T) as IDatapoint).FromArray(vals);
             }
             else if (typeT.IsOneOf(typeof(int), typeof(double), typeof(float))) // Hackish but whatever
             {
                 Dimensions = 1;
                 _magnitude = (f) => (float)Math.Abs(Operator.Convert<T, double>(f));
                 _asArray = (f) => new float[] { Operator.Convert<T, float>(f) };
-                _fromArray = (vals) => (Datapoint<T>)Operator.Convert<float, T>(vals[0]);
+                _fromArray = (vals) =>
+                {
+                    //var result = (Datapoint<T>)Operator.Convert<float, T>(vals[0]);
+                    //return result;
+                    return new Datapoint<T>() { Value = Operator.Convert<float, T>(vals[0]) };
+                };
             }
             else if (typeT == typeof(TimeSpan))
             {
@@ -225,6 +244,9 @@ namespace Atropos.DataStructures
         public static Datapoint<T> operator /(Datapoint<T> vec, float scalar) { return (Datapoint<T>)Operator.DivideAlternative(vec.Value, scalar); }
         public static Datapoint<T> operator /(Datapoint<T> vec, double scalar) { return vec / (float)scalar; }
         public static Datapoint<T> operator /(Datapoint<T> vec, int scalar) { return vec / (float)scalar; }
+
+        public static bool operator ==(Datapoint<T> first, Datapoint<T> second) { return Operator.Equals(first.Value, second.Value); }
+        public static bool operator !=(Datapoint<T> first, Datapoint<T> second) { return Operator.NotEqual(first.Value, second.Value); }
         #endregion
 
         //#region Graphics Helper Functions - Mostly obsolete
@@ -251,7 +273,45 @@ namespace Atropos.DataStructures
 
         public override string ToString()
         {
-            return $"\u1445{Value}\u1440";
+            return $"\u1445 {Value} \u1440";
         }
+
+        // Serialization... implementing the ISerializable interface.
+
+        // First, we need an explicit parameterless constructor, which is technically not allowed for a struct; one with an optional parameter is, though.
+        public Datapoint(T val = default(T)) { _value = (Operator.NotEqual(val, default(T)) ? val : Datapoint.DefaultOrIdentity<T>()); }
+
+        // Otherwise, the special ISerializable constructor would be our only constructor, which would render things... sticky.
+        public Datapoint(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null) throw new ArgumentNullException("info");
+            var valueArray = (float[])info.GetValue("valueArray", typeof(float[]));
+            var fArray = (Datapoint<T>)(new Datapoint<T>()).FromArray(valueArray);
+            _value = fArray.Value;
+        }
+
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            if (info == null) throw new ArgumentNullException("info");
+            info.AddValue("valueArray", AsArray());
+        }
+    }
+
+    /// <summary>
+    /// Since the various System.Numerics Vector classes are NOT marked as Serializable, we need a workaround.
+    /// To use, explicitly cast into and out of this type before serialization or after deserialization.  You
+    /// should never need to actually construct an instance of this type external to those two activities.
+    /// </summary>
+    /// <typeparam name="T">The type of feature - see <seealso cref="Datapoint{T}"/>.</typeparam>
+    [Serializable]
+    public struct SerializableDatapoint<T> where T : struct
+    {
+        public float[] Values;
+
+        public static explicit operator Datapoint<T>(SerializableDatapoint<T> source)
+            => (Datapoint<T>)(new Datapoint<T>()).FromArray(source.Values);
+
+        public static explicit operator SerializableDatapoint<T>(Datapoint<T> source)
+            => new SerializableDatapoint<T>() { Values = source.AsArray() };
     }
 }

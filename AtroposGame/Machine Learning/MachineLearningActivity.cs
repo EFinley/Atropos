@@ -10,8 +10,8 @@ using Android.Nfc;
 using Android.OS;
 using Android.Widget;
 using Android.Util;
-using DeviceMotion.Plugin;
-using DeviceMotion.Plugin.Abstractions;
+
+
 //using Accord.Math;
 //using Accord.Statistics;
 using Android.Content;
@@ -65,6 +65,30 @@ namespace Atropos.Machine_Learning
             CurrentGestureStage = null;
             CurrentGestureStage = new SelfEndpointingSingleGestureRecognizer(label, Classifier,
                         new ClusterLoggingProvider<Vector3, Vector3>(SensorType.LinearAcceleration, SensorType.Gravity));
+        }
+    }
+
+    [Activity(ScreenOrientation = Android.Content.PM.ScreenOrientation.Portrait, WindowSoftInputMode = SoftInput.AdjustPan)]
+    public class MachineLearningActivityABCVariant : MachineLearningPageActivity<Datapoint<float, float, float>>
+    {
+
+        protected new static MachineLearningActivityABCVariant Current { get { return (MachineLearningActivityABCVariant)CurrentActivity; } set { CurrentActivity = value; } }
+
+        protected override void ResetStage(string label)
+        {
+            //if (!_advancedCueMode)
+            CurrentGestureStage = new MachineLearningStage(label, Dataset,
+                new LoggingSensorProvider<Datapoint<float, float, float>>(new AdvancedProviders.ABCgestureCharacterizationProvider()));
+            //else CurrentStage = new SelfEndpointingSingleGestureRecognizer(label, Classifier,
+            //            new ClusterLoggingProvider<Vector3, Vector3>(SensorType.LinearAcceleration, SensorType.Gravity));
+        }
+
+        protected override void AlternativeResetStage(string label, params object[] info)
+        {
+            CurrentGestureStage?.Deactivate();
+            CurrentGestureStage = null;
+            CurrentGestureStage = new SelfEndpointingSingleGestureRecognizer(label, Classifier,
+                        new LoggingSensorProvider<Datapoint<float, float, float>>(new AdvancedProviders.ABCgestureCharacterizationProvider()));
         }
     }
 
@@ -264,6 +288,27 @@ namespace Atropos.Machine_Learning
             ResetStage("Learning gesture");
 
             _classnameSpinner.ItemSelected += OnClassnameSpinnerChanged;
+
+            //// Testing stuff... deserialization issues cropping up.
+            //var v1 = new Datapoint<Vector3, Vector3>() { Value1 = Vector3.One, Value2 = 0.5f * Vector3.UnitX + 0.33f * Vector3.UnitY };
+            var v1 = new Datapoint<float>() { Value = 1.234f };
+            var v2 = new Datapoint<float, float>() { Value1 = 1.33f, Value2 = 168000f };
+            var v3 = new Datapoint<float, float, float>() { Value1 = 1.33f, Value2 = 168000f, Value3 = 0.0003f };
+            var v3b = (Datapoint<float, float, float>)(new Datapoint<float, float, float>()).FromArray(new float[] { 1.33f, 168000f, 0.0003f });
+            Log.Debug("MachineLearning|TEST", $"V3 is {v3.ToString()}; reconstructing it we get {v3b.ToString()}.  They're equal ({v3 == v3b}).");
+            //var v4 = new Datapoint<float>() { Value = 0.456f };
+            ////var v5 = new Datapoint<Datapoint<float>>(new Datapoint<float>(0.123f));
+            ////var v6 = new Datapoint<Datapoint<float>, Datapoint<float>>() { Value1 = new Datapoint<float>(0.33f), Value2 = new Datapoint<float>(0.66f) };
+            ////Log.Debug($"MachineLearning|TEST", $"Round-trip checks... v1 {Serializer.Check(v1)}, v2 {Serializer.Check(v2)}, v3 {Serializer.Check(v3)}, v4 {Serializer.Check(v4)}.");
+            //Log.Debug($"MachineLearning|TEST", $"Round-trip checks... v1 {Serializer.Check(v1)}, v2 {Serializer.Check(v2)}, v3 {Serializer.Check(v3)}.");
+            Log.Debug($"MachineLearning|TEST", $"Round-trip checks... v3 {Serializer.Check(v3)}.");
+            Log.Debug($"MachineLearning|TEST", $"Round-trip checks... v2 {Serializer.Check(v2)}.");
+            var v1s = Serializer.Serialize<Datapoint<float>>(v1);
+            Log.Debug($"MachineLearning|TEST", $"Round-trip checks... v1 serializes to {v1s}.");
+            var v1d = Serializer.Deserialize<Datapoint<float>>(v1s);
+            Log.Debug($"MachineLearning|TEST", $"Round-trip checks... v1s deserializes to {v1d}.");
+            Log.Debug($"MachineLearning|TEST", $"Round-trip checks... v1 {Serializer.Check(v1)}.");
+
         }
 
         protected override async void OnResume()
@@ -408,7 +453,7 @@ namespace Atropos.Machine_Learning
                         using (var streamReader = new StreamReader(filepath))
                         {
                             var contents = streamReader.ReadToEnd();
-                            Log.Debug("Loading dataset", $"Loading our dataset, it currently contains: \n\n{contents}\n");
+                            Log.Debug("Loading dataset", $"Loading our dataset, it currently contains({contents.Length} chars): \n\n{contents}\n");
                             try
                             {
                                 Dataset = Serializer.Deserialize<DataSet<T>>(contents);
@@ -593,7 +638,7 @@ namespace Atropos.Machine_Learning
                         {
                             Dataset.SavedAsName = filepath;
                             var serialForm = Serializer.Serialize<DataSet>(Dataset as DataSet);
-                            Log.Debug("Saving dataset", $"Saving our dataset, it currently contains: \n\n{serialForm}\n");
+                            Log.Debug("Saving dataset", $"Saving our dataset, it currently contains ({serialForm.Length} chars): \n\n{serialForm}\n");
                             //Log.Debug("Saving dataset", $"Checking serialization: MostRecentSample {((Serializer.Check(MostRecentSample)) ? "Check" : "Nope")}.");
                             streamWriter.Write(serialForm);
 
@@ -770,51 +815,54 @@ namespace Atropos.Machine_Learning
 
                     var c = new Classifier();
 
-                    sw.Start();
-                    c.CreateMachine(d);
-                    sw.Stop();
-                    Log.Debug("MachineLearning|SpecialTest", $"Created special classifier for {currentGC.className} in {sw.Elapsed.TotalSeconds}s.");
-                    sw.Reset();
-
-                    sw.Start();
-                    await c.FastAssess(d);
-                    sw.Stop();
-                    int numCorrectPositives = 0, numFalseNegatives = 0, numCorrectNegatives = 0, numFalsePositives = 0;
-                    double scoCorrectPositives = 0, scoFalseNegatives = 0, scoCorrectNegatives = 0, scoFalsePositives = 0;
-                    foreach (var seq in d.Samples)
+                    foreach (var doOverride in new bool[] { false, true })
                     {
-                        if (seq.TrueClassIndex == 0)
+                        sw.Start();
+                        c.CreateMachine(d, doOverride);
+                        sw.Stop();
+                        Log.Debug("MachineLearning|SpecialTest", $"\nCreated special classifier for {currentGC.className} in {sw.Elapsed.TotalSeconds}s, with doOverride = {doOverride}.");
+                        sw.Reset();
+
+                        sw.Start();
+                        await c.FastAssess(d);
+                        sw.Stop();
+                        int numCorrectPositives = 0, numFalseNegatives = 0, numCorrectNegatives = 0, numFalsePositives = 0;
+                        double scoCorrectPositives = 0, scoFalseNegatives = 0, scoCorrectNegatives = 0, scoFalsePositives = 0;
+                        foreach (var seq in d.Samples)
                         {
-                            if (seq.RecognizedAsIndex == 0)
+                            if (seq.TrueClassIndex == 0)
                             {
-                                numCorrectPositives++;
-                                scoCorrectPositives += (seq.RecognitionScore - scoCorrectPositives) / numCorrectPositives;
+                                if (seq.RecognizedAsIndex == 0)
+                                {
+                                    numCorrectPositives++;
+                                    scoCorrectPositives += (seq.RecognitionScore - scoCorrectPositives) / numCorrectPositives;
+                                }
+                                else
+                                {
+                                    numFalseNegatives++;
+                                    scoFalseNegatives += (seq.RecognitionScore - scoFalseNegatives) / numFalseNegatives;
+                                }
                             }
                             else
                             {
-                                numFalseNegatives++;
-                                scoFalseNegatives += (seq.RecognitionScore - scoFalseNegatives) / numFalseNegatives;
+                                if (seq.RecognizedAsIndex == 1)
+                                {
+                                    numCorrectNegatives++;
+                                    scoCorrectNegatives += (seq.RecognitionScore - scoCorrectNegatives) / numCorrectNegatives;
+                                }
+                                else
+                                {
+                                    numFalsePositives++;
+                                    scoFalsePositives += (seq.RecognitionScore - scoFalsePositives) / numFalsePositives;
+                                }
                             }
                         }
-                        else
-                        {
-                            if (seq.RecognizedAsIndex == 1)
-                            {
-                                numCorrectNegatives++;
-                                scoCorrectNegatives += (seq.RecognitionScore - scoCorrectNegatives) / numCorrectNegatives;
-                            }
-                            else
-                            {
-                                numFalsePositives++;
-                                scoFalsePositives += (seq.RecognitionScore - scoFalsePositives) / numFalsePositives;
-                            }
-                        }
+                        Log.Debug("MachineLearning|SpecialTest", $"Assessed in {sw.Elapsed.TotalMilliseconds} ms, with {numCorrectPositives}"
+                            + $"({scoCorrectPositives:f2}) correct positives, {numCorrectNegatives} ({scoCorrectNegatives:f2}) correct"
+                            + $" negatives, {numFalseNegatives} ({scoFalseNegatives:f2}) false negatives, and {numFalsePositives} "
+                            + $"({scoFalsePositives:f2}) false positives.");
+                        sw.Reset(); 
                     }
-                    Log.Debug("MachineLearning|SpecialTest", $"Assessed in {sw.Elapsed.TotalMilliseconds} ms, with {numCorrectPositives}"
-                        + $"({scoCorrectPositives:f2}) correct positives, {numCorrectNegatives} ({scoCorrectNegatives:f2}) correct"
-                        + $" negatives, {numFalseNegatives} ({scoFalseNegatives:f2}) false negatives, and {numFalsePositives} "
-                        + $"({scoFalsePositives:f2}) false positives.");
-                    sw.Reset();
                 }
             };
 

@@ -69,12 +69,6 @@
     <Reference Include="Accord.Statistics, Version=3.8.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Accord.Statistics.3.8.0\lib\netstandard2.0\Accord.Statistics.dll</HintPath>
     </Reference>
-    <Reference Include="DeviceMotion.Plugin, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Xam.Plugin.DeviceMotion.1.1.2\lib\MonoAndroid10\DeviceMotion.Plugin.dll</HintPath>
-    </Reference>
-    <Reference Include="DeviceMotion.Plugin.Abstractions, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Xam.Plugin.DeviceMotion.1.1.2\lib\MonoAndroid10\DeviceMotion.Plugin.Abstractions.dll</HintPath>
-    </Reference>
     <Reference Include="FastAndroidCamera, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\FastAndroidCamera.2.0.0\lib\MonoAndroid403\FastAndroidCamera.dll</HintPath>
     </Reference>
@@ -95,11 +89,14 @@
     <Reference Include="Nito.AsyncEx.Concurrent, Version=4.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Nito.AsyncEx.4.0.1\lib\MonoAndroid\Nito.AsyncEx.Concurrent.dll</HintPath>
     </Reference>
-    <Reference Include="Nito.AsyncEx.Enlightenment, Version=4.0.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nito.AsyncEx.4.0.1\lib\MonoAndroid\Nito.AsyncEx.Enlightenment.dll</HintPath>
-    </Reference>
     <Reference Include="PerpetualEngine.SimpleStorage.Droid, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\SimpleStorage.1.4.2\lib\MonoAndroid\PerpetualEngine.SimpleStorage.Droid.dll</HintPath>
+    </Reference>
+    <Reference Include="Plugin.BLE, Version=1.3.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Plugin.BLE.1.3.0\lib\MonoAndroid\Plugin.BLE.dll</HintPath>
+    </Reference>
+    <Reference Include="Plugin.BLE.Abstractions, Version=1.3.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Plugin.BLE.1.3.0\lib\MonoAndroid\Plugin.BLE.Abstractions.dll</HintPath>
     </Reference>
     <Reference Include="Plugin.Vibrate, Version=3.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Xam.Plugins.Vibrate.3.0.1\lib\MonoAndroid10\Plugin.Vibrate.dll</HintPath>
@@ -108,6 +105,8 @@
       <HintPath>..\packages\Xam.Plugins.Vibrate.3.0.1\lib\MonoAndroid10\Plugin.Vibrate.Abstractions.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.Net.Http" />
     <Reference Include="System.Numerics" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Core" />
@@ -142,18 +141,6 @@
     <Reference Include="Xamarin.Android.Support.Vector.Drawable, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Xamarin.Android.Support.Vector.Drawable.25.4.0.2\lib\MonoAndroid70\Xamarin.Android.Support.Vector.Drawable.dll</HintPath>
     </Reference>
-    <Reference Include="Xamarin.GooglePlayServices.Base, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Xamarin.GooglePlayServices.Base.42.1021.1\lib\MonoAndroid70\Xamarin.GooglePlayServices.Base.dll</HintPath>
-    </Reference>
-    <Reference Include="Xamarin.GooglePlayServices.Basement, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Xamarin.GooglePlayServices.Basement.42.1021.1\lib\MonoAndroid70\Xamarin.GooglePlayServices.Basement.dll</HintPath>
-    </Reference>
-    <Reference Include="Xamarin.GooglePlayServices.Nearby, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Xamarin.GooglePlayServices.Nearby.42.1021.1\lib\MonoAndroid70\Xamarin.GooglePlayServices.Nearby.dll</HintPath>
-    </Reference>
-    <Reference Include="Xamarin.GooglePlayServices.Tasks, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Xamarin.GooglePlayServices.Tasks.42.1021.1\lib\MonoAndroid70\Xamarin.GooglePlayServices.Tasks.dll</HintPath>
-    </Reference>
     <Reference Include="ZXing.Net.Mobile.Core, Version=2.3.2.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\ZXing.Net.Mobile.2.3.2\lib\MonoAndroid403\ZXing.Net.Mobile.Core.dll</HintPath>
     </Reference>
@@ -176,22 +163,29 @@
     <Compile Include="Characters\Trait Interaction Templates.cs" />
     <Compile Include="Characters\Trait Lists.cs" />
     <Compile Include="Characters\Traits.cs" />
+    <Compile Include="Communications\BLEgattServerCallback.cs" />
+    <Compile Include="Communications\BLEserver.cs" />
+    <Compile Include="Communications\BLEtest.cs" />
     <Compile Include="Communications\Data Request.cs" />
     <Compile Include="Communications\DeviceDetailFragment.cs" />
+    <Compile Include="Communications\BluetoothDeviceListFragment.cs" />
     <Compile Include="Communications\DeviceListFragment.cs" />
     <Compile Include="Communications\FileTransferService.cs" />
     <Compile Include="Communications\IDeviceActionListener.cs" />
-    <Compile Include="Communications\NearbyConnections.cs" />
     <Compile Include="Communications\WiFiAddressBook.cs" />
+    <Compile Include="Communications\BluetoothDirectActivity.cs" />
+    <Compile Include="Communications\BluetoothCore.cs" />
+    <Compile Include="Communications\BluetoothClient.cs" />
+    <Compile Include="Communications\BluetoothMessageCenter.cs" />
     <Compile Include="Communications\WiFiMessageCenter.cs" />
-    <Compile Include="Communications\Message Receiver.cs" />
     <Compile Include="Communications\Message Target.cs" />
     <Compile Include="Communications\Message.cs" />
-    <Compile Include="Communications\Team.cs" />
+    <Compile Include="Communications\CommsContact.cs" />
     <Compile Include="Communications\WiFiClient.cs" />
     <Compile Include="Communications\WiFiDirectActivity.cs" />
     <Compile Include="Communications\WiFiDirectBroadcastReceiver.cs" />
     <Compile Include="Communications\WiFiCore.cs" />
+    <Compile Include="Communications\BluetoothServer.cs" />
     <Compile Include="Communications\WiFiServer.cs" />
     <Compile Include="Data Structures\DatapointT.cs" />
     <Compile Include="Data Structures\DatapointT1T2.cs" />
@@ -443,6 +437,10 @@
     <AndroidResource Include="Resources\layout\MeleeBeta.axml">
       <SubType>Designer</SubType>
     </AndroidResource>
+    <AndroidResource Include="Resources\layout\TeamFormation.axml">
+      <SubType>Designer</SubType>
+    </AndroidResource>
+    <AndroidResource Include="Resources\layout\TeamFormationTeammateItem.axml" />
   </ItemGroup>
   <ItemGroup>
     <AndroidResource Include="Resources\layout\Main.axml">
@@ -852,10 +850,6 @@
     <Error Condition="!Exists('..\packages\Xamarin.Android.Support.v7.AppCompat.25.4.0.2\build\MonoAndroid70\Xamarin.Android.Support.v7.AppCompat.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Xamarin.Android.Support.v7.AppCompat.25.4.0.2\build\MonoAndroid70\Xamarin.Android.Support.v7.AppCompat.targets'))" />
     <Error Condition="!Exists('..\packages\Xamarin.Build.Download.0.4.2\build\Xamarin.Build.Download.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Xamarin.Build.Download.0.4.2\build\Xamarin.Build.Download.props'))" />
     <Error Condition="!Exists('..\packages\Xamarin.Build.Download.0.4.2\build\Xamarin.Build.Download.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Xamarin.Build.Download.0.4.2\build\Xamarin.Build.Download.targets'))" />
-    <Error Condition="!Exists('..\packages\Xamarin.GooglePlayServices.Basement.42.1021.1\build\MonoAndroid70\Xamarin.GooglePlayServices.Basement.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Xamarin.GooglePlayServices.Basement.42.1021.1\build\MonoAndroid70\Xamarin.GooglePlayServices.Basement.targets'))" />
-    <Error Condition="!Exists('..\packages\Xamarin.GooglePlayServices.Tasks.42.1021.1\build\MonoAndroid70\Xamarin.GooglePlayServices.Tasks.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Xamarin.GooglePlayServices.Tasks.42.1021.1\build\MonoAndroid70\Xamarin.GooglePlayServices.Tasks.targets'))" />
-    <Error Condition="!Exists('..\packages\Xamarin.GooglePlayServices.Base.42.1021.1\build\MonoAndroid70\Xamarin.GooglePlayServices.Base.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Xamarin.GooglePlayServices.Base.42.1021.1\build\MonoAndroid70\Xamarin.GooglePlayServices.Base.targets'))" />
-    <Error Condition="!Exists('..\packages\Xamarin.GooglePlayServices.Nearby.42.1021.1\build\MonoAndroid70\Xamarin.GooglePlayServices.Nearby.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Xamarin.GooglePlayServices.Nearby.42.1021.1\build\MonoAndroid70\Xamarin.GooglePlayServices.Nearby.targets'))" />
   </Target>
   <Import Project="..\packages\Accord.3.8.0\build\Accord.targets" Condition="Exists('..\packages\Accord.3.8.0\build\Accord.targets')" />
   <Import Project="..\packages\Xamarin.Android.Support.Compat.25.4.0.2\build\MonoAndroid70\Xamarin.Android.Support.Compat.targets" Condition="Exists('..\packages\Xamarin.Android.Support.Compat.25.4.0.2\build\MonoAndroid70\Xamarin.Android.Support.Compat.targets')" />
@@ -868,10 +862,6 @@
   <Import Project="..\packages\Xamarin.Android.Support.Animated.Vector.Drawable.25.4.0.2\build\MonoAndroid70\Xamarin.Android.Support.Animated.Vector.Drawable.targets" Condition="Exists('..\packages\Xamarin.Android.Support.Animated.Vector.Drawable.25.4.0.2\build\MonoAndroid70\Xamarin.Android.Support.Animated.Vector.Drawable.targets')" />
   <Import Project="..\packages\Xamarin.Android.Support.v7.AppCompat.25.4.0.2\build\MonoAndroid70\Xamarin.Android.Support.v7.AppCompat.targets" Condition="Exists('..\packages\Xamarin.Android.Support.v7.AppCompat.25.4.0.2\build\MonoAndroid70\Xamarin.Android.Support.v7.AppCompat.targets')" />
   <Import Project="..\packages\Xamarin.Build.Download.0.4.2\build\Xamarin.Build.Download.targets" Condition="Exists('..\packages\Xamarin.Build.Download.0.4.2\build\Xamarin.Build.Download.targets')" />
-  <Import Project="..\packages\Xamarin.GooglePlayServices.Basement.42.1021.1\build\MonoAndroid70\Xamarin.GooglePlayServices.Basement.targets" Condition="Exists('..\packages\Xamarin.GooglePlayServices.Basement.42.1021.1\build\MonoAndroid70\Xamarin.GooglePlayServices.Basement.targets')" />
-  <Import Project="..\packages\Xamarin.GooglePlayServices.Tasks.42.1021.1\build\MonoAndroid70\Xamarin.GooglePlayServices.Tasks.targets" Condition="Exists('..\packages\Xamarin.GooglePlayServices.Tasks.42.1021.1\build\MonoAndroid70\Xamarin.GooglePlayServices.Tasks.targets')" />
-  <Import Project="..\packages\Xamarin.GooglePlayServices.Base.42.1021.1\build\MonoAndroid70\Xamarin.GooglePlayServices.Base.targets" Condition="Exists('..\packages\Xamarin.GooglePlayServices.Base.42.1021.1\build\MonoAndroid70\Xamarin.GooglePlayServices.Base.targets')" />
-  <Import Project="..\packages\Xamarin.GooglePlayServices.Nearby.42.1021.1\build\MonoAndroid70\Xamarin.GooglePlayServices.Nearby.targets" Condition="Exists('..\packages\Xamarin.GooglePlayServices.Nearby.42.1021.1\build\MonoAndroid70\Xamarin.GooglePlayServices.Nearby.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
 		Other similar extension points exist, see Microsoft.Common.targets.
 		<Target Name="BeforeBuild">

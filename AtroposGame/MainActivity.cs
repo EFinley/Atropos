@@ -7,8 +7,8 @@ using Android.Views;
 using Android.Widget;
 using Android.OS;
 //using DeviceMotion;
-//using DeviceMotion.Plugin;
-//using DeviceMotion.Plugin.Abstractions;
+//
+//
 using Android.Nfc;
 using Android.Nfc.Tech;
 using Java.IO;
@@ -33,6 +33,7 @@ namespace Atropos
     public class MainActivity : SelectorActivity
     {
         public override int layoutID { get; set; } = Resource.Layout.Main;
+        public static event EventHandler<EventArgs> OnFullStop;
 
         protected override void OnCreate(Bundle bundle)
         {
@@ -141,6 +142,12 @@ namespace Atropos
         {
             base.OnPause();
             Res.SFX.StopAll();
+        }
+
+        protected override void OnStop()
+        {
+            OnFullStop.Raise();
+            base.OnStop();
         }
 
         private void InitImageButton(int buttonID, int primaryImageID, int secondaryImageID)

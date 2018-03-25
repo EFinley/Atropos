@@ -231,6 +231,23 @@ namespace Atropos
                 //Log.Info("Test", "Delta");
             }
         }
+        public static async Task<T> SwallowCancellations<T>(this Task<T> task)
+        {
+            try
+            {
+                return await task;
+            }
+            catch (AggregateException ae)
+            {
+                //Log.Info("Test", "Gamma");
+                ae.Handle(x => x is TaskCanceledException);  // Unpacking... return true (it's been handled) iff all of the subexceptions are this.
+            }
+            catch (TaskCanceledException)
+            {
+                //Log.Info("Test", "Delta");
+            }
+            return default(T);
+        }
         public static void SwallowCancellations(this Action act)
         {
             try
@@ -478,13 +495,15 @@ namespace Atropos
             return (T)propInfo.GetValue(null);
         }
 
-        public static T InvokeStaticMethod<T>(this Type type, string methodName, object parameter)
+        //public static T InvokeStaticMethod<T>(this Type type, string methodName, object parameter)
+        //{
+        //    return InvokeStaticMethod<T>(type, methodName, new object[] { parameter });
+        //}
+        public static T InvokeStaticMethod<T>(this Type type, string methodName, params object[] parameters)
         {
-            return InvokeStaticMethod<T>(type, methodName, new object[] { parameter });
-        }
-        public static T InvokeStaticMethod<T>(this Type type, string methodName, object[] parameters = null)
-        {
-            var methInfo = type.GetMethod(methodName);
+            var methInfo = type.GetMethod(methodName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static) ??
+                           type.GetMethod(methodName, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            if (methInfo == null) throw new ArgumentException($"Static method {methodName} not found on {type.Name}.");
             if (methInfo.ReturnType != typeof(T)) throw new ArgumentException($"Static method {methodName} on {type.Name} returns {methInfo.ReturnType.Name} (not {typeof(T).Name}).");
             return (T)methInfo.Invoke(null, parameters);
         }
@@ -512,6 +531,11 @@ namespace Atropos
         public static void Raise<T>(this EventHandler<EventArgs<T>> sourceEvent, T value, [System.Runtime.CompilerServices.CallerMemberName] string callerName = "this")
         {
             sourceEvent?.Invoke(callerName, new EventArgs<T>(value));
+        }
+
+        public static void Raise(this EventHandler<EventArgs> sourceEvent, [System.Runtime.CompilerServices.CallerMemberName] string callerName = "this")
+        {
+            sourceEvent?.Invoke(callerName, EventArgs.Empty);
         }
 
         //public static EventHandler<EventArgs<T>> SubscribeOnce<T>(this EventHandler<EventArgs<T>> sourceEvent, Action handlerAction)
@@ -632,10 +656,17 @@ namespace Atropos
 
         internal static bool Check<T>(T obj)
         {
-            if (!typeof(T).IsValueType)
-                return Roundtrip<T>(obj) != null;
-            else
-                return Operator.NotEqual(Roundtrip<T>(obj), default(T));
+            try
+            {
+                if (!typeof(T).IsValueType)
+                    return Roundtrip<T>(obj) != null;
+                else
+                    return Operator.NotEqual(Roundtrip<T>(obj), default(T));
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         // The below exists for one specific situation where we needed the serializer itself to be instantiated as a constructed generic type, then used.  Not intended for common use.

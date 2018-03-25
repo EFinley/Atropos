@@ -7,9 +7,8 @@ using Android.Runtime;
 using Android.Views;
 using Android.Widget;
 using Android.OS;
-using DeviceMotion;
-using DeviceMotion.Plugin;
-using DeviceMotion.Plugin.Abstractions;
+
+
 using Android.Nfc;
 using Android.Nfc.Tech;
 using Java.IO;

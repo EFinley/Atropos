@@ -20,6 +20,7 @@ using System.ComponentModel;
 using System.Numerics;
 
 using Vector3 = System.Numerics.Vector3;
+using Atropos.DataStructures;
 
 namespace Atropos.Machine_Learning
 {
