@@ -55,7 +55,7 @@ namespace Atropos.Machine_Learning
         // These are used for preprocessing the sequence data before trying to classify it.
         public PreprocessorCoefficients preprocessorCoefficients { get; set; }
 
-        public void CreateMachine<T>(DataSet<T> dataSet, bool overridePreprocessorFunction = true) where T : struct
+        public void CreateMachine<T>(DataSet<T> dataSet, FeatureExtractor<T> featureExtractor = null) where T : struct
         {
             dataSet.CleanOutNontrainableSequences();
             if (stopwatch == null)
@@ -70,11 +70,15 @@ namespace Atropos.Machine_Learning
             {
                 int[] outputs = new int[samples.Count];
 
-                if (overridePreprocessorFunction)
+                if (featureExtractor != null)
                 {
-                    preprocessorCoefficients = Sequence<T>.GetPreprocessorCoefficients(samples);
-                    var closure = Sequence<T>.CreatePreprocessorFunction(preprocessorCoefficients);
+                    preprocessorCoefficients = featureExtractor.GetPreprocessorCoefficients(samples);
+                    var closure = featureExtractor.CreatePreprocessorFunction(preprocessorCoefficients);
                     foreach (var seq in samples) { seq.PreprocessorFunction = closure; seq.ResetMachineInputs(); }
+                }
+                else
+                {
+                    featureExtractor = new FeatureExtractor<T>(); // Makes it possible to query its Dimensions and use it to Extract (without altering anything)
                 }
 
                 for (int i = 0; i < inputs.Length; i++)

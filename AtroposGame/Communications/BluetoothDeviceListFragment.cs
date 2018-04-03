@@ -216,7 +216,7 @@ namespace Atropos.Communications.Bluetooth
             {
                 FindViewById(Resource.Id.bluetooth_nopeersfound).Visibility = ViewStates.Visible;
                 FindViewById(Resource.Id.bluetooth_peerslist).Visibility = ViewStates.Gone;
-                Log.Debug(BTDirectActivity.Tag, "No devices found");
+                Log.Debug(BTDirectActivity._tag, "No devices found");
             }
             else
             {
@@ -236,7 +236,7 @@ namespace Atropos.Communications.Bluetooth
 
                 FindViewById(Resource.Id.bluetooth_nopeersfound).Visibility = ViewStates.Gone;
                 FindViewById(Resource.Id.bluetooth_peerslist).Visibility = ViewStates.Visible;
-                Log.Debug(BTDirectActivity.Tag, $"Peer list: {_peers.Select(p => p.Name).Join()}");
+                Log.Debug(BTDirectActivity._tag, $"Peer list: {_peers.Select(p => p.Name).Join()}");
             }
         }
 

@@ -213,6 +213,7 @@
     <Compile Include="Machine Learning\Classifier.cs" />
     <Compile Include="Machine Learning\CueProvider.cs" />
     <Compile Include="Machine Learning\DataSet.cs" />
+    <Compile Include="Machine Learning\FeatureExtractor.cs" />
     <Compile Include="Machine Learning\FeatureT.cs" />
     <Compile Include="Machine Learning\FigureOfMerit.cs" />
     <Compile Include="Machine Learning\FigureOfMerit2.cs" />
@@ -348,7 +349,7 @@
     <Compile Include="Utilities\ExponentialAveragers.cs" />
     <Compile Include="Utilities\Extensions.cs" />
     <Compile Include="Utilities\NullableImproved.cs" />
-    <Compile Include="Data Structures\Vector6.cs" />
+    <Compile Include="Data Structures\SpecialDatapointTypes.cs" />
   </ItemGroup>
   <ItemGroup>
     <AndroidAsset Include="Assets\FTLTLT.TTF" />

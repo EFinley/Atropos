@@ -38,6 +38,11 @@ namespace Atropos
             return sublists.Join(sep1, brack1);
         }
 
+        public static IEnumerable<Tout> Cast<Tin, Tout>(this IEnumerable<Tin> source)
+        {
+            return source.Select(s => Operator.Convert<Tin, Tout>(s));
+        }
+
         public static T Clamp<T> (this T input, T min, T max)
         {
             if (Operator<T>.GreaterThan(min, input)) return min;

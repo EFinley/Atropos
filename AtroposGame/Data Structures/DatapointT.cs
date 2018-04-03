@@ -233,7 +233,16 @@ namespace Atropos.DataStructures
 
         // Multiplication operators get a little more complex because the "other woman" can have varying types, and AFAIK the operator overloading is picky about specifics there.
         // Here we just cover the most important three - double, float [because System.Numerics.VectorN plays nicely with it, unlike double], and int.
-        public static Datapoint<T> operator *(Datapoint<T> vec, float scalar) { return (Datapoint<T>)Operator.MultiplyAlternative(vec.Value, scalar); }
+        public static Datapoint<T> operator *(Datapoint<T> vec, float scalar)
+        {
+            if (typeof(T) != typeof(Quaternion)) return (Datapoint<T>)Operator.MultiplyAlternative(vec.Value, scalar);
+            else // When used as rotations, we can't just elementwise multiply - we need to SLERP them from the identity toward/past the target rotation.
+            {
+                var startQuat = Operator.Convert<T, Quaternion>(vec.Value);
+                var slerpResult = Quaternion.Slerp(Quaternion.Identity, startQuat, scalar);
+                return (Datapoint<T>)Datapoint.From<T>(Operator.Convert<Quaternion, T>(slerpResult));
+            }
+        }
         public static Datapoint<T> operator *(float scalar, Datapoint<T> vec) { return vec * scalar; }
         public static Datapoint<T> operator *(Datapoint<T> vec, double scalar) { return vec * (float)scalar; }
         public static Datapoint<T> operator *(double scalar, Datapoint<T> vec) { return vec * (float)scalar; }
@@ -241,7 +250,7 @@ namespace Atropos.DataStructures
         public static Datapoint<T> operator *(int scalar, Datapoint<T> vec) { return vec * (float)scalar; }
 
         // Division we only do *by* a scalar, never *by* our vector types, so it's a bit easier.
-        public static Datapoint<T> operator /(Datapoint<T> vec, float scalar) { return (Datapoint<T>)Operator.DivideAlternative(vec.Value, scalar); }
+        public static Datapoint<T> operator /(Datapoint<T> vec, float scalar) { return vec * (1.0f / scalar); }
         public static Datapoint<T> operator /(Datapoint<T> vec, double scalar) { return vec / (float)scalar; }
         public static Datapoint<T> operator /(Datapoint<T> vec, int scalar) { return vec / (float)scalar; }
 

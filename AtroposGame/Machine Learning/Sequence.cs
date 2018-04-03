@@ -43,13 +43,6 @@ namespace Atropos.Machine_Learning
     }
 
     [Serializable]
-    public struct PreprocessorCoefficients
-    {
-        public double[] Means;
-        public double[] Sigmas;
-    }
-
-    [Serializable]
     public class Sequence<T> : ISequence, ICloneable, ISerializable
         where T : struct
     {
@@ -144,6 +137,12 @@ namespace Atropos.Machine_Learning
             }
         }
 
+        public double[] GetMachineInputs(FeatureExtractor<T> extractor, PreprocessorCoefficients? coefficients = null)
+        {
+            var extractedSequence = extractor.ExtractSeq(SourcePath);
+            return Accord.Math.Matrix.Merge(extractor.Preprocess(extractedSequence, coefficients), extractor.Dimensions);
+        }
+
 
         public Bitmap Bitmap
         {
@@ -208,80 +207,6 @@ namespace Atropos.Machine_Learning
             double[][] zscores = Accord.Statistics.Tools.ZScores(result, means, sigmas);
 
             return Accord.Math.Elementwise.Add(zscores, 10);
-        }
-
-        /// <summary>
-        /// Generates the parameters for a preprocessor function which will turn absolute values of the supplied sequence set, into sigmas of same, based on the overall mean and standard deviation within the set.
-        /// </summary>
-        /// <param name="sampleSet">The sample set to examine.  Turns absolute values of parameters into z-scores (based on the set's mean X, and the set's maximum window size (sigma) in X/Y/Z, for every axis within every vector in the datapoint type).</param>
-        /// <param name="crosslinkFunc">A function to correlate sigmas in sets of features which should share a common window size.  Leave blank to use the normal "max sigma in any one axis" funtion, or use <see cref="CrosslinkAxes.None"/> for no crosslinking at all.</param>
-        /// <returns></returns>
-        internal static PreprocessorCoefficients GetPreprocessorCoefficients(IEnumerable<Sequence<T>> sampleSet, Func<double[], double[]> crosslinkFunc = null)
-        {
-            int dims = Datapoint<T>.Dimensions;
-            double[] means = new double[dims];
-            double[] sigmas = new double[dims];
-            List<double[]> allValues = new List<double[]>();
-
-            foreach (var sequence in sampleSet.Select(seq => seq.SourcePath))
-            {
-                if (sequence.Length == 0) continue;
-
-                //double[][] result = new double[sequence.Length][];
-                //for (int i = 0; i < sequence.Length; i++)
-                //    //result[i] = new double[] { sequence[i].X, sequence[i].Y };
-                //    results[i] = ((IDatapoint)sequence[i])
-                //        .AsArray()
-                //        //.Cast<double>()
-                //        .Select(f => (double)f)
-                //        .ToArray();
-
-                foreach (var pt in sequence)
-                {
-                    allValues.Add(Datapoint.From<T>(pt).AsArray().Select(f => (double)f).ToArray());
-                }
-            }
-
-            double[] currentAxisValues = new double[allValues.Count]; // Just to save on allocations a tiny bit by reusing it within a single axis.
-
-            for (int j = 0; j < dims; j++)
-            {
-                for (int i = 0; i < allValues.Count; i++)
-                {
-                    currentAxisValues[i] = allValues[i][j];
-                }
-                means[j] = currentAxisValues.Average();
-                sigmas[j] = Accord.Statistics.Measures.StandardDeviation(currentAxisValues);
-            }
-
-            crosslinkFunc = crosslinkFunc ?? ((s) => CrosslinkAxes.Apply<T>(s));
-            sigmas = crosslinkFunc(sigmas); // Locks values in the same space - like X and Y axes - to the same window size.
-
-            return new PreprocessorCoefficients() { Means = means, Sigmas = sigmas };
-        }
-
-        public static Func<IList<T>, double[][]> CreatePreprocessorFunction(PreprocessorCoefficients coefficients)
-        {
-            var means = coefficients.Means;
-            var sigmas = coefficients.Sigmas;
-
-            return (sequence) =>
-            {
-                if (sequence.Count == 0) return new double[0][];
-
-                double[][] result = new double[sequence.Count][];
-                for (int i = 0; i < sequence.Count; i++)
-                    //result[i] = new double[] { sequence[i].X, sequence[i].Y };
-                    result[i] = ((IDatapoint)sequence[i])
-                        .AsArray()
-                        //.Cast<double>()
-                        .Select(f => (double)f)
-                        .ToArray();
-
-                double[][] zscores = Accord.Statistics.Tools.ZScores(result, means, sigmas);
-
-                return Accord.Math.Elementwise.Add(zscores, 10);
-            };
         }
 
         private const int bmpSize = 128;

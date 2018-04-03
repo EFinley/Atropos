@@ -1135,7 +1135,7 @@ namespace Atropos
             protected override void DoWhenAllDataIsReady()
             {
                 data = new Datapoint<Vector3, Vector3, Vector3, Quaternion, double>
-                    (LinAccel.Vector, Grav.Vector, Gyro.Vector, Orientation.Quaternion, Interval.TotalMilliseconds);
+                    (LinAccel.Vector, Grav.Vector, Gyro.Vector, Orientation.Quaternion, Interval.TotalSeconds);
             }
 
             protected override Datapoint<Vector3, Vector3, Vector3, Quaternion, double> toImplicitType()

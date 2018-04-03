@@ -134,8 +134,11 @@ namespace Atropos.Communications.Bluetooth
             _cts.Cancel();
         }
 
-        public virtual void SendMessage(IMessage message)
+        public virtual void SendMessage(IMessage imessage)
         {
+            if (!(imessage is Message)) throw new ArgumentException("Message argument to standard Client must be standard Message.");
+            var message = (Message)imessage;
+
             if (!IsConnected || !socket.IsConnected)
             {
                 if (FailQuietly)
@@ -147,13 +150,35 @@ namespace Atropos.Communications.Bluetooth
             //if (!AddressBook.IPaddresses.Contains(socket.RemoteDevice.Address) && toWhom != ALL)
             //    toWhom = AddressBook.IPaddresses[AddressBook.Targets.IndexOf(AddressBook.Resolve(toWhom))];
 
-            SendString(outStream, inStream, ((Message)message).ToCharStream());
+            SendString(outStream, inStream, (message).ToCharStream());
 
-            //if (message.Type != MsgType.Ack) OnMessageSent.Raise(message);
-            //if (message.Type == MsgType.Query) messagesAwaitingReply.Add(message.ID, message);
+            if (message.Type != MsgType.Ack)
+            {
+                OnMessageSent.Raise(message);
+
+                var ackTask = new TaskCompletionSource();
+                var timeoutTask = Task.Delay(1000);
+                messagesAwaitingReply.Add(message.ID, ackTask);
+                Task.Run(() => Task.WhenAny(ackTask.Task, timeoutTask)
+                                   .ContinueWith(t =>
+                {
+                    if (timeoutTask.Status == TaskStatus.RanToCompletion) // We timed out rather than receive our ack - uh oh!
+                    {
+                        ackTask.TrySetCanceled(); // Best to always clean these up.
+                        messagesAwaitingReply.Remove(message.ID);
+                        BaseActivity.CurrentToaster.RelayToast($"Comms with {socket.RemoteDevice.Name} failed ack - connection lost.");
+                        Disconnect();
+                    }
+                    else
+                    {
+                        ackTask.TrySetResult(); // Best to make sure we always clean these up - even though if we're here it /should/ be because the task already completed.
+                        messagesAwaitingReply.Remove(message.ID);
+                    }
+                }));
+            }
         }
 
-        //private Dictionary<string, Message> messagesAwaitingReply = new Dictionary<string, Message>();
+        private Dictionary<string, TaskCompletionSource> messagesAwaitingReply = new Dictionary<string, TaskCompletionSource>();
         private int missedListenAttempts = 0;
         private void TallyMissedAttempt()
         {
@@ -170,7 +195,12 @@ namespace Atropos.Communications.Bluetooth
                     var data = ReadString(inStream, outStream);
                     var message = Message.FromCharStream(socket.RemoteDevice.Address, data);
 
-                    if (message.Type == MsgType.Ack) Log.Info(_tag, $"Received server ack of {message.Content}");
+                    if (message.Type == MsgType.Ack)
+                    {
+                        Log.Info(_tag, $"Received server ack of {message.Content}");
+                        if (messagesAwaitingReply.ContainsKey(message.ID))
+                            messagesAwaitingReply[message.ID].TrySetResult();
+                    }
                     else
                     {
                         OnMessageReceived.Raise(message);

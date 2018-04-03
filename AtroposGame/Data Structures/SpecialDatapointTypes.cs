@@ -73,6 +73,50 @@ namespace Atropos.DataStructures
         //        return (float)Math.Sqrt(Value1.Magnitude() * Value1.Magnitude() + Value2.Magnitude() * Value2.Magnitude());
         //    }
         //}
+
+        public interface IInterval
+        {
+            double Interval { get; }
+        }
+
+        public struct DatapointKitchenSink : IDatapoint, IInterval
+        {
+            public Vector3 LinAccel { get => Values.Value1; }
+            public Vector3 Gravity { get => Values.Value2; }
+            public Vector3 Gyro { get => Values.Value3; }
+            public Quaternion Orientation { get => Values.Value4; }
+            public double Interval { get => Values.Value5; }
+
+            public Datapoint<Vector3, Vector3, Vector3, Quaternion, double> Values;
+
+            public static int Dimensions => Datapoint<Vector3, Vector3, Vector3, Quaternion, double>.Dimensions; // Equals fourteen, incidentally.
+            int IDatapoint.Dimensions => Dimensions;
+
+            public float[] AsArray()
+            {
+                return Values.AsArray();
+            }
+
+            public IDatapoint FromArray(float[] sourceArray)
+            {
+                return (DatapointKitchenSink)(new Datapoint<Vector3, Vector3, Vector3, Quaternion, double>().FromArray(sourceArray));
+            }
+
+            public float Magnitude()
+            {
+                return Values.Magnitude();
+            }
+
+            public static implicit operator DatapointKitchenSink(Datapoint<Vector3, Vector3, Vector3, Quaternion, double> dpoint)
+            {
+                return new DatapointKitchenSink { Values = dpoint };
+            }
+
+            public static implicit operator Datapoint<Vector3, Vector3, Vector3, Quaternion, double>(DatapointKitchenSink dsink)
+            {
+                return dsink.Values;
+            }
+        }
     }
     
 }

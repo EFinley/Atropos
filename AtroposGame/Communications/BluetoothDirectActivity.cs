@@ -18,12 +18,12 @@ using System.Linq;
 namespace Atropos.Communications.Bluetooth
 {
     [Activity(Label = "Atropos Bluetooth Comms", ScreenOrientation = Android.Content.PM.ScreenOrientation.Portrait)]
-    public partial class BTDirectActivity : Activity
+    public partial class BTDirectActivity : BaseActivity
     {
         public static BTDirectActivity Current { get; set; }
-        private IMenu Menu;
+        //private IMenu Menu;
 
-        public const string Tag = "Atropos|BluetoothCommsActivity";
+        private const string _tag = "Atropos|BluetoothCommsActivity";
 
         private IntentFilter _intentFilter = new IntentFilter();
         private BroadcastReceiver _receiver;
@@ -178,10 +178,10 @@ namespace Atropos.Communications.Bluetooth
                 {
                     BTDirectActivity.Current.OnPeerAvailable(device);
                 }
-                if (action == BluetoothDevice.ActionAclDisconnected)
-                {
-                    BTDirectActivity.Current.Disconnect(device);
-                }
+                //if (action == BluetoothDevice.ActionAclDisconnected)
+                //{
+                //    BTDirectActivity.Current.Disconnect(device);
+                //}
             }
         }
 
@@ -337,6 +337,7 @@ namespace Atropos.Communications.Bluetooth
         public void Disconnect(BTPeer peer)
         {
             if (!Clients.ContainsKey(peer)) return;
+            if (!Clients.Keys.Any(p => p.Address == peer.Device.Address)) return;
 
             Clients[peer].Disconnect();
             //Clients.Remove(peer);
@@ -344,6 +345,8 @@ namespace Atropos.Communications.Bluetooth
         }
         public void Disconnect(BluetoothDevice device)
         {
+            if (!Clients.Keys.Any(p => p.Address == device.Address)) return;
+
             var peer = _peers.First(p => p.Device.Address == device.Address);
             Disconnect(peer);
         }
@@ -357,10 +360,10 @@ namespace Atropos.Communications.Bluetooth
 
         public void SendTestString(BTPeer peer)
         {
-            if (!Clients.ContainsKey(peer)) { Log.Warn(Tag, $"Attempting to send test string to disconnected peer {peer.Device.Address}."); return; }
+            if (!Clients.ContainsKey(peer)) { Log.Warn(_tag, $"Attempting to send test string to disconnected peer {peer.Device.Address}."); return; }
 
             var r = new Random();
-            var message = new Message(MsgType.Notify, $"Test string {r.Next(100)}");
+            var message = new Message(MsgType.PushSpeech, $"Test string {r.Next(100)}");
             RelayToast($"Sending test string '{message.Content}'.");
             Clients[peer].SendMessage(message);
         }

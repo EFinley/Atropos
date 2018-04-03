@@ -52,6 +52,16 @@ namespace Atropos.DataStructures
             else return new Datapoint<T>() { Value = val };
         }
 
+        public static float[] AsArrayFrom<T>(T val) where T : struct
+        {
+            return From(val).AsArray();
+        }
+
+        public static double[] AsDblArrayFrom<T>(T val) where T : struct
+        {
+            return AsArrayFrom(val).Cast<float, double>().ToArray();
+        }
+
         public static Datapoint<T1, T2> From<T1, T2>(T1 val1, T2 val2)
             where T1 : struct
             where T2 : struct

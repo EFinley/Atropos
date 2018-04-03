@@ -815,12 +815,12 @@ namespace Atropos.Machine_Learning
 
                     var c = new Classifier();
 
-                    foreach (var doOverride in new bool[] { false, true })
+                    foreach (var extractor in new FeatureExtractor<T>[] { null, new FeatureExtractor<T>() })
                     {
                         sw.Start();
-                        c.CreateMachine(d, doOverride);
+                        c.CreateMachine(d, extractor);
                         sw.Stop();
-                        Log.Debug("MachineLearning|SpecialTest", $"\nCreated special classifier for {currentGC.className} in {sw.Elapsed.TotalSeconds}s, with doOverride = {doOverride}.");
+                        Log.Debug("MachineLearning|SpecialTest", $"\nCreated special classifier for {currentGC.className} in {sw.Elapsed.TotalSeconds}s, with doOverride = {extractor}.");
                         sw.Reset();
 
                         sw.Start();

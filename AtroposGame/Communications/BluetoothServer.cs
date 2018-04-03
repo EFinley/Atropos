@@ -243,6 +243,7 @@ namespace Atropos.Communications.Bluetooth
                                     Content = $"{message.Type}: {message.Content}"
                                 }.ToCharStream());
                             server.numAcksSentOut++;
+                            Log.Info(_tag, $"Sending ack of '{message.Content}' to {socket.RemoteDevice.Address}");
                         }
 
                         // Now do something with it!
