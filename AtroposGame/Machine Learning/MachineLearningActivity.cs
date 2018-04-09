@@ -33,8 +33,11 @@ using Nito.AsyncEx;
 using PerpetualEngine.Storage;
 using MiscUtil;
 using Atropos.DataStructures;
+using DKS = Atropos.DataStructures.DatapointSpecialVariants.DatapointKitchenSink;
 using Atropos.Machine_Learning.Button_Logic;
 using Accord.Math;
+using static Atropos.DataStructures.DatapointSpecialVariants;
+using static Atropos.Machine_Learning.FeatureListExtractor;
 
 namespace Atropos.Machine_Learning
 {
@@ -45,7 +48,7 @@ namespace Atropos.Machine_Learning
     /// <para>Type argument here is constrained (at present) to one of: Vector2, Vector3, <seealso cref="Datapoint{T}"/>, <seealso cref="Datapoint{T1, T2}"/>.</para>
     /// </summary>
     [Activity(ScreenOrientation = Android.Content.PM.ScreenOrientation.Portrait, WindowSoftInputMode = SoftInput.AdjustPan)]
-    public class MachineLearningActivity : MachineLearningPageActivity<Datapoint<Vector3, Vector3>>
+    public class MachineLearningActivity : MachineLearningPageActivity
     {
 
         protected new static MachineLearningActivity Current { get { return (MachineLearningActivity)CurrentActivity; } set { CurrentActivity = value; } }
@@ -54,7 +57,7 @@ namespace Atropos.Machine_Learning
         {
             //if (!_advancedCueMode)
                 CurrentGestureStage = new MachineLearningStage(label, Dataset, 
-                    new ClusterLoggingProvider<Vector3, Vector3>(SensorType.LinearAcceleration, SensorType.Gravity));
+                    new LoggingSensorProvider<DKS>(new AdvancedProviders.GrabItAllSensorProvider(new GravGyroOrientationProvider())));
             //else CurrentStage = new SelfEndpointingSingleGestureRecognizer(label, Classifier,
             //            new ClusterLoggingProvider<Vector3, Vector3>(SensorType.LinearAcceleration, SensorType.Gravity));
         }
@@ -64,33 +67,33 @@ namespace Atropos.Machine_Learning
             CurrentGestureStage?.Deactivate();
             CurrentGestureStage = null;
             CurrentGestureStage = new SelfEndpointingSingleGestureRecognizer(label, Classifier,
-                        new ClusterLoggingProvider<Vector3, Vector3>(SensorType.LinearAcceleration, SensorType.Gravity));
+                        new LoggingSensorProvider<DKS>(new AdvancedProviders.GrabItAllSensorProvider(new GravGyroOrientationProvider())));
         }
     }
 
-    [Activity(ScreenOrientation = Android.Content.PM.ScreenOrientation.Portrait, WindowSoftInputMode = SoftInput.AdjustPan)]
-    public class MachineLearningActivityABCVariant : MachineLearningPageActivity<Datapoint<float, float, float>>
-    {
+    //[Activity(ScreenOrientation = Android.Content.PM.ScreenOrientation.Portrait, WindowSoftInputMode = SoftInput.AdjustPan)]
+    //public class MachineLearningActivityABCVariant : MachineLearningPageActivity<Datapoint<float, float, float>>
+    //{
 
-        protected new static MachineLearningActivityABCVariant Current { get { return (MachineLearningActivityABCVariant)CurrentActivity; } set { CurrentActivity = value; } }
+    //    protected new static MachineLearningActivityABCVariant Current { get { return (MachineLearningActivityABCVariant)CurrentActivity; } set { CurrentActivity = value; } }
 
-        protected override void ResetStage(string label)
-        {
-            //if (!_advancedCueMode)
-            CurrentGestureStage = new MachineLearningStage(label, Dataset,
-                new LoggingSensorProvider<Datapoint<float, float, float>>(new AdvancedProviders.ABCgestureCharacterizationProvider()));
-            //else CurrentStage = new SelfEndpointingSingleGestureRecognizer(label, Classifier,
-            //            new ClusterLoggingProvider<Vector3, Vector3>(SensorType.LinearAcceleration, SensorType.Gravity));
-        }
+    //    protected override void ResetStage(string label)
+    //    {
+    //        //if (!_advancedCueMode)
+    //        CurrentGestureStage = new MachineLearningStage(label, Dataset,
+    //            new LoggingSensorProvider<Datapoint<float, float, float>>(new AdvancedProviders.ABCgestureCharacterizationProvider()));
+    //        //else CurrentStage = new SelfEndpointingSingleGestureRecognizer(label, Classifier,
+    //        //            new ClusterLoggingProvider<Vector3, Vector3>(SensorType.LinearAcceleration, SensorType.Gravity));
+    //    }
 
-        protected override void AlternativeResetStage(string label, params object[] info)
-        {
-            CurrentGestureStage?.Deactivate();
-            CurrentGestureStage = null;
-            CurrentGestureStage = new SelfEndpointingSingleGestureRecognizer(label, Classifier,
-                        new LoggingSensorProvider<Datapoint<float, float, float>>(new AdvancedProviders.ABCgestureCharacterizationProvider()));
-        }
-    }
+    //    protected override void AlternativeResetStage(string label, params object[] info)
+    //    {
+    //        CurrentGestureStage?.Deactivate();
+    //        CurrentGestureStage = null;
+    //        CurrentGestureStage = new SelfEndpointingSingleGestureRecognizer(label, Classifier,
+    //                    new LoggingSensorProvider<Datapoint<float, float, float>>(new AdvancedProviders.ABCgestureCharacterizationProvider()));
+    //    }
+    //}
 
     //[Activity(ScreenOrientation = Android.Content.PM.ScreenOrientation.Portrait, WindowSoftInputMode = SoftInput.AdjustPan)]
     //public class MachineLearningActivity : MachineLearningActivity<Vector6>
@@ -157,32 +160,31 @@ namespace Atropos.Machine_Learning
             }
         }
 
+        //public Classifier Classifier { get { return Dataset.Classifier; } set { Dataset.Classifier = value; } }
         public Classifier Classifier { get; set; }
+        protected Dictionary<GestureClass, Classifier> CueClassifiers = new Dictionary<GestureClass, Classifier>();
+
         protected abstract void ResetStage(string label);
         protected virtual void AlternativeResetStage(string label, params object[] info) { ResetStage(label); }
         protected CuePrompter<T> CuePrompter { get; set; }
         public virtual void SetUpAdapters(IDataset dataSet) { throw new NotImplementedException(); }
         #endregion
 
-        public async Task<Sequence<T>> Analyze(Sequence<T> sequence)
+        public virtual async Task<Sequence<T>> Analyze(Sequence<T> sequence)
         {
-            if (Classifier != null && Classifier.MachineOnline)
-            {
-                sequence.RecognizedAsIndex = await Classifier.Recognize(sequence);
-                //sequence.TrueClassIndex = SelectedGestureClass.index;
-            }
-            return sequence;
+            await Task.CompletedTask;
+            throw new NotImplementedException("Attempt made to use MachineLearningActivity<T>.Analyze directly.");
         }
     }
 
-    public class MachineLearningPageActivity<T> : MachineLearningActivity<T> where T : struct
+    public class MachineLearningPageActivity : MachineLearningActivity<DKS>
     {
         #region Data members (and tightly linked properties & functions)
-        public override DataSet<T> Dataset
+        public override DataSet<DKS> Dataset
         {
             get
             {
-                return DataSet.Current as DataSet<T>;
+                return DataSet.Current as DataSet<DKS>;
             }
             set
             {
@@ -190,7 +192,7 @@ namespace Atropos.Machine_Learning
                 ButtonStates.Update(this);
             }
         }
-        public override Sequence<T> MostRecentSample
+        public override Sequence<DKS> MostRecentSample
         {
             get { return _mostRecentSample; }
             set
@@ -207,10 +209,11 @@ namespace Atropos.Machine_Learning
             _saveDatasetButton, 
             _clearDatasetButton, 
             _computeButton,
+            _computeSingleButton,
             _addNewClassButton,
             _gimmeCueButton;
         protected ListView _listView;
-        protected GestureClassListAdapter<T> _listAdapter;
+        protected GestureClassListAdapter<DKS> _listAdapter;
         protected Spinner _classnameSpinner;
         protected ArrayAdapter<string> _classnameSpinnerAdapter;
         protected EditText _newClassNameField, _datasetNameField;
@@ -244,6 +247,7 @@ namespace Atropos.Machine_Learning
             _saveDatasetButton = FindViewById<Button>(Resource.Id.mlrn_dataset_save_btn);
             _clearDatasetButton = FindViewById<Button>(Resource.Id.mlrn_dataset_clear_btn);
             _computeButton = FindViewById<Button>(Resource.Id.mlrn_study_dataset_btn);
+            _computeSingleButton = FindViewById<Button>(Resource.Id.mlrn_study_gc_btn);
 
             _teachonly = FindViewById<RadioButton>(Resource.Id.mlrn_trainmode_teachonly);
             _guessandteach = FindViewById<RadioButton>(Resource.Id.mlrn_trainmode_guessandteach);
@@ -279,7 +283,7 @@ namespace Atropos.Machine_Learning
             //GestureClassList = FragmentManager.FindFragmentById<GestureClassListFragment>(Resource.Id.mlrn_gestureclass_list_fragment);
             //LatestSample = FragmentManager.FindFragmentById<LatestSampleFragment>(Resource.Id.mlrn_latest_sample_display);
 
-            Dataset = new DataSet<T>();
+            Dataset = new DataSet<DKS>();
             Classifier = new Classifier();
 
             SetUpButtonClicks();
@@ -289,25 +293,28 @@ namespace Atropos.Machine_Learning
 
             _classnameSpinner.ItemSelected += OnClassnameSpinnerChanged;
 
-            //// Testing stuff... deserialization issues cropping up.
-            //var v1 = new Datapoint<Vector3, Vector3>() { Value1 = Vector3.One, Value2 = 0.5f * Vector3.UnitX + 0.33f * Vector3.UnitY };
-            var v1 = new Datapoint<float>() { Value = 1.234f };
-            var v2 = new Datapoint<float, float>() { Value1 = 1.33f, Value2 = 168000f };
-            var v3 = new Datapoint<float, float, float>() { Value1 = 1.33f, Value2 = 168000f, Value3 = 0.0003f };
-            var v3b = (Datapoint<float, float, float>)(new Datapoint<float, float, float>()).FromArray(new float[] { 1.33f, 168000f, 0.0003f });
-            Log.Debug("MachineLearning|TEST", $"V3 is {v3.ToString()}; reconstructing it we get {v3b.ToString()}.  They're equal ({v3 == v3b}).");
-            //var v4 = new Datapoint<float>() { Value = 0.456f };
-            ////var v5 = new Datapoint<Datapoint<float>>(new Datapoint<float>(0.123f));
-            ////var v6 = new Datapoint<Datapoint<float>, Datapoint<float>>() { Value1 = new Datapoint<float>(0.33f), Value2 = new Datapoint<float>(0.66f) };
-            ////Log.Debug($"MachineLearning|TEST", $"Round-trip checks... v1 {Serializer.Check(v1)}, v2 {Serializer.Check(v2)}, v3 {Serializer.Check(v3)}, v4 {Serializer.Check(v4)}.");
-            //Log.Debug($"MachineLearning|TEST", $"Round-trip checks... v1 {Serializer.Check(v1)}, v2 {Serializer.Check(v2)}, v3 {Serializer.Check(v3)}.");
-            Log.Debug($"MachineLearning|TEST", $"Round-trip checks... v3 {Serializer.Check(v3)}.");
-            Log.Debug($"MachineLearning|TEST", $"Round-trip checks... v2 {Serializer.Check(v2)}.");
-            var v1s = Serializer.Serialize<Datapoint<float>>(v1);
-            Log.Debug($"MachineLearning|TEST", $"Round-trip checks... v1 serializes to {v1s}.");
-            var v1d = Serializer.Deserialize<Datapoint<float>>(v1s);
-            Log.Debug($"MachineLearning|TEST", $"Round-trip checks... v1s deserializes to {v1d}.");
-            Log.Debug($"MachineLearning|TEST", $"Round-trip checks... v1 {Serializer.Check(v1)}.");
+            ////// Testing stuff... deserialization issues cropping up.
+            ////var v1 = new Datapoint<Vector3, Vector3>() { Value1 = Vector3.One, Value2 = 0.5f * Vector3.UnitX + 0.33f * Vector3.UnitY };
+            //var v1 = new Datapoint<float>() { Value = 1.234f };
+            //var v2 = new Datapoint<float, float>() { Value1 = 1.33f, Value2 = 168000f };
+            //var v3 = new Datapoint<float, float, float>() { Value1 = 1.33f, Value2 = 168000f, Value3 = 0.0003f };
+            //var v3b = (Datapoint<float, float, float>)(new Datapoint<float, float, float>()).FromArray(new float[] { 1.33f, 168000f, 0.0003f });
+            //Log.Debug("MachineLearning|TEST", $"V3 is {v3.ToString()}; reconstructing it we get {v3b.ToString()}.  They're equal ({v3 == v3b}).");
+            //var v4 = new DKS { Values = new Datapoint<Vector3, Vector3, Vector3, Quaternion, double>() { Value1 = Vector3.One, Value4 = Quaternion.Identity, Value5 = 0.1122334455 } };
+            //var v5 = new Sequence<DKS>() { SourcePath = new DKS[] { v4 } };
+            //////var v5 = new Datapoint<Datapoint<float>>(new Datapoint<float>(0.123f));
+            //////var v6 = new Datapoint<Datapoint<float>, Datapoint<float>>() { Value1 = new Datapoint<float>(0.33f), Value2 = new Datapoint<float>(0.66f) };
+            //////Log.Debug($"MachineLearning|TEST", $"Round-trip checks... v1 {Serializer.Check(v1)}, v2 {Serializer.Check(v2)}, v3 {Serializer.Check(v3)}, v4 {Serializer.Check(v4)}.");
+            ////Log.Debug($"MachineLearning|TEST", $"Round-trip checks... v1 {Serializer.Check(v1)}, v2 {Serializer.Check(v2)}, v3 {Serializer.Check(v3)}.");
+            //Log.Debug($"MachineLearning|TEST", $"Round-trip checks... v5 {Serializer.Check(v5)}.");
+            //Log.Debug($"MachineLearning|TEST", $"Round-trip checks... v4 {Serializer.Check(v4)}.");
+            //Log.Debug($"MachineLearning|TEST", $"Round-trip checks... v3 {Serializer.Check(v3)}.");
+            //Log.Debug($"MachineLearning|TEST", $"Round-trip checks... v2 {Serializer.Check(v2)}.");
+            //var v1s = Serializer.Serialize<Datapoint<float>>(v1);
+            //Log.Debug($"MachineLearning|TEST", $"Round-trip checks... v1 serializes to {v1s}.");
+            //var v1d = Serializer.Deserialize<Datapoint<float>>(v1s);
+            //Log.Debug($"MachineLearning|TEST", $"Round-trip checks... v1s deserializes to {v1d}.");
+            //Log.Debug($"MachineLearning|TEST", $"Round-trip checks... v1 {Serializer.Check(v1)}.");
 
         }
 
@@ -370,7 +377,7 @@ namespace Atropos.Machine_Learning
                         {
                             // Halt the gesture-collection stage and query it.
                             var resultData = CurrentGestureStage.StopAndReturnResults();
-                            var resultSeq = new Sequence<T>() { SourcePath = resultData };
+                            var resultSeq = new Sequence<DKS>() { SourcePath = resultData };
                             resultSeq.Metadata = CurrentGestureStage.GetMetadata();
                             ResolveEndOfGesture(resultSeq);
                         }
@@ -385,7 +392,7 @@ namespace Atropos.Machine_Learning
             return base.OnKeyUp(keyCode, e);
         }
 
-        protected void ResolveEndOfGesture(Sequence<T> resultSequence)
+        protected void ResolveEndOfGesture(Sequence<DKS> resultSequence)
         {
             var SelectedGestureClassIndex = SelectedGestureClass.index;
 
@@ -396,7 +403,7 @@ namespace Atropos.Machine_Learning
             Dataset?.AddSequence(MostRecentSample);
 
             //CurrentStage.Deactivate();
-            //CurrentStage = new MachineLearningStage<T>($"Learning gesture {SelectedGestureClass.className}#{SelectedGestureClass.numExamples + SelectedGestureClass.numNewExamples}", Dataset);
+            //CurrentStage = new MachineLearningStage<DKS>($"Learning gesture {SelectedGestureClass.className}#{SelectedGestureClass.numExamples + SelectedGestureClass.numNewExamples}", Dataset);
             string StageLabel = (TeachOnlyMode)
                 ? $"Learning gesture {SelectedGestureClass.className}#{SelectedGestureClass.numExamples + SelectedGestureClass.numNewExamples}"
                 : $"Reading gesture (#{Dataset.SequenceCount + 1})";
@@ -447,23 +454,23 @@ namespace Atropos.Machine_Learning
                     #region Load Dataset
                     if (filepath.EndsWith(DataSet.FileExtension))
                     {
-                        //DataSet<T> oldDataset = (DataSet<T>)Dataset.Clone(); // TODO - implement using Serialize/Deserialize.
-                        DataSet<T> oldDataset = Serializer.Deserialize<DataSet<T>>(
-                                                Serializer.Serialize<DataSet<T>>(Dataset) ); // Because Clone() wasn't working.
+                        //DataSet<DKS> oldDataset = (DataSet<DKS>)Dataset.Clone(); // TODO - implement using Serialize/Deserialize.
+                        DataSet<DKS> oldDataset = Serializer.Deserialize<DataSet<DKS>>(
+                                                Serializer.Serialize<DataSet<DKS>>(Dataset) ); // Because Clone() wasn't working.
                         using (var streamReader = new StreamReader(filepath))
                         {
                             var contents = streamReader.ReadToEnd();
                             Log.Debug("Loading dataset", $"Loading our dataset, it currently contains({contents.Length} chars): \n\n{contents}\n");
                             try
                             {
-                                Dataset = Serializer.Deserialize<DataSet<T>>(contents);
+                                Dataset = Serializer.Deserialize<DataSet<DKS>>(contents);
                                 if (Dataset == null) throw new Exception($"Deserialization failed - filename {filepath}");
                             }
                             catch (Exception ex)
                             {
                                 Log.Debug("MachineLearning|Load Dataset", ex.ToString());
                                 AskToDelete("Failure to load dataset; this may be due to a versioning issue.  Delete unloadable file?", filepath);
-                                Dataset = new DataSet<T>();
+                                Dataset = new DataSet<DKS>();
                                 return;
                             }
 
@@ -547,8 +554,14 @@ namespace Atropos.Machine_Learning
                             Log.Debug("Loading classifier", $"Loading our classifier, it currently contains: \n\n{contents}\n");
                             try
                             {
-                                Classifier = Serializer.Deserialize<Classifier>(contents);
-                                if (Classifier == null) throw new Exception($"Classifier deserialization failed - filename {filepath}");
+                                //Classifier = Serializer.Deserialize<ClusterClassifier>(contents) ?? Serializer.Deserialize<Classifier>(contents);
+                                var cTree = Serializer.Deserialize<ClassifierTree>(contents);
+                                if (cTree == null) throw new Exception($"Classifier deserialization failed - filename {filepath}");
+                                Classifier = cTree.MainClassifier;
+                                CueClassifiers = cTree.CueClassifiers;
+                                Dataset = new DataSet<DKS> { Name = Classifier.MatchingDatasetName };
+                                foreach (var gC in cTree.GestureClasses) Dataset.AddClass(gC);
+                                SelectedGestureClass = Dataset.Classes.FirstOrDefault();
                             }
                             catch (Exception ex)
                             {
@@ -562,7 +575,7 @@ namespace Atropos.Machine_Learning
                         // Simpler variant of co-deserialization, for now...
                         if (Dataset == null || Dataset.SequenceCount == 0)
                         {
-                            Dataset = Dataset ?? new DataSet<T>();
+                            Dataset = Dataset ?? new DataSet<DKS>();
                             Dataset.Name = Classifier.MatchingDatasetName;
                             foreach (var className in Classifier.MatchingDatasetClasses) Dataset.AddClass(className);
                             SelectedGestureClass = Dataset.Classes.FirstOrDefault();
@@ -613,9 +626,9 @@ namespace Atropos.Machine_Learning
                     #endregion
                 }
                 //await Task.CompletedTask; // Oh, shut up, warning message.
-                //if (DataSet<T>.DatasetIndex.Count(s => s != Dataset.Name) == 0)
+                //if (DataSet<DKS>.DatasetIndex.Count(s => s != Dataset.Name) == 0)
                 //    { Toast.MakeText(this, "Nothing to load!", ToastLength.Short).Show(); return; }
-                //Log.Debug("LoadDataset", $"Datasets currently in storage: {DataSet<T>.DatasetIndex.Join()}.");
+                //Log.Debug("LoadDataset", $"Datasets currently in storage: {DataSet<DKS>.DatasetIndex.Join()}.");
                 //var loadDialogBuilder = createDataSetChooserDialog();
                 //var loadDialog = loadDialogBuilder.Create();
                 //loadDialog.Show();
@@ -673,8 +686,15 @@ namespace Atropos.Machine_Learning
 
                         using (var streamWriter = (assetStream != null) ? new StreamWriter(assetStream) : new StreamWriter(filepath))
                         {
-                            var serialForm = Serializer.Serialize<Classifier>(Classifier);
-                            Log.Debug("Saving classifier", $"Saving our classifier, it currently contains: \n\n{serialForm}\n");
+                            //var newDataSet = Dataset.Clone();
+                            //newDataSet.Samples.Clear(); // Take out the actual sample data, to reduce the footprint of the Classifier-only dataset
+                            //var serialForm = Serializer.Serialize<DataSet>(newDataSet);
+
+                            //var serialForm = (Classifier is ClusterClassifier cc) ? Serializer.Serialize(cc) : Serializer.Serialize(Classifier); 
+
+                            var cTree = new ClassifierTree(Dataset, Classifier, CueClassifiers);
+                            var serialForm = Serializer.Serialize(cTree);
+                            Log.Debug("Saving classifier", $"Saving our classifier structure, it currently contains: \n\n{serialForm}\n");
                             streamWriter.Write(serialForm);
 
                             var ClipboardMgr = (ClipboardManager)GetSystemService(Service.ClipboardService);
@@ -742,8 +762,9 @@ namespace Atropos.Machine_Learning
                     ButtonStates.Compute.State = ButtonStates.IsComputing;
                     ShowProgressIndicator("Calculating", "Please hold for the next available AI...");
                     //await Task.Run(() => Classifier.CreateMachine(Dataset));
+                    Classifier = await ClassifierSelection.FindBestClassifier(Dataset);
 
-                    //var subDataset = new DataSet<T>();
+                    //var subDataset = new DataSet<DKS>();
                     //foreach (var gc in Dataset.ActualGestureClasses) subDataset.AddClass(gc);
                     //subDataset.TallySequences();
                     //Dataset.Samples.Shuffle();
@@ -756,7 +777,7 @@ namespace Atropos.Machine_Learning
                     //Log.Debug("MachineLearning|Calculate", $"Classifier for sub-dataset consisting of {subDataset.Samples.Count} samples ({Dataset.ActualGestureClasses.Count} classes) generated in {sw1.Elapsed.TotalMilliseconds} ms.");
                     //sw1.Restart();
 
-                    Classifier.CreateMachine(Dataset);
+                    //Classifier.CreateMachine(Dataset);
 
                     //sw1.Stop();
                     //Log.Debug("MachineLearning|Calculate", $"Classifier for dataset consisting of {Dataset.Samples.Count} samples ({Dataset.ActualGestureClasses.Count} classes) generated in {sw1.Elapsed.TotalMilliseconds} ms ({(sw1.Elapsed.TotalMilliseconds / t1):2f}x as long).");
@@ -797,73 +818,13 @@ namespace Atropos.Machine_Learning
             };
 
             // Special debugging test operation
-            FindViewById<Button>(Resource.Id.mlrn_run_test_btn).Click += async (o, e) =>
+            if (_computeSingleButton != null) _computeSingleButton.Click += async (o, e) =>
             {
-                var sw = new System.Diagnostics.Stopwatch();
-                foreach (var currentGC in Dataset.ActualGestureClasses)
-                {
-                    var d = new DataSet<T>();
-                    d.AddClass(currentGC.className);
-                    d.AddClass("Other");
-                    foreach (var seq in Dataset.Samples)
-                    {
-                        var s = new Sequence<T>() { SourcePath = seq.SourcePath };
-                        if (seq.TrueClassIndex == currentGC.index) s.TrueClassIndex = 0;
-                        else s.TrueClassIndex = 1;
-                        d.AddSequence(s, skipBitmap: true);
-                    }
-
-                    var c = new Classifier();
-
-                    foreach (var extractor in new FeatureExtractor<T>[] { null, new FeatureExtractor<T>() })
-                    {
-                        sw.Start();
-                        c.CreateMachine(d, extractor);
-                        sw.Stop();
-                        Log.Debug("MachineLearning|SpecialTest", $"\nCreated special classifier for {currentGC.className} in {sw.Elapsed.TotalSeconds}s, with doOverride = {extractor}.");
-                        sw.Reset();
-
-                        sw.Start();
-                        await c.FastAssess(d);
-                        sw.Stop();
-                        int numCorrectPositives = 0, numFalseNegatives = 0, numCorrectNegatives = 0, numFalsePositives = 0;
-                        double scoCorrectPositives = 0, scoFalseNegatives = 0, scoCorrectNegatives = 0, scoFalsePositives = 0;
-                        foreach (var seq in d.Samples)
-                        {
-                            if (seq.TrueClassIndex == 0)
-                            {
-                                if (seq.RecognizedAsIndex == 0)
-                                {
-                                    numCorrectPositives++;
-                                    scoCorrectPositives += (seq.RecognitionScore - scoCorrectPositives) / numCorrectPositives;
-                                }
-                                else
-                                {
-                                    numFalseNegatives++;
-                                    scoFalseNegatives += (seq.RecognitionScore - scoFalseNegatives) / numFalseNegatives;
-                                }
-                            }
-                            else
-                            {
-                                if (seq.RecognizedAsIndex == 1)
-                                {
-                                    numCorrectNegatives++;
-                                    scoCorrectNegatives += (seq.RecognitionScore - scoCorrectNegatives) / numCorrectNegatives;
-                                }
-                                else
-                                {
-                                    numFalsePositives++;
-                                    scoFalsePositives += (seq.RecognitionScore - scoFalsePositives) / numFalsePositives;
-                                }
-                            }
-                        }
-                        Log.Debug("MachineLearning|SpecialTest", $"Assessed in {sw.Elapsed.TotalMilliseconds} ms, with {numCorrectPositives}"
-                            + $"({scoCorrectPositives:f2}) correct positives, {numCorrectNegatives} ({scoCorrectNegatives:f2}) correct"
-                            + $" negatives, {numFalseNegatives} ({scoFalseNegatives:f2}) false negatives, and {numFalsePositives} "
-                            + $"({scoFalsePositives:f2}) false positives.");
-                        sw.Reset(); 
-                    }
-                }
+                //foreach (var currentGC in Dataset.ActualGestureClasses)
+                //{
+                //    currentGC.CueClassifier = await ClassifierSelection.FindBestClassifier(Dataset, currentGC);
+                //}
+                CueClassifiers.Add(SelectedGestureClass, await ClassifierSelection.FindBestClassifier(Dataset, SelectedGestureClass));
             };
 
             if (_addNewClassButton != null) _addNewClassButton.Click +=
@@ -972,7 +933,7 @@ namespace Atropos.Machine_Learning
         {
             if (!advancedMode)
             {
-                CuePrompter = new MlrnCuePrompter<T>(this);
+                CuePrompter = new MlrnCuePrompter<DKS>(this);
                 await CuePrompter.WaitBeforeCue();
                 CuePrompter.ProvideCue();
                 return;
@@ -986,7 +947,7 @@ namespace Atropos.Machine_Learning
 
                 AlternativeResetStage($"Cueing {SelectedGestureClass?.className}");
 
-                CuePrompter = new MlrnCuePrompter<T>(this);
+                CuePrompter = new MlrnCuePrompter<DKS>(this);
                 await CuePrompter.WaitBeforeCue();
                 CuePrompter.ProvideCue(SelectedGestureClass);
                 //CurrentGestureStage.Activate(); // Is included in "RunUntilFound()" below.
@@ -1003,18 +964,18 @@ namespace Atropos.Machine_Learning
                     var resultSeq = await ((SelfEndpointingSingleGestureRecognizer)CurrentGestureStage).RunUntilFound(SelectedGestureClass);
 
                     //// To work out the "promptness" component of their score, we need to see where the best fit *beginning* of their gesture was.
-                    //var reversePeakFinder = new PeakFinder<T>.IncrementingStartIndexVariant<T>(
+                    //var reversePeakFinder = new PeakFinder<DKS>.IncrementingStartIndexVariant<DKS>(
                     //    resultSeq.SourcePath.ToList(),
                     //    (seq) =>
                     //    {
-                    //        var Seq = new Sequence<T>() { SourcePath = seq.ToArray() };
+                    //        var Seq = new Sequence<DKS>() { SourcePath = seq.ToArray() };
                     //        var analyzedSeq = Current.Analyze(Seq).Result;
 
                     //        if (SelectedGestureClass != null && Seq.RecognizedAsIndex != SelectedGestureClass.index) return double.NaN;
                     //        else return analyzedSeq.RecognitionScore;
                     //    }, thresholdScore: 1.5, minLength: Dataset?.MinSequenceLength ?? 5); // Might need to tweak this depending on how the parsing of the stuff works out.
 
-                    //resultSeq = new Sequence<T>() { SourcePath = reversePeakFinder.FindBestSequence().ToArray() };
+                    //resultSeq = new Sequence<DKS>() { SourcePath = reversePeakFinder.FindBestSequence().ToArray() };
                     ////MostRecentSample = Current.Analyze(resultSeq).Result;
 
                     CuePrompter.TimeElapsed = (CurrentGestureStage as MachineLearningStage).RunTime - PromptStartTimeStamp;
@@ -1104,6 +1065,16 @@ namespace Atropos.Machine_Learning
         }
         #endregion
 
+        public override async Task<Sequence<DKS>> Analyze(Sequence<DKS> sequence)
+        {
+            if (Classifier != null && Classifier.MachineOnline)
+            {
+                sequence.RecognizedAsIndex = await Classifier.Recognize(sequence);
+                //sequence.TrueClassIndex = SelectedGestureClass.index;
+            }
+            return sequence;
+        }
+
         public override void SetUpAdapters(IDataset dataSet)
         {
             SpinnerChangeIsSilent = true;
@@ -1114,7 +1085,7 @@ namespace Atropos.Machine_Learning
             _classnameSpinnerAdapter.AddAll(dataSet.ClassNames);
             _classnameSpinner.Adapter = _classnameSpinnerAdapter;
 
-            _listAdapter = new GestureClassListAdapter<T>(this, dataSet);
+            _listAdapter = new GestureClassListAdapter<DKS>(this, dataSet);
             _listView.Adapter = _listAdapter;
             _listView.DisableScrolling();
         }
@@ -1123,7 +1094,7 @@ namespace Atropos.Machine_Learning
         {
             RunOnUiThread(() =>
             {
-                if (sequence == null || (sequence as Sequence<T>).SourcePath.Length < 3) return;
+                if (sequence == null || (sequence as Sequence<DKS>).SourcePath.Length < 3) return;
 
                 _sampleVisualization.SetImageBitmap(sequence.Bitmap);
                 bool SubmitButtonPermitted = true;
@@ -1255,7 +1226,7 @@ namespace Atropos.Machine_Learning
         }
     }
 
-    public class GestureClassListAdapter<T> : BaseAdapter<GestureClass> where T : struct
+    public class GestureClassListAdapter<DKS> : BaseAdapter<GestureClass>
     {
         private readonly Activity _context;
         private readonly IDataset _dataset;
@@ -1298,7 +1269,7 @@ namespace Atropos.Machine_Learning
             GestureClass gC = _items[position];
             if (gC == null) return v;
 
-            var ctx = (MachineLearningPageActivity<T>)_context;
+            var ctx = (MachineLearningPageActivity)_context;
             IconField.Alpha = (ctx.SelectedGestureClass.className == gC.className) ?
                               ((ctx.TeachOnlyMode) ? 1.0f : 0.35f) : 0.25f;
             NameField.Text = gC.className;

@@ -56,24 +56,33 @@ namespace Atropos.Machine_Learning
                 Type wrappedType = Datapoint.From(default(T)).GetType();
 
                 // First (and lowest-level of recursion) case: if T is not something which implements IDatapoint at all, 
-                // hopefully it's a basic type like a scalar or the like; for all such, return the highest single scaling value, in all slots.
+                // hopefully it's a basic type like a scalar or a vector; for all such, return the highest single scaling value, in all slots.
                 if (!typeT.Implements<IDatapoint>())
                 {
-                    var dimensions = wrappedType.GetStaticProperty<int>("Dimensions");
+                    //var dimensions = wrappedType.GetStaticProperty<int>("Dimensions");
+                    var dimensions = Datapoint.From(default(T)).Dimensions;
                     _apply = (double[] inputs) =>
                     {
-                        return Enumerable
-                            .Repeat(inputs.Max(), dimensions)
-                            .ToList().ToArray(); // Stupid frickin' portable Accord.Math with busted ToArray...
+                        try
+                        {
+                            return Enumerable
+                                    .Repeat(inputs.Max(), dimensions)
+                                    .ToList().ToArray(); // Stupid frickin' portable Accord.Math with busted ToArray...
+                        }
+                        catch (Exception)
+                        {
+                            Android.Util.Log.Debug("Crosslinker", $"Issue with type {typeT.Name} (wrapped type {wrappedType.FullName}) and _apply.");
+                            throw;
+                        }
                     };
                     return;
                 }
 
-                // If it does implement IDatapoint, then (by construction) it has at least one generic argument, possibly several.
+                // If it does implement IDatapoint, then (by construction) it has at least one generic argument, possibly several, though we need to use the static Datapoint.GetGenericArguments to allow for proxied types (see DatapointKitchenSink).
                 var _applyFuncs = new List<Func<double[], double[]>>();
                 var numberToTake = new List<int>();
                 var numberToSkip = new List<int>() { 0 };
-                foreach (Type t in typeT.GetGenericArguments())
+                foreach (Type t in Datapoint.GetGenericArguments<T>())
                 {
                     // How many dimensions does this one have?
                     int nToTake;
@@ -102,7 +111,7 @@ namespace Atropos.Machine_Learning
                 _apply = (inputs) =>
                 {
                     var outputs = new List<double>();
-                    foreach (int i in Enumerable.Range(0, typeT.GetGenericArguments().Length))
+                    foreach (int i in Enumerable.Range(0, Datapoint.GetGenericArguments<T>().Length))
                     {
                         var inputsSubset = inputs
                             .Skip(numberToSkip[i])

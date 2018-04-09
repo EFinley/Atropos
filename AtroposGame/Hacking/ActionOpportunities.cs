@@ -119,25 +119,25 @@ namespace Atropos.Hacking
             }
         }
 
-        public override async Task<IStateChange> Attempt(HackingAttemptState initialState)
-        {
-            var MostRecentSample = new Sequence<Vector2>();
+        //public override async Task<IStateChange> Attempt(HackingAttemptState initialState)
+        //{
+        //    var MostRecentSample = new Sequence<Vector2>();
 
-            //// Watch for the "key" gestures here; if detected, launch the associated ICEbreaker and await its results.
-            //var featureVectors = (new MachineLearningActivity.MachineLearningStage("", null, null)).StopAndReturnResults(); // Change!!!
-            //MostRecentSample.SourcePath = featureVectors;
+        //    //// Watch for the "key" gestures here; if detected, launch the associated ICEbreaker and await its results.
+        //    //var featureVectors = (new MachineLearningActivity.MachineLearningStage("", null, null)).StopAndReturnResults(); // Change!!!
+        //    //MostRecentSample.SourcePath = featureVectors;
 
-            int selectionIndex = -1;
-            if (Classifier.MachineOnline)
-            {
-                selectionIndex = await Classifier.Recognize(MostRecentSample);
-            }
-            string selectedOutcomeName = Classifier.Dataset.ActualGestureClasses.ElementAtOrDefault(selectionIndex).className;
+        //    int selectionIndex = -1;
+        //    if (Classifier.MachineOnline)
+        //    {
+        //        selectionIndex = await Classifier.Recognize(MostRecentSample);
+        //    }
+        //    string selectedOutcomeName = Classifier.Dataset.ActualGestureClasses.ElementAtOrDefault(selectionIndex).className;
 
-            if (selectionIndex == -1 || !OutcomeOptions.ContainsKey(selectedOutcomeName)) return HackOutcome.NoChange;
+        //    if (selectionIndex == -1 || !OutcomeOptions.ContainsKey(selectedOutcomeName)) return HackOutcome.NoChange;
 
-            else return OutcomeOptions[selectedOutcomeName];
-        }
+        //    else return OutcomeOptions[selectedOutcomeName];
+        //}
 
         public static Classifier LeftRightSwipeClassifier { get; } // TODO - actually create this!
     }
@@ -162,7 +162,7 @@ namespace Atropos.Hacking
             int selectionIndex = -1;
             if (Classifier.MachineOnline)
             {
-                selectionIndex = await Classifier.Recognize(MostRecentSample);
+                //selectionIndex = await Classifier.Recognize(MostRecentSample); // TODO - fix this up for DatapointKitchenSink type Classifier...
             }
 
             if (selectionIndex == -1) return StateChange.NoChange;

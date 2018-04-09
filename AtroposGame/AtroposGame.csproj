@@ -211,6 +211,7 @@
     <Compile Include="LoggingProvider.cs" />
     <Compile Include="Machine Learning\ButtonLogic.cs" />
     <Compile Include="Machine Learning\Classifier.cs" />
+    <Compile Include="Machine Learning\ClassifierSelection.cs" />
     <Compile Include="Machine Learning\CueProvider.cs" />
     <Compile Include="Machine Learning\DataSet.cs" />
     <Compile Include="Machine Learning\FeatureExtractor.cs" />

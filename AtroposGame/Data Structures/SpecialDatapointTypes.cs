@@ -12,6 +12,7 @@ using Android.Widget;
 using System.Numerics;
 using Android.Hardware;
 using System.Threading;
+using MiscUtil;
 
 namespace Atropos.DataStructures
 {
@@ -79,7 +80,13 @@ namespace Atropos.DataStructures
             double Interval { get; }
         }
 
-        public struct DatapointKitchenSink : IDatapoint, IInterval
+        public interface IProxyType
+        {
+            Type ProxyType { get; }
+        }
+
+        [Serializable]
+        public struct DatapointKitchenSink : IDatapoint, IInterval, IProxyType
         {
             public Vector3 LinAccel { get => Values.Value1; }
             public Vector3 Gravity { get => Values.Value2; }
@@ -88,6 +95,7 @@ namespace Atropos.DataStructures
             public double Interval { get => Values.Value5; }
 
             public Datapoint<Vector3, Vector3, Vector3, Quaternion, double> Values;
+            public Type ProxyType { get => typeof(Datapoint<Vector3, Vector3, Vector3, Quaternion, double>); }
 
             public static int Dimensions => Datapoint<Vector3, Vector3, Vector3, Quaternion, double>.Dimensions; // Equals fourteen, incidentally.
             int IDatapoint.Dimensions => Dimensions;
@@ -99,7 +107,10 @@ namespace Atropos.DataStructures
 
             public IDatapoint FromArray(float[] sourceArray)
             {
-                return (DatapointKitchenSink)(new Datapoint<Vector3, Vector3, Vector3, Quaternion, double>().FromArray(sourceArray));
+                return new DatapointKitchenSink()
+                {
+                    Values = (Datapoint <Vector3, Vector3, Vector3, Quaternion, double>)new Datapoint<Vector3, Vector3, Vector3, Quaternion, double>().FromArray(sourceArray)
+                };
             }
 
             public float Magnitude()
@@ -116,6 +127,36 @@ namespace Atropos.DataStructures
             {
                 return dsink.Values;
             }
+
+            public static DatapointKitchenSink operator -(DatapointKitchenSink source) => (DatapointKitchenSink)Operator.Negate((Datapoint<Vector3, Vector3, Vector3, Quaternion, double>)source);
+            public static DatapointKitchenSink operator +(DatapointKitchenSink first, DatapointKitchenSink second)
+                => (DatapointKitchenSink)Operator.Add((Datapoint<Vector3, Vector3, Vector3, Quaternion, double>)first, (Datapoint<Vector3, Vector3, Vector3, Quaternion, double>)second);
+            public static DatapointKitchenSink operator -(DatapointKitchenSink first, DatapointKitchenSink second)
+                => (DatapointKitchenSink)Operator.Subtract((Datapoint<Vector3, Vector3, Vector3, Quaternion, double>)first, (Datapoint<Vector3, Vector3, Vector3, Quaternion, double>)second);
+            public static DatapointKitchenSink operator *(DatapointKitchenSink first, double second)
+                => (DatapointKitchenSink)Operator.MultiplyAlternative((Datapoint<Vector3, Vector3, Vector3, Quaternion, double>)first, (float)second);
+            public static DatapointKitchenSink operator *(double second, DatapointKitchenSink first)
+                => (DatapointKitchenSink)Operator.MultiplyAlternative((Datapoint<Vector3, Vector3, Vector3, Quaternion, double>)first, (float)second);
+            public static DatapointKitchenSink operator *(DatapointKitchenSink first, float second)
+                => (DatapointKitchenSink)Operator.MultiplyAlternative((Datapoint<Vector3, Vector3, Vector3, Quaternion, double>)first, second);
+            public static DatapointKitchenSink operator *(float second, DatapointKitchenSink first)
+                => (DatapointKitchenSink)Operator.MultiplyAlternative((Datapoint<Vector3, Vector3, Vector3, Quaternion, double>)first, second);
+            public static DatapointKitchenSink operator *(DatapointKitchenSink first, int second)
+                => (DatapointKitchenSink)Operator.MultiplyAlternative((Datapoint<Vector3, Vector3, Vector3, Quaternion, double>)first, (float)second);
+            public static DatapointKitchenSink operator *(int second, DatapointKitchenSink first)
+                => (DatapointKitchenSink)Operator.MultiplyAlternative((Datapoint<Vector3, Vector3, Vector3, Quaternion, double>)first, (float)second);
+            public static DatapointKitchenSink operator /(DatapointKitchenSink first, float second)
+                => (DatapointKitchenSink)Operator.DivideAlternative((Datapoint<Vector3, Vector3, Vector3, Quaternion, double>)first, second);
+            public static DatapointKitchenSink operator /(DatapointKitchenSink first, double second)
+                => (DatapointKitchenSink)Operator.DivideAlternative((Datapoint<Vector3, Vector3, Vector3, Quaternion, double>)first, (float)second);
+            public static DatapointKitchenSink operator /(DatapointKitchenSink first, int second)
+                => (DatapointKitchenSink)Operator.DivideAlternative((Datapoint<Vector3, Vector3, Vector3, Quaternion, double>)first, (float)second);
+
+            public static bool operator ==(DatapointKitchenSink first, DatapointKitchenSink second)
+                => Operator.Equals(first.LinAccel, second.LinAccel) && Operator.Equals(first.Gravity, second.Gravity) && Operator.Equals(first.Gyro, second.Gyro) && Operator.Equals(first.Orientation, second.Orientation) && Operator.Equals(first.Interval, second.Interval);
+            public static bool operator !=(DatapointKitchenSink first, DatapointKitchenSink second)
+                => Operator.NotEqual(first.LinAccel, second.LinAccel) || Operator.Equals(first.Gravity, second.Gravity) || Operator.Equals(first.Gyro, second.Gyro) || Operator.Equals(first.Orientation, second.Orientation) || Operator.Equals(first.Interval, second.Interval);
+
         }
     }
     

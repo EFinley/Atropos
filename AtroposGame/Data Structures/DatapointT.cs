@@ -91,21 +91,22 @@ namespace Atropos.DataStructures
                 _magnitude = (val) => (val as IDatapoint).Magnitude();
                 _asArray = (val) => (val as IDatapoint).AsArray();
                 //_fromArray = (vals) => typeT.InvokeStaticMethod<Datapoint<T>>("FromArray", vals);
-                if (typeT.GetGenericTypeDefinition() == typeof(Datapoint<,>)) 
-                {
-                    var dT1T2 = typeof(Datapoint<,>).MakeGenericType(typeT.GetGenericArguments());
-                    var instance = System.Activator.CreateInstance(dT1T2);
-                    var methInfo = dT1T2.GetMethod("FromArray");
-                    _fromArray = (vals) =>
-                    {
-                        //dynamic dyn = dT1T2.InvokeStaticMethod<T>("FromArray", vals);
-                        //return (IDatapoint)dyn;
-                        var parameters = new object[] { vals };//vals.Select(v => (object)v).ToList().ToArray();
-                        dynamic dyn = methInfo.Invoke(instance, parameters);
-                        return (IDatapoint)dyn;
-                    };
-                }
-                else _fromArray = (vals) => (default(T) as IDatapoint).FromArray(vals);
+                //if (typeT.IsGenericType && typeT.GetGenericTypeDefinition() == typeof(Datapoint<,>)) 
+                //{
+                //    var dT1T2 = typeof(Datapoint<,>).MakeGenericType(typeT.GetGenericArguments());
+                //    var instance = System.Activator.CreateInstance(dT1T2);
+                //    var methInfo = dT1T2.GetMethod("FromArray");
+                //    _fromArray = (vals) =>
+                //    {
+                //        //dynamic dyn = dT1T2.InvokeStaticMethod<T>("FromArray", vals);
+                //        //return (IDatapoint)dyn;
+                //        var parameters = new object[] { vals };//vals.Select(v => (object)v).ToList().ToArray();
+                //        dynamic dyn = methInfo.Invoke(instance, parameters);
+                //        return (IDatapoint)dyn;
+                //    };
+                //}
+                //else 
+                    _fromArray = (vals) => (default(T) as IDatapoint).FromArray(vals);
             }
             else if (typeT.IsOneOf(typeof(int), typeof(double), typeof(float))) // Hackish but whatever
             {

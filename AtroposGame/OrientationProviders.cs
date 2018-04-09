@@ -1017,7 +1017,7 @@ namespace Atropos
         }
     }
 
-    public class GravGyroOrientationProvider : FrameShiftedMultiSensorProvider<Quaternion>
+    public class GravGyroOrientationProvider : FrameShiftedMultiSensorProvider<Quaternion>, IOrientationProvider
     {
         protected GravityOrientationProvider GravProvider;
         protected Vector3Provider GyroProvider;
@@ -1070,6 +1070,7 @@ namespace Atropos
     namespace AdvancedProviders
     {
         using DataStructures;
+        using DKS = DataStructures.DatapointSpecialVariants.DatapointKitchenSink;
 
         public class ABCgestureCharacterizationProvider : MultiSensorProvider<Datapoint<float, float, float>>
         {
@@ -1116,29 +1117,29 @@ namespace Atropos
             }
         } 
 
-        public class GrabItAllSensorProvider : MultiSensorProvider<Datapoint<Vector3, Vector3, Vector3, Quaternion, double>>
+        public class GrabItAllSensorProvider : MultiSensorProvider<DKS>
         {
             protected Vector3Provider LinAccel, Grav, Gyro;
-            protected OrientationSensorProvider Orientation;
+            protected IOrientationProvider Orientation;
 
-            protected Datapoint<Vector3, Vector3, Vector3, Quaternion, double> data;
+            protected DKS data;
 
-            public GrabItAllSensorProvider(OrientationSensorProvider orientation)
+            public GrabItAllSensorProvider(IOrientationProvider orientation)
                 : base(new Vector3Provider(SensorType.LinearAcceleration), new Vector3Provider(SensorType.Gravity), new Vector3Provider(SensorType.Gyroscope), orientation)
             {
                 LinAccel = providers[0] as Vector3Provider;
                 Grav = providers[1] as Vector3Provider;
                 Gyro = providers[2] as Vector3Provider;
-                Orientation = providers[3] as OrientationSensorProvider;
+                Orientation = providers[3] as IOrientationProvider;
             }
 
             protected override void DoWhenAllDataIsReady()
             {
-                data = new Datapoint<Vector3, Vector3, Vector3, Quaternion, double>
+                data = (DKS)new Datapoint<Vector3, Vector3, Vector3, Quaternion, double>
                     (LinAccel.Vector, Grav.Vector, Gyro.Vector, Orientation.Quaternion, Interval.TotalSeconds);
             }
 
-            protected override Datapoint<Vector3, Vector3, Vector3, Quaternion, double> toImplicitType()
+            protected override DKS toImplicitType()
             {
                 return data;
             }

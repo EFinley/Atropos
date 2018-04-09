@@ -33,8 +33,12 @@ namespace Atropos.Machine_Learning
         //// eventually other stuff like energy spectra etc. if necessary.
         public SequenceMetadata AverageMetadata;
         private int numMetadataPoints = 0;
+
+        // Utility funcs for UpdateMetadata()
         private double rollinAverage(double oldAvg, double newVal) { return oldAvg + (newVal - oldAvg) / (numMetadataPoints + 1); }
         private TimeSpan rollinAverage(TimeSpan oldAvg, TimeSpan newVal) { return TimeSpan.FromMilliseconds(oldAvg.TotalMilliseconds + ((newVal - oldAvg).TotalMilliseconds) / (numMetadataPoints + 1)); }
+
+        // When we assess a representative of this class, we use this to update the characteristics of the gesture.
         public void UpdateMetadata(SequenceMetadata newData)
         {
             AverageMetadata.QualityScore = rollinAverage(AverageMetadata.QualityScore, newData.QualityScore);

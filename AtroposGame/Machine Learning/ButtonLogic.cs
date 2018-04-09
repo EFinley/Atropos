@@ -56,13 +56,16 @@ namespace Atropos.Machine_Learning.Button_Logic
                 _state = value;
                 Task.Delay(2).ContinueWith(_ =>
                 {
-                    if (_state.Enabled != null) Target.Enabled = _state.Enabled.Value;
-                    if (_state.Text != FieldState.NoChange) Target.Text = _state.Text;
-                });
+                    ButtonStates.parentActivity.RunOnUiThread(() =>
+                    {
+                        if (_state.Enabled != null) Target.Enabled = _state.Enabled.Value;
+                        if (_state.Text != FieldState.NoChange) Target.Text = _state.Text;
 
-                Target.Clickable = _state.Clickable;
+                        Target.Clickable = _state.Clickable;
 
-                Target.RequestLayout(); // Tell the engine we need re-displaying.
+                        Target.RequestLayout(); // Tell the engine we need re-displaying.
+                    });
+                }).ConfigureAwait(false);
             }
         }
     }
@@ -103,12 +106,12 @@ namespace Atropos.Machine_Learning.Button_Logic
     // Original version... controller for a standard MachineLearningActivity
     public class ButtonStates
     {
-        private Activity parentActivity; // Not currently needed, but if we need RunOnUI permissions, it'll be handy.
+        public static Activity parentActivity; // Not currently needed, but if we need RunOnUI permissions, it'll be handy.
 
         public NamedField Save;
         public NamedField Load;
         public NamedField Clear;
-        public NamedField Compute;
+        public NamedField Compute, ComputeSingle;
         public NamedField DatasetName;
         //public static NamedField AddNewClass;
         private ListView _listview;
@@ -124,6 +127,7 @@ namespace Atropos.Machine_Learning.Button_Logic
             Load = new NamedField(activity, Resource.Id.mlrn_dataset_load_btn);
             Clear = new NamedField(activity, Resource.Id.mlrn_dataset_clear_btn);
             Compute = new NamedField(activity, Resource.Id.mlrn_study_dataset_btn);
+            ComputeSingle = new NamedField(activity, Resource.Id.mlrn_study_gc_btn);
             DatasetName = new NamedField(activity, Resource.Id.mlrn_subheading_datasetnamefield);
             //AddNewClass = new NamedField(activity, Resource.Id.mlrn_add_gesture_class_btn);
             _listview = parentActivity.FindViewById<ListView>(Resource.Id.list);
@@ -151,6 +155,8 @@ namespace Atropos.Machine_Learning.Button_Logic
 
         public static FieldState CannotCompute = FieldState.Def("Generate Classification AI", false);
         public static FieldState CanCompute = FieldState.Def("Generate Classification AI", true);
+        public static FieldState CannotComputeSingle = FieldState.Def("Generate Cue AI for Selected", false);
+        public static FieldState CanComputeSingle = FieldState.Def("Generate Cue AI for Selected", true);
         public static FieldState IsComputing = FieldState.Def("Computing...", true, false);
         public static FieldState IsReassessing = FieldState.Def("Reassessing data...", true, false);
         public static FieldState DoFullReassess = FieldState.Def("Reassess data", true);
@@ -212,6 +218,7 @@ namespace Atropos.Machine_Learning.Button_Logic
                 Save.State = CannotSave;
                 Clear.State = NothingToClear;
                 Compute.State = CannotCompute;
+                ComputeSingle.State = CannotComputeSingle;
                 _listview.RequestLayout();
                 return;
             }
@@ -253,6 +260,7 @@ namespace Atropos.Machine_Learning.Button_Logic
             {
                 Save.State = CannotSave;
                 Compute.State = CannotCompute;
+                ComputeSingle.State = CannotComputeSingle;
                 if (HasBeenNamed || Dataset.SavedAsName != null)
                 {
                     Clear.State = IsClearedExceptName;
@@ -267,6 +275,7 @@ namespace Atropos.Machine_Learning.Button_Logic
             {
                 Save.State = (DatasetHasChanged) ? CanSave : CannotSave; // Allowed to still save even if all it includes is empty gesture classes.
                 Compute.State = CannotCompute;
+                ComputeSingle.State = CannotComputeSingle;
                 Clear.State = CanClear;
             }
             // Okay, so it contains meaningful content.  What kind?
@@ -280,6 +289,7 @@ namespace Atropos.Machine_Learning.Button_Logic
                 if (HasNewSamples && !Classifier.MachineOnline)
                 {
                     Compute.State = (Dataset.Classes.Count > 1) ? CanCompute : CannotCompute;
+                    ComputeSingle.State = (Dataset.Classes.Count > 1) ? CanComputeSingle : CannotComputeSingle;
                     Clear.State = CanClear;
                 }
                 // Or maybe it's got existing data and a classifier, but no new data...

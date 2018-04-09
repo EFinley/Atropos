@@ -52,17 +52,17 @@ namespace Atropos.Melee
 
         protected override void ResetStage(string label)
         {
-            //if (!_advancedCueMode)
-                CurrentStage = new MachineLearningActivity.MachineLearningStage(label, Dataset, 
-                    new ClusterLoggingProvider<Vector3, Vector3>(SensorType.LinearAcceleration, SensorType.Gravity));
-            //else CurrentStage = new SelfEndpointingSingleGestureRecognizer(label, Classifier,
-            //            new ClusterLoggingProvider<Vector3, Vector3>(SensorType.LinearAcceleration, SensorType.Gravity));
+            ////if (!_advancedCueMode)
+            //    CurrentStage = new MachineLearningActivity.MachineLearningStage(label, Dataset, 
+            //        new ClusterLoggingProvider<Vector3, Vector3>(SensorType.LinearAcceleration, SensorType.Gravity));
+            ////else CurrentStage = new SelfEndpointingSingleGestureRecognizer(label, Classifier,
+            ////            new ClusterLoggingProvider<Vector3, Vector3>(SensorType.LinearAcceleration, SensorType.Gravity));
         }
 
         protected override void AlternativeResetStage(string label, params object[] info)
         {
-            CurrentStage = new MachineLearningActivity.SelfEndpointingSingleGestureRecognizer(label, Classifier,
-                        new ClusterLoggingProvider<Vector3, Vector3>(SensorType.LinearAcceleration, SensorType.Gravity));
+            //CurrentStage = new MachineLearningActivity.SelfEndpointingSingleGestureRecognizer(label, Classifier,
+            //            new ClusterLoggingProvider<Vector3, Vector3>(SensorType.LinearAcceleration, SensorType.Gravity));
         }
 
         public override double GetAccelForDatapoint(Datapoint<Vector3, Vector3> datapoint)

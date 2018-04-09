@@ -26,7 +26,7 @@ namespace Atropos
             base.OnCreate(savedInstanceState);
 
             // Link the checkboxes and buttons and such
-            SetupButton(Resource.Id.btn_launch_experimental_mode, typeof(Atropos.Machine_Learning.MachineLearningActivityABCVariant));
+            SetupButton(Resource.Id.btn_launch_experimental_mode, typeof(Atropos.Machine_Learning.MachineLearningActivity));
             SetupButton(Resource.Id.btn_dev_hotbutton, typeof(FunctionalityTestActivity));
             SetupButton(Resource.Id.btn_train_spells, typeof(SpellTrainingActivity));
             SetupButton(Resource.Id.btn_train_locks, () => { }, null, false);

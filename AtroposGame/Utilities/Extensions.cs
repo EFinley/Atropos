@@ -304,10 +304,12 @@ namespace Atropos
 
         public static Vector3 Normalize(this Vector3 source)
         {
+            if (source.LengthSquared() < 1e-8) return Vector3.Zero;
             return Vector3.Normalize(source);
         }
         public static Quaternion Normalize(this Quaternion source)
         {
+            if (source.LengthSquared() < 1e-8) return Quaternion.Identity;
             return Quaternion.Normalize(source);
         }
 

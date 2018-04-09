@@ -2607,11 +2607,11 @@ namespace Atropos
 			// aapt resource value: 0x7f0b00a7
 			public const int mlrn_new_gesture_class_namefield = 2131427495;
 			
-			// aapt resource value: 0x7f0b00a6
-			public const int mlrn_run_test_btn = 2131427494;
-			
 			// aapt resource value: 0x7f0b00a5
 			public const int mlrn_study_dataset_btn = 2131427493;
+			
+			// aapt resource value: 0x7f0b00a6
+			public const int mlrn_study_gc_btn = 2131427494;
 			
 			// aapt resource value: 0x7f0b00a0
 			public const int mlrn_subheading_datasetnamefield = 2131427488;

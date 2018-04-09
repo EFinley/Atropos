@@ -86,7 +86,12 @@ namespace Atropos.Machine_Learning
             {
                 SourcePath = sourceArray
                             //.Select(array => (T)(default(T) as IDatapoint).FromArray(array))
-                            .Select(array => Operator.Convert<IDatapoint, T>((default(T) as IDatapoint).FromArray(array)))
+                            .Select(array =>
+                            {
+                                var defT = (default(T) as IDatapoint);
+                                var fromA = defT.FromArray(array);
+                                return Operator.Convert<IDatapoint, T>(fromA);
+                            })
                             //.Cast<T>()
                             .ToArray();
             }
@@ -139,6 +144,7 @@ namespace Atropos.Machine_Learning
 
         public double[] GetMachineInputs(FeatureExtractor<T> extractor, PreprocessorCoefficients? coefficients = null)
         {
+            extractor.Reset(); // If it's an integrator type, we'll need this to make any sense of the results.
             var extractedSequence = extractor.ExtractSeq(SourcePath);
             return Accord.Math.Matrix.Merge(extractor.Preprocess(extractedSequence, coefficients), extractor.Dimensions);
         }
@@ -274,7 +280,7 @@ namespace Atropos.Machine_Learning
             //xmax = ymax = Math.Max(xmax, ymax);
             //xmin = ymin = Math.Min(xmin, ymin);
             
-            var DisplayedDimensions = Enumerable.Range(0, Datapoint<T>.Dimensions);
+            var DisplayedDimensions = Enumerable.Range(0, Datapoint.From(default(T)).Dimensions);
             float maxCoord = float.NegativeInfinity;
             float minCoord = float.PositiveInfinity;
             foreach (int i in DisplayedDimensions)
@@ -306,7 +312,7 @@ namespace Atropos.Machine_Learning
             };
             // If even that isn't enough, create new ones until we have enough such paint functions.
             //while (Datapoint<Tgraphical>.Dimensions > getColorFuncs.Count)
-            while (Datapoint<T>.Dimensions > getColorFuncs.Count)
+            while (DisplayedDimensions.Count() > getColorFuncs.Count)
             {
                 List<Func<int, int>> converters = new List<Func<int, int>>()
                     {

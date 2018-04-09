@@ -62,6 +62,15 @@ namespace Atropos.DataStructures
             return AsArrayFrom(val).Cast<float, double>().ToArray();
         }
 
+        public static Type[] GetGenericArguments<T>() where T : struct
+        {
+            var typeT = typeof(T);
+            if (typeof(T).Implements<DatapointSpecialVariants.IProxyType>()) typeT = (default(T) as DatapointSpecialVariants.IProxyType).ProxyType;
+
+            if (!typeT.IsGenericType) throw new ArgumentException($"Cannot retrieve the generic arguments for {typeT.Name}!");
+            else return typeT.GetGenericArguments();
+        }
+
         public static Datapoint<T1, T2> From<T1, T2>(T1 val1, T2 val2)
             where T1 : struct
             where T2 : struct
@@ -73,8 +82,8 @@ namespace Atropos.DataStructures
             };
         }
 
-        public static Datapoint<T1, T2> From<T1, T2>(IDatapoint val) 
-            where T1 : struct 
+        public static Datapoint<T1, T2> From<T1, T2>(IDatapoint val)
+            where T1 : struct
             where T2 : struct
         {
             if (!(val is Datapoint<T1, T2>)) throw new ArgumentException($"Cannot create a Datapoint<{typeof(T1).Name},{typeof(T2).Name}> from the provided {val.GetType().Name}!");

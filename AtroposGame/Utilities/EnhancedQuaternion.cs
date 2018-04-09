@@ -220,7 +220,10 @@ namespace Atropos
 
         public static double AngleTo (this Vector3 first, Vector3 second)
         {
-            return Math.Acos(first.Dot(second) / first.Length() / second.Length()) * radToDeg;
+            if (first.LengthSquared() < 1e-8 || second.LengthSquared() < 1e-8) return 0;
+            var result = Math.Acos(first.Dot(second) / first.Length() / second.Length()) * radToDeg;
+            if (double.IsNaN(result)) return 0;
+            else return result;
         }
 
         public static float Component(this Vector3 source, int axisNumber)
