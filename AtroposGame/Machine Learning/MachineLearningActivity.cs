@@ -162,7 +162,7 @@ namespace Atropos.Machine_Learning
 
         //public Classifier Classifier { get { return Dataset.Classifier; } set { Dataset.Classifier = value; } }
         public Classifier Classifier { get; set; }
-        protected Dictionary<GestureClass, Classifier> CueClassifiers = new Dictionary<GestureClass, Classifier>();
+        protected Dictionary<string, Classifier> CueClassifiers = new Dictionary<string, Classifier>();
 
         protected abstract void ResetStage(string label);
         protected virtual void AlternativeResetStage(string label, params object[] info) { ResetStage(label); }
@@ -315,7 +315,12 @@ namespace Atropos.Machine_Learning
             //var v1d = Serializer.Deserialize<Datapoint<float>>(v1s);
             //Log.Debug($"MachineLearning|TEST", $"Round-trip checks... v1s deserializes to {v1d}.");
             //Log.Debug($"MachineLearning|TEST", $"Round-trip checks... v1 {Serializer.Check(v1)}.");
-
+            var c = new Classifier();
+            Log.Debug("MachineLearning|TEST", $"Round-trip check... classifier {Serializer.Check(c)}");
+            var cTree = new ClassifierTree(new DataSet<DKS>(), new Classifier(), new Dictionary<string, Classifier>());
+            var cTreeSer = Serializer.Serialize(cTree);
+            Log.Debug("MachineLearning|TEST", $"cTree serializes to {cTreeSer.Substring(0, 500)}.");
+            Log.Debug($"MachineLearning|TEST", $"Round-trip check... cTree {Serializer.Check(cTree)}.");
         }
 
         protected override async void OnResume()
@@ -454,9 +459,9 @@ namespace Atropos.Machine_Learning
                     #region Load Dataset
                     if (filepath.EndsWith(DataSet.FileExtension))
                     {
-                        //DataSet<DKS> oldDataset = (DataSet<DKS>)Dataset.Clone(); // TODO - implement using Serialize/Deserialize.
-                        DataSet<DKS> oldDataset = Serializer.Deserialize<DataSet<DKS>>(
-                                                Serializer.Serialize<DataSet<DKS>>(Dataset) ); // Because Clone() wasn't working.
+                        ////DataSet<DKS> oldDataset = (DataSet<DKS>)Dataset.Clone(); // TODO - implement using Serialize/Deserialize.
+                        //DataSet<DKS> oldDataset = Serializer.Deserialize<DataSet<DKS>>(
+                        //                        Serializer.Serialize<DataSet<DKS>>(Dataset) ); // Because Clone() wasn't working.
                         using (var streamReader = new StreamReader(filepath))
                         {
                             var contents = streamReader.ReadToEnd();
@@ -476,31 +481,31 @@ namespace Atropos.Machine_Learning
 
                         }
 
-                        // If we're loading a dataset that MATCHES the one we already have, then assume we want to load the old data AND keep the current set.
-                        if (Dataset.Name == oldDataset.Name
-                            && Dataset.ClassNames.ToString() == oldDataset.ClassNames.ToString()
-                            && Dataset.SequenceCount > 0 && oldDataset.SequenceCount > 0)
-                        {
-                            Toast.MakeText(this, "Merging loaded data with current...", ToastLength.Short).Show();
-                            int currentSelectedGestureClass = SelectedGestureClass.index;
+                        //// If we're loading a dataset that MATCHES the one we already have, then assume we want to load the old data AND keep the current set.
+                        //if (Dataset.Name == oldDataset.Name
+                        //    && Dataset.ClassNames.ToString() == oldDataset.ClassNames.ToString()
+                        //    && Dataset.SequenceCount > 0 && oldDataset.SequenceCount > 0)
+                        //{
+                        //    Toast.MakeText(this, "Merging loaded data with current...", ToastLength.Short).Show();
+                        //    int currentSelectedGestureClass = SelectedGestureClass.index;
 
-                            // Put them both into a form which we can compare (turns out Union() doesn't work even if you implement IEquality, not worth pursuing further).
-                            var oldSeqs = oldDataset.Samples.Select(seq => seq.SourcePath.ToString()).ToList();
-                            var newSeqs = Dataset.Samples.Select(seq => seq.SourcePath.ToString()).ToList();
+                        //    // Put them both into a form which we can compare (turns out Union() doesn't work even if you implement IEquality, not worth pursuing further).
+                        //    var oldSeqs = oldDataset.Samples.Select(seq => seq.SourcePath.ToString()).ToList();
+                        //    var newSeqs = Dataset.Samples.Select(seq => seq.SourcePath.ToString()).ToList();
 
-                            // The new set should get added onto the end of the old set, so as to preserve order (not that it actually matters at the moment).
-                            for (int i = 0; i < Dataset.Samples.Count; i++)
-                            {
-                                if (!oldSeqs.Contains(newSeqs[i])) oldDataset.AddSequence(Dataset.Samples[i]);
-                            }
-                            // Now we have no more use for the 'new' set, and it can go pfft in favour of the augmented 'old' set.
-                            Dataset = oldDataset;
-                            SelectedGestureClass = Dataset.Classes[currentSelectedGestureClass];
-                        }
-                        else
-                        {
-                            SelectedGestureClass = Dataset.Classes?.FirstOrDefault();
-                        }
+                        //    // The new set should get added onto the end of the old set, so as to preserve order (not that it actually matters at the moment).
+                        //    for (int i = 0; i < Dataset.Samples.Count; i++)
+                        //    {
+                        //        if (!oldSeqs.Contains(newSeqs[i])) oldDataset.AddSequence(Dataset.Samples[i]);
+                        //    }
+                        //    // Now we have no more use for the 'new' set, and it can go pfft in favour of the augmented 'old' set.
+                        //    Dataset = oldDataset;
+                        //    SelectedGestureClass = Dataset.Classes[currentSelectedGestureClass];
+                        //}
+                        //else
+                        //{
+                        //    SelectedGestureClass = Dataset.Classes?.FirstOrDefault();
+                        //}
 
                         SetUpAdapters(Dataset);
 
@@ -555,11 +560,19 @@ namespace Atropos.Machine_Learning
                             try
                             {
                                 //Classifier = Serializer.Deserialize<ClusterClassifier>(contents) ?? Serializer.Deserialize<Classifier>(contents);
+                                //Dataset = new DataSet<DKS> { Name = Classifier.MatchingDatasetName };
+                                //foreach (var gC in Classifier.MatchingDatasetClasses) Dataset.AddClass(gC);
+
                                 var cTree = Serializer.Deserialize<ClassifierTree>(contents);
                                 if (cTree == null) throw new Exception($"Classifier deserialization failed - filename {filepath}");
                                 Classifier = cTree.MainClassifier;
-                                CueClassifiers = cTree.CueClassifiers;
                                 Dataset = new DataSet<DKS> { Name = Classifier.MatchingDatasetName };
+                                //CueClassifiers = cTree.CueClassifiers;
+                                CueClassifiers = new Dictionary<string, Classifier>();
+                                foreach (var i in Enumerable.Range(0, cTree.CueClassifiersNames.Count))
+                                {
+                                    CueClassifiers.Add(cTree.CueClassifiersNames[i], cTree.CueClassifiersValues[i]);
+                                }
                                 foreach (var gC in cTree.GestureClasses) Dataset.AddClass(gC);
                                 SelectedGestureClass = Dataset.Classes.FirstOrDefault();
                             }
@@ -572,14 +585,14 @@ namespace Atropos.Machine_Learning
                             }
                         }
 
-                        // Simpler variant of co-deserialization, for now...
-                        if (Dataset == null || Dataset.SequenceCount == 0)
-                        {
-                            Dataset = Dataset ?? new DataSet<DKS>();
-                            Dataset.Name = Classifier.MatchingDatasetName;
-                            foreach (var className in Classifier.MatchingDatasetClasses) Dataset.AddClass(className);
-                            SelectedGestureClass = Dataset.Classes.FirstOrDefault();
-                        }
+                        //// Simpler variant of co-deserialization, for now...
+                        //if (Dataset == null || Dataset.SequenceCount == 0)
+                        //{
+                        //    Dataset = Dataset ?? new DataSet<DKS>();
+                        //    Dataset.Name = Classifier.MatchingDatasetName;
+                        //    foreach (var className in Classifier.MatchingDatasetClasses) Dataset.AddClass(className);
+                        //    SelectedGestureClass = Dataset.Classes.FirstOrDefault();
+                        //}
 
                         //// Co-deserialization possibilities... are we working with a trivial (essentially empty) dataset?
                         //string FeedbackString;
@@ -824,7 +837,7 @@ namespace Atropos.Machine_Learning
                 //{
                 //    currentGC.CueClassifier = await ClassifierSelection.FindBestClassifier(Dataset, currentGC);
                 //}
-                CueClassifiers.Add(SelectedGestureClass, await ClassifierSelection.FindBestClassifier(Dataset, SelectedGestureClass));
+                CueClassifiers.Add(SelectedGestureClass.className, await ClassifierSelection.FindBestClassifier(Dataset, SelectedGestureClass));
             };
 
             if (_addNewClassButton != null) _addNewClassButton.Click +=

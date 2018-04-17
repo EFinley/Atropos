@@ -28,6 +28,8 @@ namespace Atropos
         public static SoundOptions Default = new SoundOptions();
         public static SoundOptions OnSpeakers = new SoundOptions() { UseSpeakers = true };
         public static SoundOptions OnHeadphones = new SoundOptions() { UseSpeakers = false };
+        public static SoundOptions AtSpeed(double speed) { return new SoundOptions() { Speed = speed }; }
+        public static SoundOptions AtVolume(double volume) { return new SoundOptions() { Volume = volume }; }
     }
     
 }

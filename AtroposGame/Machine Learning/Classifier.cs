@@ -428,15 +428,24 @@ namespace Atropos.Machine_Learning
     [Serializable]
     public class ClassifierTree : ISerializable
     {
-        public List<GestureClass> GestureClasses;
+        [NonSerialized] public List<GestureClass> GestureClasses;
         [NonSerialized] public Classifier MainClassifier;
-        [NonSerialized] public Dictionary<GestureClass, Classifier> CueClassifiers;
+        //[NonSerialized] public Dictionary<string, Classifier> CueClassifiers;
+        [NonSerialized] public List<string> CueClassifiersNames;
+        [NonSerialized] public List<Classifier> CueClassifiersValues;
 
-        public ClassifierTree(DataSet dataset, Classifier classifier, Dictionary<GestureClass, Classifier> cueClassifiers)
+        public ClassifierTree(DataSet dataset, Classifier classifier, Dictionary<string, Classifier> cueClassifiers)
         {
             GestureClasses = dataset.ActualGestureClasses;
             MainClassifier = classifier;
-            CueClassifiers = cueClassifiers;
+            //CueClassifiers = cueClassifiers;
+            CueClassifiersNames = new List<string>();
+            CueClassifiersValues = new List<Classifier>();
+            foreach (var kvp in cueClassifiers)
+            {
+                CueClassifiersNames.Add(kvp.Key);
+                CueClassifiersValues.Add(kvp.Value);
+            }
         }
 
         public ClassifierTree(SerializationInfo info, StreamingContext context)
@@ -444,25 +453,48 @@ namespace Atropos.Machine_Learning
             var mainStr = info.GetString("MainClassifier_Serialized");
             MainClassifier = Serializer.Deserialize<ClusterClassifier>(mainStr) ?? Serializer.Deserialize<Classifier>(mainStr);
 
-            var secondaries = (Dictionary<GestureClass, string>)info.GetValue("CueClassifiers_Serialized", typeof(Dictionary<GestureClass, string>));
-            CueClassifiers = new Dictionary<GestureClass, Classifier>();
-            foreach (var cc_kvp in secondaries)
+            //var secondaries = (Dictionary<GestureClass, string>)info.GetValue("CueClassifiers_Serialized", typeof(Dictionary<GestureClass, string>));
+            //CueClassifiers = new Dictionary<string, Classifier>();
+            //foreach (var cc_kvp in secondaries)
+            //{
+            //    Classifier result = Serializer.Deserialize<ClusterClassifier>(cc_kvp.Value) ?? Serializer.Deserialize<Classifier>(cc_kvp.Value);
+            //    CueClassifiers.Add(cc_kvp.Key.className, result);
+            //}
+
+            CueClassifiersNames = new List<string>();
+            CueClassifiersValues = new List<Classifier>();
+            var keys = info.GetValue<List<string>>("CueNames");
+            var valsSerialform = info.GetValue<List<string>>("CueValues");
+            foreach (int i in Enumerable.Range(0, keys.Count))
             {
-                Classifier result = Serializer.Deserialize<ClusterClassifier>(cc_kvp.Value) ?? Serializer.Deserialize<Classifier>(cc_kvp.Value);
-                CueClassifiers.Add(cc_kvp.Key, result);
+                CueClassifiersNames.Add(keys[i]);
+                var classifier = Serializer.Deserialize<ClusterClassifier>(valsSerialform[i]) ?? Serializer.Deserialize<Classifier>(valsSerialform[i]);
+                CueClassifiersValues.Add(classifier);
             }
+
+            GestureClasses = info.GetValue<List<GestureClass>>("GestureClasses_Serialized");
         }
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.AddValue("MainClassifier_Serialized", Serializer.Serialize(MainClassifier));
-            var stringForms = new Dictionary<GestureClass, string>();
-            foreach (var cc_kvp in CueClassifiers)
+            //var stringForms = new Dictionary<string, string>();
+            //foreach (var cc_kvp in CueClassifiers)
+            //{
+            //    if (cc_kvp.Value is ClusterClassifier cc) stringForms.Add(cc_kvp.Key, Serializer.Serialize(cc)); // May be unnecessary, but not sure.  Mirrors equivalent code in previous save-classifier-button code (cf. MachineLearningActivity.cs, line ~700)
+            //    else stringForms.Add(cc_kvp.Key, Serializer.Serialize(cc_kvp.Value));
+            //}
+            //info.AddValue("CueClassifiers_Serialized", stringForms);
+            info.AddValue("CueNames", CueClassifiersNames);
+            var stringForms = new List<string>();
+            foreach (var cc in CueClassifiersValues)
             {
-                if (cc_kvp.Value is ClusterClassifier cc) stringForms.Add(cc_kvp.Key, Serializer.Serialize(cc));
-                else stringForms.Add(cc_kvp.Key, Serializer.Serialize(cc_kvp.Value));
+                if (cc is ClusterClassifier ccl) stringForms.Add(Serializer.Serialize(ccl)); // May be unnecessary, but not sure.  Mirrors equivalent code in previous save-classifier-button code (cf. MachineLearningActivity.cs, line ~700)
+                else stringForms.Add(Serializer.Serialize(cc));
             }
-            info.AddValue("CueClassifiers_Serialized", stringForms);
+            info.AddValue("CueValues", stringForms);
+
+            info.AddValue("GestureClasses_Serialized", GestureClasses);
         }
     }
 }

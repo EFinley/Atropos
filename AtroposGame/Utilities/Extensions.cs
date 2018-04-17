@@ -684,5 +684,10 @@ namespace Atropos
             internal static T Roundtrip(T obj) { return Serializer.Roundtrip<T>(obj); }
             internal static bool Check(T obj) { return Serializer.Check<T>(obj); }
         }
+
+        internal static T GetValue<T>(this System.Runtime.Serialization.SerializationInfo info, string name)
+        {
+            return (T)info.GetValue(name, typeof(T));
+        }
     }
 }

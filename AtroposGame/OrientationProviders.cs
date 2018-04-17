@@ -468,6 +468,9 @@ namespace Atropos
 
             foreach (var p in providers) if (!p.IsActive) p.Activate(StopToken);
             CombinerLoop().LaunchAsOrphan(StopToken, $"CombinerLoop({this.GetType().Name})");
+
+            stopwatch = new System.Diagnostics.Stopwatch();
+            stopwatch.Start();
         }
 
         public SensorDelay Delay

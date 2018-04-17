@@ -43,7 +43,7 @@ namespace Atropos
 
         public IProvider DataProvider { get; set; }
         private bool allowProviderToPersist;
-        private bool verboseLogging = false;
+        private bool verboseLogging = true;
         protected void verbLog(string message) { if (verboseLogging) Log.Debug($"GestureRecog|VerbLog|{Label}", message); }
 
         public GestureRecognizerStage(string label = "GestureRecog") : base()

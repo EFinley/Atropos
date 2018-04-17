@@ -164,7 +164,11 @@ namespace Atropos.Machine_Learning
             cts = new CancellationTokenSource();
             stopwatch = new Stopwatch();
             stopwatch.Start();
-            cancellationReg = cts.Token.Register(() => OnInterruption?.Invoke(this, new EventArgs<TimeSpan>(stopwatch.Elapsed)));
+            cancellationReg = cts.Token.Register(() =>
+            {
+                this.actionIfCanceled.Invoke();
+                OnInterruption?.Invoke(this, new EventArgs<TimeSpan>(stopwatch.Elapsed));
+            });
 
             await Task.Delay(this.timeToWait.Value, cts.Token)
                 .ContinueWith(_ =>

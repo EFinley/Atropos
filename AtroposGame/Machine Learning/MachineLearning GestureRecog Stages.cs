@@ -78,6 +78,11 @@ namespace Atropos.Machine_Learning
                 // We can't get the Quality Score yet - have to fill that in after analysis (see Classifier.Recognize()).
                 return result;
             }
+
+            //public static explicit operator MachineLearningActivity<>.MachineLearningStage(IActivator v)
+            //{
+            //    throw new NotImplementedException();
+            //}
         }
 
         public class SelfEndpointingSingleGestureRecognizer : MachineLearningStage
@@ -104,7 +109,8 @@ namespace Atropos.Machine_Learning
                         var analyzedSeq = Current.Analyze(Seq).Result;
 
                         // If we've stated that we only care about one gesture class, and it's not that, then we're obviously not there yet.
-                        if (Target != null && Seq.RecognizedAsIndex != Target.index) return double.NaN;
+                        //if (Target != null && Seq.RecognizedAsIndex != Target.index) return double.NaN;
+                        if (Target != null && Seq.RecognizedAsName != Target.className) return double.NaN;
                         else return analyzedSeq.RecognitionScore;
                     }, thresholdScore: 1.0, minLength: Classifier.Dataset?.MinSequenceLength ?? 5);
                 InterimInterval = TimeSpan.FromMilliseconds(100);
@@ -149,7 +155,7 @@ namespace Atropos.Machine_Learning
 
             protected override Task nextStageActionAsync()
             {
-                return Speech.SayAllOf("Got it.", new SoundOptions() { Speed = 1.75 });
+                return Speech.SayAllOf("Got it.", SoundOptions.AtSpeed(1.75));
             }
         }
     }
