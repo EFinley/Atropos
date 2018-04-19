@@ -35,9 +35,14 @@ namespace Atropos
         public IEffect FeedbackSFX { get { return MasterSpellLibrary.SpellSFX[FeedbackSFXName]; } }
         public IEffect ProgressSFX { get { return MasterSpellLibrary.SpellSFX[ProgressSFXName]; } }
 
-        public Glyph(Quaternion orientation, double steadinessBase, double orientationSigma, string progressSFXname = MasterSpellLibrary.defaultProgressSFXName, string feedbackSFXname = MasterSpellLibrary.defaultFeedbackSFXName)
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public string Instruction_Short { get; set; }
+        public string Instruction_Long { get; set; }
+
+        public Glyph(Quaternion? orientation = null, double steadinessBase = 0.0, double orientationSigma = 0.0, string progressSFXname = MasterSpellLibrary.defaultProgressSFXName, string feedbackSFXname = MasterSpellLibrary.defaultFeedbackSFXName)
         {
-            Orientation = orientation;
+            Orientation = orientation ?? Quaternion.Identity;
             SteadinessScoreWhenDefined = steadinessBase;
             OrientationSigma = orientationSigma;
             ProgressSFXName = progressSFXname;
@@ -49,7 +54,7 @@ namespace Atropos
         {
             var valuesArray = new double[] { Orientation.X, Orientation.Y, Orientation.Z, Orientation.W, SteadinessScoreWhenDefined, OrientationSigma };
             var stringsArray = valuesArray.Select(d => d.ToString("f4")).ToArray();
-            stringsArray = stringsArray.Concat(new string[] { ProgressSFXName, FeedbackSFXName }).ToArray();
+            stringsArray = stringsArray.Concat(new string[] { Name, ProgressSFXName, FeedbackSFXName }).ToArray();
             return stringsArray.Join(",");
         }
 
@@ -61,10 +66,11 @@ namespace Atropos
                 var floatsArray = new float[6];
                 foreach (int i in Enumerable.Range(0, 6)) floatsArray[i] = float.Parse(inputArray[i]);
 
-                var pName = (inputArray.Length > 6) ? inputArray[6] : MasterSpellLibrary.defaultProgressSFXName;
-                var fName = (inputArray.Length > 7) ? inputArray[7] : MasterSpellLibrary.defaultFeedbackSFXName;
+                string name = (inputArray.Length > 6) ? inputArray[6] : null;
+                var pName = (inputArray.Length > 7) ? inputArray[7] : MasterSpellLibrary.defaultFeedbackSFXName;
+                var fName = (inputArray.Length > 8) ? inputArray[8] : MasterSpellLibrary.defaultFeedbackSFXName;
                 var Orientation = new Quaternion(floatsArray[0], floatsArray[1], floatsArray[2], floatsArray[3]);
-                var outGlyph = new Glyph(Orientation, floatsArray[4], floatsArray[5], pName, fName);
+                var outGlyph = new Glyph(Orientation, floatsArray[4], floatsArray[5], pName, fName) { Name = name };
                 return outGlyph;
             }
             catch (Exception)
@@ -73,13 +79,40 @@ namespace Atropos
             }
         }
 
-        public static Glyph EndOfSpell = new Glyph(Quaternion.Identity, 0.0, 0.0, MasterSpellLibrary.defaultSuccessSFXName);
+        // TODO - Add subtly different SFX loops for each of the ones in these first two sets
+        public static Glyph L = new Glyph() { Name = "Lesser", Instruction_Short = "Fingers down" };
+        public static Glyph M = new Glyph() { Name = "Moderate", Instruction_Short = "Thumb down" };
+        public static Glyph H = new Glyph() { Name = "High", Instruction_Short = "Fingers up" };
+        public static Glyph G = new Glyph() { Name = "Grand", Instruction_Short = "Thumb down, palm up" };
+        public static List<Glyph> MagnitudeGlyphs = new List<Glyph> { L, M, H, G };
+
+        public static Glyph D = new Glyph() { Name = "Defense", Instruction_Short = "Palm down" };
+        public static Glyph A = new Glyph() { Name = "Attack", Instruction_Short = "Thumb up" };
+        public static Glyph C = new Glyph() { Name = "Control", Instruction_Short = "Palm up" };
+        public static List<Glyph> SpellTypeGlyphs = new List<Glyph> { D, A, C };
+        
+        public static Glyph F = new Glyph() { Name = "Fire", Instruction_Short = "Thumb up, palm down" };
+        public static Glyph I = new Glyph() { Name = "Ice", Instruction_Short = "Thumb down, palm down" };
+        public static Glyph Z = new Glyph() { Name = "Electricity", Instruction_Short = "Thumb up, palm up" };
+        public static Glyph X = new Glyph() { Name = "Mysteries", Instruction_Short = "Fingers up, thumb up" };
+        public static Glyph N = new Glyph() { Name = "Entropy", Instruction_Short = "Fingers down, thumb down" };
+        public static Glyph T = new Glyph() { Name = "Time", Instruction_Short = "Fingers up, thumb down" };
+        public static Glyph R = new Glyph() { Name = "Resonance", Instruction_Short = "Fingers down, thumb up" };
+        public static Glyph P = new Glyph() { Name = "Project", Instruction_Short = "Fingers up, palm down" };
+        public static Glyph S = new Glyph() { Name = "Summon", Instruction_Short = "Fingers up, palm up" };
+        public static Glyph K = new Glyph() { Name = "Kinetic", Instruction_Short = "Fingers down, palm down" };
+        public static Glyph B = new Glyph() { Name = "Biological", Instruction_Short = "Fingers down, palm up" };
+        public static List<Glyph> AllGlyphs = new List<Glyph> { L, M, H, G, D, A, C, F, I, Z, X, N, T, R, P, S, K, B };
+
+        public static Glyph EndOfSpell = new Glyph();
     }
 
     public class Spell
     {
         public string SpellName { get; set; }
-        public Quaternion ZeroStance { get; set; } = Quaternion.Identity;
+        private Quaternion _zeroStance = Quaternion.Identity;
+        public Quaternion ZeroStance { get { return (IsNewStyle) ? Glyphs[0].Orientation : _zeroStance; } set { _zeroStance = value; } }
+        public bool IsNewStyle = false;
         public float AngleTo(Quaternion orientation) { return ZeroStance.AngleTo(orientation); }
         public List<Glyph> Glyphs { get; set; }
         private string castResultName;
@@ -110,16 +143,20 @@ namespace Atropos
                                         failResultFunc = MasterSpellLibrary.nullCastResultFunction;
         }
 
-        // Handle old saved spells gracefully.
-        public Spell(string name, string successSFXname, string castResult = MasterSpellLibrary.nullCastResultName, string failResult = MasterSpellLibrary.nullCastResultName)
-            :this(name, default(Quaternion), castResult, failResult)
+        public Spell(string name, params Glyph[] glyphs)
         {
-            ZeroStance = Quaternion.Identity;
-            if (castResult == MasterSpellLibrary.nullCastResultName && MasterSpellLibrary.SpellSFX.ContainsKey(successSFXname))
+            SpellName = name;
+            IsNewStyle = true;
+            Glyphs = glyphs.ToList();
+
+            // Gimmick to make sure that object initialization can happen before this executes
+            Task.Delay(50).ContinueWith(_ =>
             {
-                castResultName = "Play " + successSFXname;
-                castResultFunc = MasterSpellLibrary.CastingResults[castResultName];
-            }
+                if (!MasterSpellLibrary.CastingResults.TryGetValue(castResultName, out castResultFunc))
+                    castResultFunc = MasterSpellLibrary.nullCastResultFunction;
+                if (!MasterSpellLibrary.CastingResults.TryGetValue(failResultName, out failResultFunc))
+                    failResultFunc = MasterSpellLibrary.nullCastResultFunction;
+            });
         }
 
         public void AddGlyph(Glyph newGlyph)
