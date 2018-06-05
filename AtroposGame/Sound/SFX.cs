@@ -502,14 +502,17 @@ namespace Atropos
 
         public void Invalidate()
         {
-            _effect = null;
-            if (__innerEffect != null)
+            lock (__syncRoot)
             {
-                if (__innerEffect.IsPlaying) __innerEffect.Stop();
-                __innerEffect.Reset();
-                __innerEffect.Release();
-                __innerEffect = null;
-                SFX.NumberOfMediaPlayersCreated--;
+                _effect = null;
+                if (__innerEffect != null)
+                {
+                    if (__innerEffect.IsPlaying) __innerEffect.Stop();
+                    __innerEffect.Reset();
+                    __innerEffect.Release();
+                    __innerEffect = null;
+                    SFX.NumberOfMediaPlayersCreated--;
+                } 
             }
         }
 
@@ -539,7 +542,10 @@ namespace Atropos
                 //SessionID = SFX.SessionIDHeadphones;
             }
 
-            __innerEffect = MediaPlayer.Create(Application.Context, _resourceID, aa, SessionID);
+            lock (__syncRoot)
+            {
+                __innerEffect = MediaPlayer.Create(Application.Context, _resourceID, aa, SessionID);
+            }
             SFX.NumberOfMediaPlayersCreated++;
         }
 
@@ -636,7 +642,7 @@ namespace Atropos
 
         protected void Start()
         {
-            if (IsActive && !_effect.IsPlaying) _effect.Start();
+            if (IsActive && !(_effect?.IsPlaying ?? false)) _effect?.Start();
         }
 
         public async void Pause()
@@ -692,8 +698,11 @@ namespace Atropos
             set
             {
                 _looping = value;
-                if (_effect != null) { _effect.Looping = value; return; }
-                else PlaybackStarting += setLooping; // No longer relevant?  Looping ought to be settable in any state but Error.
+                lock (__syncRoot)
+                {
+                    if (_effect != null) { _effect.Looping = value; return; }
+                    else PlaybackStarting += setLooping; // No longer relevant?  Looping ought to be settable in any state but Error.
+                }
             } }
 
         public virtual async Task PlayFromTo(double startSeconds = 0, double endSeconds = -1, 
@@ -804,8 +813,41 @@ namespace Atropos
             }).LaunchAsOrphan($"{Name} diminuendo");
         }
 
-        public event EventHandler Completion { add { if (_effect != null) _effect.Completion += value; } remove { if (_effect != null) _effect.Completion -= value; } }
-        public event EventHandler<MediaPlayer.ErrorEventArgs> Error { add { if (_effect != null) _effect.Error += value; } remove { if (_effect != null) _effect.Error -= value; } }
+        public event EventHandler Completion
+        {
+            add
+            {
+                lock (__syncRoot)
+                {
+                    if (__innerEffect != null) __innerEffect.Completion += value; 
+                }
+            }
+            remove
+            {
+                lock (__syncRoot)
+                {
+                    if (__innerEffect != null) __innerEffect.Completion -= value; 
+                }
+            }
+        }
+        public event EventHandler<MediaPlayer.ErrorEventArgs> Error
+        {
+            add
+            {
+                lock (__syncRoot)
+                {
+                    if (__innerEffect != null) __innerEffect.Error += value;
+
+                }
+            }
+            remove
+            {
+                lock (__syncRoot)
+                {
+                    if (__innerEffect != null) __innerEffect.Error -= value; 
+                }
+            }
+        }
         public event EventHandler PlaybackStarting;
 
         public void OnPlayCompletion(object sender, EventArgs e)

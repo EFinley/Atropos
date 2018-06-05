@@ -76,6 +76,7 @@ namespace Atropos.Communications.Bluetooth
             {
                 var device = bluetoothAdapter.GetRemoteDevice(macAddress); // Returns a device with name = null if device not found in range
                 OnPeerAvailable(device); // Ignores all devices with null or empty name fields
+                device = null;
             }
         }
 
@@ -124,8 +125,8 @@ namespace Atropos.Communications.Bluetooth
             base.OnPause();
             UnregisterReceiver(_receiver);
 
-            // Debugging!
-            DisconnectAll();
+            //// Debugging!
+            //DisconnectAll();
         }
 
         //public override bool OnCreateOptionsMenu(IMenu menu)
@@ -286,6 +287,8 @@ namespace Atropos.Communications.Bluetooth
             {
                 //newTeamMate.Client = client;
                 //AddressBook.Add(newTeamMate);
+                newTeamMate.Client = client;
+                BluetoothMessageCenter.TemporaryAddressBook_SingleEntry = newTeamMate;
                 Clients.Add(_device, client);
                 KnownMACaddresses.Add(_device.MACaddressOrRole);
                 Res.Storage.Put(KnownMACaddressesKey, KnownMACaddresses);
@@ -321,7 +324,7 @@ namespace Atropos.Communications.Bluetooth
         }
         public void ConnectByMACaddress(string address)
         {
-            var device = bluetoothAdapter.GetRemoteDevice(address); // Returns a device with name = null if device not found in range
+            var device = bluetoothAdapter.GetRemoteDevice(address); // Is supposed to return a device with name = null if device not found in range
             if (string.IsNullOrEmpty(device.Name)) return;
 
             Connect(device);

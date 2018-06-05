@@ -31,18 +31,26 @@ namespace Atropos
             SetupButton(Resource.Id.btn_train_spells, typeof(SpellTrainingActivity));
             SetupButton(Resource.Id.btn_train_locks, () => { }, null, false);
 
+            CheckBox solipsismMode = FindViewById<CheckBox>(Resource.Id.chbox_solipsism_mode);
+            solipsismMode.CheckedChange += (o, e) => { Res.SolipsismMode = solipsismMode.Checked; };
+
+            CheckBox lefthandedMode = FindViewById<CheckBox>(Resource.Id.chbox_lefthanded_mode);
+            lefthandedMode.CheckedChange += (o, e) => { Res.LefthandedMode = lefthandedMode.Checked; Handedness.Update(); };
+
+            CheckBox screenFlipMode = FindViewById<CheckBox>(Resource.Id.chbox_flipscreen_mode);
+            screenFlipMode.CheckedChange += (o, e) => { Res.ScreenFlipMode = screenFlipMode.Checked; Handedness.Update(); };
+
             CheckBox allowSpeakers = FindViewById<CheckBox>(Resource.Id.chbox_allow_speakers);
-            allowSpeakers.Checked = Res.AllowSpeakerSounds;
             allowSpeakers.Click += (o, e) => { Res.AllowSpeakerSounds = allowSpeakers.Checked; };
 
-
             CheckBox allowNfc = FindViewById<CheckBox>(Resource.Id.chbox_use_nfc);
-            allowNfc.Checked = Res.AllowNfc;
             allowNfc.Click += (o, e) => { Res.AllowNfc = allowNfc.Checked; };
 
             SetupButton(Resource.Id.btn_export_run_data, () => { }, null, false);
             SetupButton(Resource.Id.btn_import_run_data, () => { }, null, false);
 
+            // DELETE USER DATA BUTTON DOES NOT SEEM TO WORK
+            // Note that SetupButton is not used here because we want to be able to read our button's text.  There's probably a better way to handle it based on reading the Sender, but meh.
             Button deleteData = FindViewById<Button>(Resource.Id.btn_delete_user_data);
             SetTypeface(deleteData, "FTLTLT.TTF");
             deleteData.Click += (o, e) =>
@@ -65,6 +73,15 @@ namespace Atropos
                     //Android.OS.Process.KillProcess(Android.OS.Process.MyPid());
                 });
             };
+        }
+        
+        protected override void OnResume()
+        {
+            base.OnResume();
+            FindViewById<CheckBox>(Resource.Id.chbox_solipsism_mode).Checked = Res.SolipsismMode;
+            FindViewById<CheckBox>(Resource.Id.chbox_lefthanded_mode).Checked = Res.LefthandedMode;
+            FindViewById<CheckBox>(Resource.Id.chbox_allow_speakers).Checked = Res.AllowSpeakerSounds;
+            FindViewById<CheckBox>(Resource.Id.chbox_use_nfc).Checked = Res.AllowNfc;
         }
     }
 

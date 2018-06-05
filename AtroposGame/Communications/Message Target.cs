@@ -32,7 +32,6 @@ namespace Atropos.Communications
 
         public abstract Bluetooth.BluetoothClient Client { get; set; }
 
-        // Technically this'd happen anyway thanks to the implicit cast, but this way it shows up in Intellisense as the first-and-default option, which it should be.
         public virtual Message SendMessage(MsgType type, string content)
         {
             return SendMessage(new Message(type, content));

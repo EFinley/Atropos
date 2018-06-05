@@ -59,7 +59,7 @@ namespace Atropos.Communications
 
         public Message(MsgType type, string id, string content)
         {
-            From = BluetoothMessageCenter.Server.MyMACaddress;
+            From = BluetoothMessageCenter.Server?.MyMACaddress ?? "Me";
             Type = type;
             ID = id;
             Content = content;
@@ -88,6 +88,9 @@ namespace Atropos.Communications
             //    result.ReferredToAs = regEx.Groups["As"].Value;
             //}
             //result.From = pieces[1];
+
+            if (charStream == null || pieces.Count() != 3) return new Message(MsgType.Notify, "Error reading original character stream.");
+
             try
             {
                 result.Type = (MsgType)int.Parse(pieces[0]);

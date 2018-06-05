@@ -20,6 +20,7 @@ using Nito.AsyncEx;
 using Android.Util;
 using System.ComponentModel;
 using System.Numerics;
+using Nito.AsyncEx;
 
 namespace Atropos
 {
@@ -38,12 +39,12 @@ namespace Atropos
         public volatile bool isMet = false;
         protected DateTime startTime;
         private DateTime nextInterimTriggerAt;
-        protected TimeSpan InterimInterval { get; set; } = TimeSpan.FromMilliseconds(100);
+        public TimeSpan InterimInterval { get; set; } = TimeSpan.FromMilliseconds(100);
         public TimeSpan RunTime { get { return DataProvider?.RunTime ?? (DateTime.Now - startTime); } }
 
         public IProvider DataProvider { get; set; }
         private bool allowProviderToPersist;
-        private bool verboseLogging = true;
+        private bool verboseLogging = false;
         protected void verbLog(string message) { if (verboseLogging) Log.Debug($"GestureRecog|VerbLog|{Label}", message); }
 
         public GestureRecognizerStage(string label = "GestureRecog") : base()
@@ -60,6 +61,8 @@ namespace Atropos
 
         public override async void Activate(CancellationToken? externalToken = null)
         {
+            if (IsActive) return;
+
             if (DataProvider == null) throw new Exception($"Gesture recog stage {Label} unable to Activate because it has no Provider!");
             verbLog("Early activation");
             base.Activate(externalToken);
@@ -82,13 +85,14 @@ namespace Atropos
             return DataProvider.WhenDataReady();
         }
 
+        private int hitCount = 0;
         protected async Task ListenForData()
         {
             try
             {
                 isMet = false;
                 startTime = nextInterimTriggerAt = DateTime.Now;
-                Log.Info("GestureRecognitionCore", $"Starting gesture stage {Label}.");
+                Log.Info("GestureRecognitionCore", $"Starting gesture stage {Label} (hitCount {hitCount++}).");
 
                 // If overridden in a derived class, do this now.
                 verbLog("Starting listen loop");
@@ -222,6 +226,127 @@ namespace Atropos
         }
     }
 
+    public class AwaitableStage<T> : GestureRecognizerStage
+    {
+        public T Result { get => _tcs.Task.Result; }
+        public Task<T> AwaitableTask { get => _tcs.Task; }
+        public CancellationToken AwaitableToken { get => CancellationTokenHelpers.FromTask(AwaitableTask).Token; }
+        public Task<T> AwaitResult()
+        {
+            Activate();
+            return AwaitableTask;
+        }
+
+        protected TaskCompletionSource<T> _tcs;
+        public AwaitableStage(string label) : base(label)
+        {
+            _tcs = new TaskCompletionSource<T>(TaskCreationOptions.None);
+            StopToken.Register(StageCancel);
+        }
+
+        protected void StageReturn(T result)
+        {
+            _tcs?.TrySetResult(result);
+            _tcs = null;
+            Deactivate();
+        }
+
+        protected void StageCancel()
+        {
+            _tcs?.TrySetCanceled();
+            _tcs = null;
+            Deactivate();
+        }
+
+        protected void StageThrow(Exception exception)
+        {
+            _tcs?.TrySetException(exception);
+            _tcs = null;
+            Deactivate();
+        }
+
+        // Make sure that _tcs is ALWAYS completed one way or the other.  If we forget to call one of StageReturn, StageCancel, or StageThrow, then it's an implicit Cancel.
+        public override void Deactivate()
+        {
+            if (_tcs != null) StageCancel();
+            else base.Deactivate();
+        }
+    }
+
+    public class ConditionStage<T> : AwaitableStage<T>
+    {
+        private Func<T, TimeSpan, bool> SuccessCriterion;
+        private Func<T, TimeSpan, bool> AbortCriterion;
+        private Action<T, TimeSpan> InterimAction;
+        private IProvider<T> Provider { get => DataProvider as IProvider<T>; }
+
+        public ConditionStage(IProvider<T> provider, 
+                              Func<T, bool> successCriterion, 
+                              Func<T, bool> abortCriterion = null,
+                              Action<T> interimAction = null)
+            : this(provider, 
+                   (data, t) => successCriterion?.Invoke(data) ?? false, 
+                   (data, t) => abortCriterion?.Invoke(data) ?? false, 
+                   (data, t) => interimAction?.Invoke(data))
+        { }
+
+        public ConditionStage(IProvider<T> provider, 
+                              Func<T, TimeSpan, bool> successCriterion, 
+                              Func<T, TimeSpan, bool> abortCriterion = null,
+                              Action<T, TimeSpan> interimAction = null)
+            : base($"Awaiting a condition on {provider.GetType().Name}.")
+        {
+            SetUpProvider(provider);
+            SuccessCriterion = successCriterion;
+            AbortCriterion = abortCriterion;
+            InterimAction = interimAction;
+
+            //BaseActivity.AddBackgroundStage(this);
+        }
+
+        public async Task ConditionMet()
+        {
+            var resultDataIgnored = await AwaitResult();
+        }
+
+        protected override bool nextStageCriterion()
+        {
+            return SuccessCriterion?.Invoke(Provider.Data, RunTime) ?? false;
+        }
+
+        protected override bool abortCriterion()
+        {
+            return AbortCriterion?.Invoke(Provider.Data, RunTime) ?? false;
+        }
+
+        protected override void nextStageAction()
+        {
+            StageReturn(Provider.Data);
+        }
+
+        protected override void abortAction()
+        {
+            StageCancel();
+        }
+
+        protected override bool interimCriterion()
+        {
+            return InterimAction != null;
+        }
+
+        protected override void interimAction()
+        {
+            InterimAction?.Invoke(Provider.Data, RunTime);
+        }
+
+        public override void Deactivate()
+        {
+            //try { BaseActivity.BackgroundStages.Remove(this); } catch { }
+            base.Deactivate();
+        }
+    }
+
+    [Obsolete]
     public class AveragingStage<T> : GestureRecognizerStage where T : struct
     {
         public T Value { get { return (DataProvider as SensorProvider<T>) ?? default(T); } }
@@ -234,7 +359,8 @@ namespace Atropos
             Averager = new RollingAverage<T>();
         }
     }
-
+    
+    [Obsolete]
     public class ThrottledGestureStage : GestureRecognizerStage
     {
         protected TimeSpan Interval { get; private set; } = TimeSpan.Zero;

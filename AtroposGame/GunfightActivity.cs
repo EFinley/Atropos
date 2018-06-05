@@ -64,8 +64,6 @@ namespace Atropos
         private LinearLayout bulletPane;
         private List<ImageView> bulletList = new List<ImageView>();
         private StillnessProvider stillnessMonitor;
-        private bool settingsVolumeTriggerOn = true;
-        private bool useVolumeTrigger { get { return settingsVolumeTriggerOn && CurrentActivity is GunfightActivity; } }
 
         public static IEffect ShotHitSFX, ShotMissSFX;
         
@@ -167,6 +165,9 @@ namespace Atropos
             //SetTagRemovalResult(Finish, 10, 2);
             //LinkSeekbars();
 
+            useVolumeTrigger = true;
+            OnVolumeButtonPressed += (o, e) => { ((Gunfight_AimStage)CurrentStage).ResolveTriggerPull(); };
+
             OnGunshotFired += (o, e) => 
             {
                 if (e.Value > 0) OnGunshotHit.Raise(e.Value);
@@ -183,34 +184,6 @@ namespace Atropos
                 ThePlayersGun.CockSFX.Play(useSpeakers: true);
                 await System.Threading.Tasks.Task.Delay(500);
             });
-        }
-
-        protected static object isResolvingSyncLock = new object();
-        public override bool OnKeyDown([GeneratedEnum] Keycode keyCode, KeyEvent e)
-        {
-            if (useVolumeTrigger)
-            {
-                if (keyCode == Keycode.VolumeDown || keyCode == Keycode.VolumeUp)
-                {
-                    lock (isResolvingSyncLock)
-                    {
-                        ((Gunfight_AimStage)CurrentStage).ResolveTriggerPull();
-                        return true; 
-                    }
-                }
-            }
-            return base.OnKeyDown(keyCode, e);
-        }
-        public override bool OnKeyUp([GeneratedEnum] Keycode keyCode, KeyEvent e)
-        {
-            if (useVolumeTrigger)
-            {
-                if (keyCode == Keycode.VolumeDown || keyCode == Keycode.VolumeUp)
-                {
-                    return true; // Handled it, thanks.
-                }
-            }
-            return base.OnKeyUp(keyCode, e);
         }
 
         //public static void RelayMessage(string message, bool useSecondaryDisplay = false)
@@ -313,7 +286,7 @@ namespace Atropos
             {
                 try
                 {
-                    lock (isResolvingSyncLock)
+                    lock (volumeButtonSyncLock)
                     {
                         if (DateTime.Now < nextReadyTime) return; // Both debouncing and conceptually letting the gun's mechanism cycle - two birds, one rock!
                         lastTriggerPull = DateTime.Now;

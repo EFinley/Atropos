@@ -58,7 +58,7 @@
             android:layout_margin="6dp"
             android:textColor="@android:color/holo_blue_dark" />
     </LinearLayout>
-    <!--<Button
+<!--<Button
         android:text="Functionality Tests"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -74,17 +74,34 @@
         android:layout_height="wrap_content"
         android:id="@+id/btn_train_locks" />
     <CheckBox
-        android:text="Use NFC tags"
+        android:text="Solipsism Mode"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="15dp"
+        android:checked="false"
+        android:id="@+id/chbox_solipsism_mode" />
+    <CheckBox
+        android:text="Left-Handed"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:checked="false"
+        android:id="@+id/chbox_lefthanded_mode" />
+    <CheckBox
+        android:text="Flip Screen"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:checked="false"
+        android:id="@+id/chbox_flipscreen_mode" />
+    <CheckBox
+        android:text="Use NFC tags"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:checked="true"
         android:id="@+id/chbox_use_nfc" />
     <CheckBox
         android:text="Allow speaker sounds"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="15dp"
         android:id="@+id/chbox_allow_speakers"
         android:checked="true" />
     <TextView

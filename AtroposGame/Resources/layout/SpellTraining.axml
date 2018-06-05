@@ -9,6 +9,12 @@
     android:padding="25dp"
     android:scrollbars="none">
 
+    <Button
+      android:id="@+id/glyph_training_btn"
+      android:text="Train Glyphs"
+      android:layout_height="wrap_content"
+      android:layout_width="wrap_content"/>
+
     <LinearLayout
       android:id="@+id/Spell_casting_layoutpane"
       android:layout_width="match_parent"

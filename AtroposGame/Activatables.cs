@@ -68,6 +68,9 @@ namespace Atropos
             Default,
             RemoveDependency
         }
+
+        public static ActivatorBase AlwaysActive = new ActivatorBase.FixedStateActivator(true);
+        public static ActivatorBase NeverActive = new ActivatorBase.FixedStateActivator(false);
     }
 
     public abstract class ActivatorBase : IActivator
@@ -108,7 +111,7 @@ namespace Atropos
             //OnDeactivation();
             cts?.Cancel();
             externalTokens.Clear();
-            foreach (var registration in tokenRegistrations.Values) registration.Dispose();
+            foreach (var registration in tokenRegistrations.Values) registration?.Dispose();
             tokenRegistrations.Clear();
             cts = null;
         }
@@ -146,6 +149,23 @@ namespace Atropos
         }
 
         public bool IsActive { get { return (cts != null && !cts.IsCancellationRequested); } }
+
+        // Utility class used to create Activator.AlwaysActive and Activator.NeverActive
+        public class FixedStateActivator : ActivatorBase
+        {
+            private bool _isActive;
+            public FixedStateActivator(bool state)
+            {
+                _isActive = state;
+                if (state) cts = new CancellationTokenSource();
+            }
+            public override void Activate(CancellationToken? externalStopToken = null)
+            {
+            }
+            public override void Deactivate()
+            {
+            }
+        }
     }
 
     public abstract class ResumableBase : ActivatorBase, IResumer

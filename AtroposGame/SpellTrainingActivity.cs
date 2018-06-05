@@ -163,6 +163,25 @@ namespace Atropos
                 CurrentStage = new Spell_Training_TutorialStage($"Init training for {SpellBeingTrained.SpellName}", ThePlayersFocus, true);
             };
 
+            FindViewById<Button>(Resource.Id.glyph_training_btn).Click += async (o, e) =>
+            {
+                var glyphText = Res.Storage.Get(NewGlyphTrainingStage.GlyphKey);
+                if (glyphText != null) Log.Debug("SpellTraining", "\n" + glyphText);
+
+                Current.HideKeyboard();
+                await Task.Delay(100); // Let the screen update.
+                foreach (Button btn in spellButtons) btn.Visibility = ViewStates.Gone;
+                await Speech.SayAllOf($"Training core glyphs.");
+                //CurrentStage = new Spell_Training_TutorialStage($"Init training for {SpellBeingTrained.SpellName}", ThePlayersFocus, true);
+
+                var provider = new GravityOrientationProvider();
+                provider.Activate();
+                Task.Delay(50)
+                    .ContinueWith(async _ => await SensorProvider.EnsureIsReady(provider))
+                    .ContinueWith(_ => CurrentStage = new NewGlyphTrainingStage(0, ThePlayersFocus, provider))
+                    .LaunchAsOrphan();
+            };
+
             undoGlyphButton.Click += async (o, e) => 
             {
                 if (SpellBeingTrained.Glyphs.Count == 0)
@@ -472,5 +491,181 @@ namespace Atropos
             }
         }
 
+        public class NewSpell_Training_TutorialStage : GestureRecognizerStage
+        {
+            private Focus Implement;
+            private Spell SpellBeingTrained;
+            private StillnessProvider Stillness;
+            private FrameShiftedOrientationProvider AttitudeProvider;
+            private Task sayIt;
+
+            public NewSpell_Training_TutorialStage(string label, Focus Focus, bool AutoStart = false) : base(label)
+            {
+                Implement = Focus;
+                Stillness = new StillnessProvider();
+                SetUpProvider(Stillness);
+                Stillness.StartDisplayLoop(Current, 1000);
+                SpellBeingTrained = Current.SpellBeingTrained;
+
+                AttitudeProvider = new GravityOrientationProvider(Implement.FrameShift);
+                AttitudeProvider.Activate();
+
+                if (AutoStart) Activate();
+            }
+
+            protected override async void startAction()
+            {
+                sayIt = Speech.SayAllOf($"Hold device at each position until you hear the tone.  Take your zero stance to begin.",
+                    volume: 0.5, cancelToken: StopToken);
+                await sayIt;
+                //Speech.Say("Hold device at each position yadda yadda.");
+                await Task.Delay(1000);
+            }
+
+            protected override bool interimCriterion()
+            {
+                return Stillness.IsItDisplayUpdateTime();
+            }
+
+            protected override void interimAction()
+            {
+                Stillness.DoDisplayUpdate();
+            }
+
+            protected override async Task<bool> nextStageCriterionAsync()
+            {
+                await sayIt;
+                return (Stillness.ReadsMoreThan(8f));// && sayIt.Status == TaskStatus.RanToCompletion);
+            }
+
+            protected override async Task nextStageActionAsync()
+            {
+                await AttitudeProvider.SetFrameShiftFromCurrent();
+                SpellBeingTrained.ZeroStance = AttitudeProvider.FrameShift;
+
+                Log.Debug("SpellTraining", $"Zero stance assigned at {SpellBeingTrained.ZeroStance.ToEulerAngles():f1}.");
+
+                await Speech.SayAllOf("Begin");
+                //Speech.Say("Begin");
+                CurrentStage = new GlyphTrainingStage($"Glyph 0", Implement, AttitudeProvider);
+            }
+        }
+
+        public class NewGlyphTrainingStage : GestureRecognizerStage
+        {
+            private int TargetGlyphIndex;
+            private Glyph TargetGlyph;
+            private Focus Implement;
+            public StillnessProvider Stillness;
+            private float Volume;
+            //private AdvancedRollingAverageQuat AverageAttitude;
+            private RollingAverage<Quaternion> AverageAttitude;
+            private OrientationSensorProvider AttitudeProvider;
+            private Quaternion lastOrientation;
+
+            public static string GlyphKey = "Glyph_Key";
+            public static string GlyphQuaternions = "";
+
+            public NewGlyphTrainingStage(int targetGlyphIndex, Focus Focus, OrientationSensorProvider Provider = null)
+                : base($"Training glyph {Glyph.AllGlyphs[targetGlyphIndex].Name}")
+            {
+                TargetGlyphIndex = targetGlyphIndex;
+                TargetGlyph = Glyph.AllGlyphs[targetGlyphIndex];
+                Implement = Focus;
+                Res.DebuggingSignalFlag = true;
+
+                verbLog("Ctor");
+                Stillness = new StillnessProvider();
+                //Stillness.StartDisplayLoop(Current, 750);
+
+                SetUpProvider(Stillness);
+                Volume = 0.1f;
+
+                verbLog("Averages");
+                //AverageAttitude = new AdvancedRollingAverageQuat(timeFrameInPeriods: 15);
+                AverageAttitude = new RollingAverage<Quaternion>(timeFrameInPeriods: 10);
+                AttitudeProvider = Provider ?? new GravityOrientationProvider(Implement.FrameShift);
+                AttitudeProvider.Activate();
+
+                if (targetGlyphIndex == 0) lastOrientation = Quaternion.Identity;
+                else lastOrientation = Glyph.AllGlyphs[targetGlyphIndex - 1].Orientation;
+
+                verbLog("Auto-activation");
+                Activate();
+            }
+
+            protected override void startAction()
+            {
+                Speech.SayAllOf($"Train glyph {TargetGlyph.Name}.  {TargetGlyph.Instruction_Short}.").Wait();
+                MasterSpellLibrary.SpellFeedbackSFX.Play(Volume, true);
+                StopToken.Register(() => MasterSpellLibrary.SpellFeedbackSFX.Stop());
+            }
+
+            protected override bool nextStageCriterion()
+            {
+                // Must (A) satisfy stillness criterion, and (B) be at least thirty degrees away from previous (if any).
+                if (Stillness.StillnessScore + Math.Sqrt(Stillness.RunTime.TotalSeconds) > 4f)
+                {
+                    return (AverageAttitude.Average.AngleTo(lastOrientation) > 30.0f) // Done as a separate clause for debugging reasons only.
+                        && (AverageAttitude.Average.AngleTo(AttitudeProvider.Quaternion) < 5.0f);
+                }
+                return false;
+            }
+            protected override async void nextStageAction()
+            {
+                try
+                {
+                    MasterSpellLibrary.SpellFeedbackSFX.Stop();
+                    await Task.Delay(150);
+                    MasterSpellLibrary.SpellProgressSFX.Play();
+                    await Task.Delay(1000); // Give a moment to get ready.
+
+                    //Current.SpellBeingTrained.AddGlyph(new Glyph(AverageAttitude, Stillness.StillnessScore, AverageAttitude.StdDev));
+                    //Current.SpellBeingTrained.AddGlyph(new Glyph(AverageAttitude, Stillness.StillnessScore, 0));
+                    //Current.CheckGlyphCount();
+                    TargetGlyph.Orientation = AverageAttitude;
+
+                    //var EulerAngles = AverageAttitude.Average.ToEulerAngles();
+                    var o = TargetGlyph.Orientation;
+                    //Log.Debug("SpellTraining", $"Saved glyph at yaw {EulerAngles.X:f2}, pitch {EulerAngles.Y}, and roll {EulerAngles.Z} from zero stance.");
+                    //Log.Debug("SpellTraining", $"Saved {((GestureRecognizerStage)CurrentStage).Label} at {EulerAngles:f1} from zero stance.  That's {AverageAttitude.Average.AngleTo(lastOrientation):f0} degrees from the last one.  Baselines are {Stillness.StillnessScore:f2} for stillness, {AverageAttitude.StdDev:f2} for orientation.");
+                    Log.Debug("SpellTraining", $"Glyph {TargetGlyph.Name} recorded at:          {o.X}, {o.Y}, {o.Z}, {o.W}");
+                    GlyphQuaternions += $"{TargetGlyph.Name}                {o.X}, {o.Y}, {o.Z}, {o.W}\n";
+                    Res.Storage.Put(GlyphKey, GlyphQuaternions);
+                    if (TargetGlyphIndex < Glyph.AllGlyphs.Count - 1) CurrentStage = new NewGlyphTrainingStage(TargetGlyphIndex + 1, Implement, AttitudeProvider);
+                    else Log.Debug("SpellTraining", $"Logged orientations:\n{GlyphQuaternions}");
+                }
+                catch (Exception e)
+                {
+                    Log.Error("Glyph training stage progression", e.Message);
+                    throw;
+                }
+            }
+
+            protected override bool interimCriterion()
+            {
+                //Stillness.IsItDisplayUpdateTime(); // Updates max and min values.
+                return true;
+            }
+
+            protected DateTime nextDisplayUpdateAt = DateTime.Now;
+            protected override void interimAction()
+            {
+                Volume = (float)Exp(-(Sqrt((15 - Stillness) / 2) - 0.5));
+                MasterSpellLibrary.SpellFeedbackSFX.SetVolume(Volume);
+
+                //if (Stillness.IsItDisplayUpdateTime())
+                //{
+                //    Stillness.DoDisplayUpdate();
+                //}
+
+                if (!float.IsNaN(AttitudeProvider.Quaternion.LengthSquared())) AverageAttitude.Update(AttitudeProvider);
+                if (DateTime.Now > nextDisplayUpdateAt)
+                {
+                    nextDisplayUpdateAt = DateTime.Now + TimeSpan.FromMilliseconds(250);
+                    Current.RunOnUiThread(() => { Current.currentSignalsDisplay.Text = $"At {AttitudeProvider.Quaternion.ToEulerAngles():f1} (\u0394 {AverageAttitude.Average.AngleTo(AttitudeProvider.Quaternion):f1})"; });
+                }
+            }
+        }
     }
 }

@@ -347,7 +347,7 @@ namespace Atropos.Locks
                 DialBody.Rotation = 0;
             });
             var provider = new AngleAxisProvider(Vector3.UnitY, Vector3.UnitZ);
-            SensorProvider.EnsureIsReady(provider);
+            SensorProvider.EnsureIsReady(provider).Wait();
             CurrentStage = new VaultTumblerFindingStage("Tumbler 0", ThePlayersToolkit, Current.LockBeingOpened.Tumblers[0], provider);
         }
 
@@ -648,7 +648,7 @@ namespace Atropos.Locks
                 //DialText.Visibility = ViewStates.Visible;
             });
             var provider = new AngleAxisProvider(Vector3.UnitX * -1f, Vector3.UnitY);
-            SensorProvider.EnsureIsReady(provider);
+            SensorProvider.EnsureIsReady(provider).Wait();
             CurrentStage = new LockTumblerFindingStage("Tumbler 0", ThePlayersToolkit, Current.LockBeingOpened.Tumblers[0], provider);
         }
 

@@ -44,7 +44,7 @@ namespace Atropos
         }
 
         public float OutValue { get { return Score.Average; } }
-        public float InstantaneousValue { get { return (currentPoints * 10f).Clamp(-20f, 20f); } }
+        public float InstantaneousValue { get { return (currentPoints * 10f).Clamp(minimumScore, maximumScore); } }
         public float OutRating { get { return (Score.Average - minimumScore) / (maximumScore - minimumScore); } } // Maps it into (0,1)
         public float Compute() { return OutValue; }
 

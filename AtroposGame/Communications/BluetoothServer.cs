@@ -96,6 +96,7 @@ namespace Atropos.Communications.Bluetooth
                         }
 
                         // Create a new thread for this connection
+                        await Task.Delay(150);
                         serverThreads.Add(new ServerThread(this, socket).Start());
 
                         //AddressBook.Add(new CommsContact() { Name = socket.RemoteDevice.Name, IPaddress = socket.RemoteDevice.Address });
@@ -195,6 +196,8 @@ namespace Atropos.Communications.Bluetooth
                 var dInStream = new DataInputStream(socket.InputStream);
                 var dOutStream = new DataOutputStream(socket.OutputStream);
 
+                Task.Delay(100).Wait();
+
                 try
                 {
                     // Get the next message
@@ -206,10 +209,19 @@ namespace Atropos.Communications.Bluetooth
                         {
                             data = ReadString(dInStream, dOutStream);
                         }
-                        catch (Java.IO.IOException)
+                        //catch (Java.IO.IOException)
+                        //{
+                        //    BTDirectActivity.Current.RelayToast("Server thread error 'Read() returns -1' - connection lost.");
+                        //    continue;
+                        //}
+                        catch (System.AggregateException e)
                         {
-                            BTDirectActivity.Current.RelayToast("Server thread error 'Read() returns -1' - connection lost.");
-                            break;
+                            if (e.InnerExceptions.All(ex => ex is Java.IO.IOException))
+                            {
+                                BTDirectActivity.Current.RelayToast("Connection to client lost.");
+                                break;
+                            }
+                            else throw e;
                         }
                                                           
                         var message = Message.FromCharStream(socket.RemoteDevice.Address, data);

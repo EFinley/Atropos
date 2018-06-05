@@ -55,6 +55,7 @@ namespace Atropos
         public static double Random { get { return globalRandom.NextDouble(); } }
         public static float RandomF { get { return (float)globalRandom.NextDouble(); } }
         public static double RandomZ { get { return Accord.Math.Special.Ierf(Random); } }
+        public static bool CoinFlip { get { return globalRandom.NextDouble() >= 0.5; } }
         public static double GetRandomCoefficient(double sigma) { return GetRandomCoefficient(1.0, sigma); }
         public static double GetRandomCoefficient(double mean, double sigma) // From Wikipedia: for Gamma(theta, k), mean = k * theta, variance ( = std. dev. squared) = theta^2 * k
         {
@@ -68,10 +69,27 @@ namespace Atropos
         public static bool AllowNewActivities = true;
 
         private const string allowSpeakerSetting = "AllowSpeaker";
-        private static Persistent<bool> _allowSpeaker;
-        public static bool AllowSpeakerSounds { get { return (bool)_allowSpeaker; } set { _allowSpeaker = (Persistent<bool>)value; } }
+        private static Persistent<bool> _allowSpeaker = new Persistent<bool>(allowSpeakerSetting);
+        public static bool AllowSpeakerSounds { get { return (bool)_allowSpeaker; } set { _allowSpeaker.Value = value; } }
         public static List<IEffect> PersistentSFX = new List<IEffect>(); // TODO - currently this does nothing, should function to keep those effects alive.
-        // Also TODO to go with this: set those up to 'duck' properly when other effects are playing.
+                                                                         // Also TODO to go with this: set those up to 'duck' properly when other effects are playing.
+        private const string solipsismModeKey = "SolipsismMode";
+        //private static Persistent<bool> _allowNfc;
+        private static Persistent<bool> _solipsismMode = new Persistent<bool>(solipsismModeKey);
+        //public static bool AllowNfc { get { return (bool)_allowNfc; } set { _allowNfc = (Persistent<bool>)value; } }
+        public static bool SolipsismMode { get { return _solipsismMode; } set { _solipsismMode.Value = value; } }
+
+        private const string lefthandedModeKey = "LeftHandedMode";
+        //private static Persistent<bool> _allowNfc;
+        private static Persistent<bool> _lefthandedMode = new Persistent<bool>(lefthandedModeKey);
+        //public static bool AllowNfc { get { return (bool)_allowNfc; } set { _allowNfc = (Persistent<bool>)value; } }
+        public static bool LefthandedMode { get { return _lefthandedMode; } set { _lefthandedMode.Value = value; } }
+
+        private const string screenFlipModeKey = "ScreenFlipMode";
+        //private static Persistent<bool> _allowNfc;
+        private static Persistent<bool> _screenFlipMode = new Persistent<bool>(screenFlipModeKey);
+        //public static bool AllowNfc { get { return (bool)_allowNfc; } set { _allowNfc = (Persistent<bool>)value; } }
+        public static bool ScreenFlipMode { get { return _screenFlipMode; } set { _screenFlipMode.Value = value; } }
 
         private const string allowNfcSetting = "AllowNFC";
         //private static Persistent<bool> _allowNfc;
@@ -241,7 +259,7 @@ namespace Atropos
         // and by which functions/properties/etc they've been created.  This is, therefore, not *guaranteed* to
         // create the same ID for the same named variable in your code each time it is run, but unless you're creating
         // a lot of Persistent<T> objects of the same Type in the same function all at once, it should be relatively safe.
-        private Dictionary<string, int> callerNameInvocations;
+        private static Dictionary<string, int> callerNameInvocations = new Dictionary<string, int>();
         private static DateTime lastUse = DateTime.Now;
         private static string lastCallerName = "";
         private static readonly TimeSpan warningInterval = TimeSpan.FromMilliseconds(100);
@@ -263,7 +281,7 @@ namespace Atropos
                     callerNameInvocations.Add(callerName, 0);
 
                 // Increment the counter which lets the same function create more than one Persistent<T> yet have them be persistent.
-                callerNameInvocations[callerName]++;
+                callerNameInvocations[callerName] = callerNameInvocations[callerName] + 1;
 
                 // Return the created key.  Barring refactoring or adding new, earlier, creations of Persistent<T> *by the same function*, this should keep across loads and even compiles.
                 return $"{callerName}{callerNameInvocations[callerName]}";
@@ -315,7 +333,7 @@ namespace Atropos
 
     public static class PersistentExtensions
     {
-        public static Persistent<T> Persistent<T>(this T self, [CallerMemberName] string keyRoot = "ExtensionMethod")
+        public static Persistent<T> MakePersistent<T>(this T self, [CallerMemberName] string keyRoot = "ExtensionMethod")
         {
             return new Persistent<T>(keyRoot);
         }

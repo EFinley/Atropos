@@ -64,7 +64,9 @@ namespace Atropos.Communications.Bluetooth
                 try
                 {
                     socket = peer.Device.CreateRfcommSocketToServiceRecord(BluetoothServer.ServiceUUID);
+                    await Task.Delay(100);
                     socket.Connect();
+                    await Task.Delay(250);
 
                     if (socket.IsConnected)
                     {
@@ -89,19 +91,19 @@ namespace Atropos.Communications.Bluetooth
                         }
                         return;
                     }
-
+                    
                     inStream = new DataInputStream(socket.InputStream);
                     outStream = new DataOutputStream(socket.OutputStream);
 
                     BluetoothCore.RunSendingLooper(this);
 
-                    await Task.Delay(250)
+                    Task.Delay(500)
                         .ContinueWith(_ =>
                             SendMessage(new Message(MsgType.Notify,
                                 $"{CONFIRM_AS_CLIENT}{NEXT}{socket.RemoteDevice.Address}")))
-                        .ConfigureAwait(false);
+                        .LaunchAsOrphan();
 
-                    await Task.Delay(100);
+                    //await Task.Delay(100);
                     var ListeningLoop = Task.Run((Action)Listen); // When finished, *should* mean that it's received its stop signal and is thus ready to close.
 
                     //foreach (var teammate in HeyYou.MyTeammates.TeamMembers)
@@ -121,7 +123,7 @@ namespace Atropos.Communications.Bluetooth
                 }
                 finally
                 {
-                    Log.Debug(_tag, "Closing client connection normally (I think).");
+                    Log.Debug(_tag, "Closing client connection.");
                     //socket.Close();
                     //IsConnected = false;
                     Disconnect();
@@ -131,7 +133,7 @@ namespace Atropos.Communications.Bluetooth
 
         public virtual void Disconnect()
         {
-            _cts.Cancel();
+            _cts?.Cancel();
         }
 
         public virtual void SendMessage(IMessage imessage)
@@ -157,21 +159,28 @@ namespace Atropos.Communications.Bluetooth
                 OnMessageSent.Raise(message);
 
                 var ackTask = new TaskCompletionSource();
-                var timeoutTask = Task.Delay(1000);
-                messagesAwaitingReply.Add(message.ID, ackTask);
+                var timeoutTask = Task.Delay(3000);
+                lock (messagesAwaitingReply)
+                {
+                    messagesAwaitingReply.Add(message.ID, ackTask);
+                }
                 Task.Run(() => Task.WhenAny(ackTask.Task, timeoutTask)
                                    .ContinueWith(t =>
                 {
-                    if (timeoutTask.Status == TaskStatus.RanToCompletion) // We timed out rather than receive our ack - uh oh!
+                    //if (ackTask.Task.Status != TaskStatus.RanToCompletion) // We timed out rather than receive our ack - uh oh!
+                    //if (timeoutTask.Status == TaskStatus.RanToCompletion) // We timed out rather than receive our ack - uh oh!
+                    if (object.ReferenceEquals(t, timeoutTask))
                     {
                         ackTask.TrySetCanceled(); // Best to always clean these up.
-                        messagesAwaitingReply.Remove(message.ID);
-                        BaseActivity.CurrentToaster.RelayToast($"Comms with {socket.RemoteDevice.Name} failed ack - connection lost.");
-                        Disconnect();
+                        BaseActivity.CurrentToaster.RelayToast($"Comms with {socket.RemoteDevice.Name} failed ack - connection lost?");
+                        //Disconnect();
                     }
                     else
                     {
-                        ackTask.TrySetResult(); // Best to make sure we always clean these up - even though if we're here it /should/ be because the task already completed.
+                        ackTask.TrySetResult(); // Best to make sure we always clean these up - even though if we're here it /should/ be because the task already completed.                        
+                    }
+                    lock (messagesAwaitingReply)
+                    {
                         messagesAwaitingReply.Remove(message.ID);
                     }
                 }));
@@ -183,11 +192,13 @@ namespace Atropos.Communications.Bluetooth
         private void TallyMissedAttempt()
         {
             missedListenAttempts++;
+            Log.Debug(_tag, $"Talling missed listen attempt {missedListenAttempts}.");
             Task.Delay(100).Wait();
         }
         private void Listen()
         {
-            while (!StopToken.IsCancellationRequested && missedListenAttempts < 60)
+            //while (!StopToken.IsCancellationRequested && missedListenAttempts < 60)
+            while (missedListenAttempts < 60)
             {
                 try
                 {
@@ -198,8 +209,11 @@ namespace Atropos.Communications.Bluetooth
                     if (message.Type == MsgType.Ack)
                     {
                         Log.Info(_tag, $"Received server ack of {message.Content}");
-                        if (messagesAwaitingReply.ContainsKey(message.ID))
-                            messagesAwaitingReply[message.ID].TrySetResult();
+                        lock (messagesAwaitingReply)
+                        {
+                            if (messagesAwaitingReply.ContainsKey(message.ID))
+                                messagesAwaitingReply[message.ID].TrySetResult();
+                        }
                     }
                     else
                     {

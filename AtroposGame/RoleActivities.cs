@@ -104,29 +104,28 @@ namespace Atropos
         public override bool OnOptionsItemSelected(IMenuItem item)
         {
             Intent intent;
-            switch (item.ItemId)
+            if (item.ItemId == Resource.Id.menuaction_character)
             {
-                case Resource.Id.menuaction_character:
-                    Toast.MakeText(this, Resource.String.popup_placeholder_character, ToastLength.Short).Show();
-                    return true;
-                //case Resource.Id.menuaction_nfc:
-                //    Toast.MakeText(this, Resource.String.popup_placeholder_nfc, ToastLength.Short).Show();
-                //    return true;
-                case Resource.Id.menuaction_wifi:
-                    intent = new Intent(this, typeof(Communications.Bluetooth.BTDirectActivity));
-                    intent.AddFlags(ActivityFlags.SingleTop);
-                    intent.AddFlags(ActivityFlags.NewTask);
-                    StartActivity(intent);
-                    return true;
-                case Resource.Id.menuaction_settings:
-                    intent = new Intent(this, typeof(SettingsActivity));
-                    intent.AddFlags(ActivityFlags.NewTask);
-                    intent.AddFlags(ActivityFlags.SingleTop);
-                    StartActivity(intent);
-                    return true;
-                default:
-                    return base.OnOptionsItemSelected(item);
+                Toast.MakeText(this, Resource.String.popup_placeholder_character, ToastLength.Short).Show();
+                return true;
             }
+            else if (item.ItemId == Resource.Id.menuaction_wifi)
+            {
+                intent = new Intent(this, typeof(Communications.Bluetooth.BTDirectActivity));
+                intent.AddFlags(ActivityFlags.SingleTop);
+                intent.AddFlags(ActivityFlags.NewTask);
+                StartActivity(intent);
+                return true;
+            }
+            else if (item.ItemId == Resource.Id.menuaction_settings)
+            {
+                intent = new Intent(this, typeof(SettingsActivity));
+                intent.AddFlags(ActivityFlags.NewTask);
+                intent.AddFlags(ActivityFlags.SingleTop);
+                StartActivity(intent);
+                return true;
+            }
+            else return base.OnOptionsItemSelected(item);
         }
 
         public void RelayToast(string message, ToastLength length = ToastLength.Short)

@@ -25,7 +25,7 @@ namespace Atropos.Characters
         public string Name { get; set; }
         public Dictionary<Trait, TraitInteraction.Base> InteractsWith;
 
-        public static List<Trait> All = new List<Trait>();
+        public static List<Trait> AllTraits = new List<Trait>();
 
         public static SpecificTraitLists.CharacterTraits Char;
         public static SpecificTraitLists.ScenarioTraits Scen;
@@ -118,19 +118,13 @@ namespace Atropos.Characters
         }
 
         public Trait this[string name]
-            { get => All.Find(t => t.Name == name); }
-        //{
-        //    get
-        //    {
-        //        return this.GetType().GetStaticProperty<Trait>(name);
-        //    }
-        //}
+            { get => Trait.AllTraits.Find(t => t.Name == name); }
 
         protected static Trait Create()
         {
             var result = new Trait();
             //All.Add(result);
-            Trait.All.Add(result);
+            Trait.AllTraits.Add(result);
             return result;
         }
 
@@ -138,24 +132,10 @@ namespace Atropos.Characters
         {
             var result = new Trait<T>();
             //All.Add(result);
-            Trait.All.Add(result);
+            Trait.AllTraits.Add(result);
             result.Value = result.DefaultValue = initialVal;
             return result;
         }
-
-        public List<Trait> All
-            { get; set; } = new List<Trait>();
-        //{
-        //    get
-        //    {
-        //        return this
-        //            .GetType()
-        //            .GetProperties()
-        //            .Where(pInf => pInf.PropertyType == typeof(Trait))
-        //            .Select(pInf => (Trait)pInf.GetValue(null))
-        //            .ToList();
-        //    }
-        //}
 
         public void SetTraitNames()
         {
@@ -169,7 +149,7 @@ namespace Atropos.Characters
                 var trait = (Trait)pInfo.GetValue(null);
                 trait.Name = name;
                 pInfo.SetValue(null, trait);
-                All.Add(trait);
+                //All.Add(trait);
             }
         }
     }

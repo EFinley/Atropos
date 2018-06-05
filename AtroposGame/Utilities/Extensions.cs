@@ -545,13 +545,27 @@ namespace Atropos
             sourceEvent?.Invoke(callerName, EventArgs.Empty);
         }
 
-        //public static EventHandler<EventArgs<T>> SubscribeOnce<T>(this EventHandler<EventArgs<T>> sourceEvent, Action handlerAction)
-        //{
-        //    EventHandler<EventArgs<T>> disposableEvent = null;
-        //    disposableEvent = (o, e) => { sourceEvent?.Invoke(o, e); sourceEvent -= disposableEvent; };
-        //    sourceEvent += disposableEvent;
-        //    return disposableEvent;
-        //}
+        /// <summary>
+        /// Syntactic sugar for a "return default instead of throwing an error" variant on TryGetValue().
+        /// </summary>
+        /// <returns>Dictionary[key], or default(Tvalue) if not found.</returns>
+        public static Tresult GetValue<Tkey, Tresult>(this IDictionary<Tkey, Tresult> source, Tkey key)
+        {
+            Tresult result;
+            if (source.TryGetValue(key, out result)) return result;
+            else return default(Tresult);
+        }
+
+        /// <summary>
+        /// Syntactic sugar for a "return (this) instead of throwing an error" variant on TryGetValue().
+        /// </summary>
+        /// <returns>Dictionary[key], or default(Tvalue) if not found.</returns>
+        public static Tresult GetValueOr<Tkey, Tresult>(this IDictionary<Tkey, Tresult> source, Tkey key, Tresult ifNotFound)
+        {
+            Tresult result;
+            if (source.TryGetValue(key, out result)) return result;
+            else return ifNotFound;
+        }
     }
 
     public static class AndroidLayoutUtilExtensions

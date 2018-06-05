@@ -207,12 +207,16 @@ namespace Atropos
         }
 
         private string callerName;
-        public SensorProvider(SensorType sensorType, CancellationToken? externalStopToken = null, [CallerMemberName] string callerName = "")
+        private bool useHandedness;
+        protected Handedness Handedness { get { return (useHandedness) ? Handedness.Current : Handedness.Default; } }
+        public SensorProvider(SensorType sensorType, CancellationToken? externalStopToken = null, bool useHandedness = true, [CallerMemberName] string callerName = "")
         {
             //sensor = sensorManager.GetDefaultSensor(sensorType);
             sensorListener = SensorListener.Get(sensorType); //new SensorListener(sensorType);
             //Activate(externalStopToken);
             if (externalStopToken != null) DependsOn(externalStopToken.Value);
+            //Handedness = (useHandedness) ? Handedness.Current : Handedness.Default;
+            this.useHandedness = useHandedness;
             this.callerName = callerName;
             //Log.Debug("SensorProvider|Ctor", $"Creating a {this.GetType().Name} (for {Enum.GetName(typeof(SensorType), sensorType)}), from {callerName}, as sensor listener #{Res.NumSensors + 1}.");
         }
@@ -303,7 +307,7 @@ namespace Atropos
         // REQUIRED to be implemented by derived classes (since otherwise what's the point?).
         protected abstract void SensorChanged(SensorEvent e);
 
-        public static void EnsureIsReady<T>(IProvider<T> provider)
+        public static async Task EnsureIsReady<T>(IProvider<T> provider)
         {
             var wasActive = provider.IsActive;
             if (!wasActive) provider.Activate();
@@ -311,7 +315,10 @@ namespace Atropos
             stopW.Start();
             var currentValue = provider.Data;
             while (Operator.Equal<T>(provider.Data, currentValue))
-                provider.WhenDataReady().Wait();
+            {
+                await provider.WhenDataReady();
+                await Task.Delay(10);
+            }
             Log.Debug("SensorProvider|EnsureIsReady", $"{provider.GetType().Name} ready in {stopW.ElapsedMilliseconds} ms.");
             if (!wasActive) provider.Deactivate();
         }
@@ -340,8 +347,8 @@ namespace Atropos
     public abstract class SensorProvider<T> : SensorProvider, IProvider<T> where T:struct
     {
         // Constructor inheritance must be explicit
-        public SensorProvider(SensorType sensorType, CancellationToken? externalStopToken = null, [CallerMemberName] string callerName = "") 
-            : base(sensorType, externalStopToken, callerName) { }
+        public SensorProvider(SensorType sensorType, CancellationToken? externalStopToken = null, bool useHandedness = true, [CallerMemberName] string callerName = "") 
+            : base(sensorType, externalStopToken, useHandedness, callerName) { }
 
         protected virtual T toDataType()
         {
@@ -507,7 +514,7 @@ namespace Atropos
         protected Quaternion currentOrientation;
         protected float[] valuesArray = new float[4];
 
-        public OrientationSensorProvider(SensorType sensType, CancellationToken? token = null, [CallerMemberName] string callerName = "") : base(sensType, token, callerName)
+        public OrientationSensorProvider(SensorType sensType, CancellationToken? token = null, bool useHandedness = true, [CallerMemberName] string callerName = "") : base(sensType, token, useHandedness, callerName)
         {
             // Initialise with identity
             currentOrientation = Quaternion.Identity;
@@ -544,9 +551,9 @@ namespace Atropos
         {
             SensorManager.GetQuaternionFromVector(valuesArray, e.Values.ToArray());
             currentOrientation.W = valuesArray[0];
-            currentOrientation.X = valuesArray[1];
-            currentOrientation.Y = valuesArray[2];
-            currentOrientation.Z = valuesArray[3];
+            currentOrientation.X = valuesArray[1] * Handedness.CoeffX;
+            currentOrientation.Y = valuesArray[2] * Handedness.CoeffY;
+            currentOrientation.Z = valuesArray[3] * Handedness.CoeffZ;
         }
 
         // Also, for those cases where you just need one read off a sensor that's not necessarily running...
@@ -580,7 +587,7 @@ namespace Atropos
             }
         }
 
-        public Vector3Provider(SensorType sensType, CancellationToken? token = null, [CallerMemberName] string callerName = "") : base(sensType, token, callerName)
+        public Vector3Provider(SensorType sensType, CancellationToken? token = null, bool useHandedness = true, [CallerMemberName] string callerName = "") : base(sensType, token, useHandedness, callerName)
         {
             // Initialise with identifiable default
             currentVector = Vector3.UnitX * 0.01f;
@@ -605,15 +612,15 @@ namespace Atropos
 
         protected override void SensorChanged(SensorEvent e)
         {
-            _currentVector.X = e.Values[0];
-            _currentVector.Y = e.Values[1];
-            _currentVector.Z = e.Values[2];
+            _currentVector.X = e.Values[0] * Handedness.CoeffX;
+            _currentVector.Y = e.Values[1] * Handedness.CoeffY;
+            _currentVector.Z = e.Values[2] * Handedness.CoeffZ;
         }
 
         // Also, for those cases where you just need one read off a sensor that's not necessarily running...
-        public static async Task<Vector3> ReadSingleValue(SensorType sensType)
+        public static async Task<Vector3> ReadSingleValue(SensorType sensType, bool useHandedness)
         {
-            var localProvider = new Vector3Provider(sensType);
+            var localProvider = new Vector3Provider(sensType, useHandedness: useHandedness);
             await localProvider.WhenDataReady(); // First read is sometimes an issue...
             localProvider.Proceed();
             await localProvider.WhenDataReady();
@@ -672,7 +679,7 @@ namespace Atropos
 
         public bool IsFrameShiftSet { get { return (!frameShift.IsIdentity && !frameShift.IsZero()); } }
 
-        public FrameShiftedVector3Provider(SensorType sensType, Quaternion? frameSh = null, CancellationToken? token = null, [CallerMemberName] string callerName = "") : base(sensType, token, callerName)
+        public FrameShiftedVector3Provider(SensorType sensType, Quaternion? frameSh = null, CancellationToken? token = null, bool useHandedness = true, [CallerMemberName] string callerName = "") : base(sensType, token, useHandedness, callerName)
         {
             frameShift = frameSh ?? Quaternion.Identity;
             if (frameShift.IsZero()) frameShift = Quaternion.Identity;
@@ -704,7 +711,7 @@ namespace Atropos
 
         public virtual bool IsFrameShiftSet { get { return !frameShift.IsIdentity; } }
 
-        public FrameShiftedOrientationProvider(SensorType sensType, Quaternion? frameSh = null, CancellationToken? token = null, [CallerMemberName] string callerName = "") : base(sensType, token, callerName)
+        public FrameShiftedOrientationProvider(SensorType sensType, Quaternion? frameSh = null, CancellationToken? token = null, bool useHandedness = true, [CallerMemberName] string callerName = "") : base(sensType, token, useHandedness, callerName)
         {
             frameShift = frameSh ?? Quaternion.Identity;
         }
@@ -760,10 +767,10 @@ namespace Atropos
             : this(Quaternion.Identity, CancellationToken.None, keyProv, providerArgs) { }
     }
 
-    public class GravityOrientationProvider : FrameShiftedOrientationProvider, IVector3Provider
+    public class GravityOrientationProvider : FrameShiftedOrientationProvider, IVector3Provider, IProvider<Quaternion>
     {
-        public GravityOrientationProvider(Quaternion? frameShift = null, CancellationToken? externalStopToken = null, [CallerMemberName] string callerName = "") 
-            : base(SensorType.Gravity, frameShift, externalStopToken, callerName)
+        public GravityOrientationProvider(Quaternion? frameShift = null, CancellationToken? externalStopToken = null, bool useHandedness = true, [CallerMemberName] string callerName = "") 
+            : base(SensorType.Gravity, frameShift, externalStopToken, useHandedness, callerName)
         {
             normalizedGravityVector = Vector3.UnitZ;
             averageGravityVector = new AdvancedRollingAverageVector3(timeFrameInPeriods: 5, initialAverage: Vector3.UnitZ);
@@ -773,9 +780,9 @@ namespace Atropos
         private Vector3 normalizedGravityVector;
         protected override void SensorChanged(SensorEvent e)
         {
-            normalizedGravityVector.X = e.Values[0];
-            normalizedGravityVector.Y = e.Values[1];
-            normalizedGravityVector.Z = e.Values[2];
+            normalizedGravityVector.X = e.Values[0] * Handedness.CoeffX;
+            normalizedGravityVector.Y = e.Values[1] * Handedness.CoeffY;
+            normalizedGravityVector.Z = e.Values[2] * Handedness.CoeffZ;
             normalizedGravityVector = normalizedGravityVector.Normalize();
             averageGravityVector.Update(normalizedGravityVector);
         }
@@ -816,6 +823,10 @@ namespace Atropos
                 return RawQuaternion * FrameShift;
             }
         }
+        protected override Quaternion toDataType()
+        {
+            return Quaternion;
+        }
 
         protected Quaternion RawQuaternion
         {
@@ -835,10 +846,11 @@ namespace Atropos
     {
         public Vector3 UpDirection, Axis;
 
-        public AngleAxisProvider(Vector3 upDirection, Vector3 axis, CancellationToken? externalToken = null, [CallerMemberName] string callerName = "") 
-            : base(SensorType.Gravity, externalToken, callerName)
+        public AngleAxisProvider(Vector3 upDirection, Vector3 axis, CancellationToken? externalToken = null, bool useHandedness = true, [CallerMemberName] string callerName = "") 
+            : base(SensorType.Gravity, externalToken, useHandedness, callerName)
         {
             UpDirection = upDirection;
+            if (useHandedness) UpDirection.X *= -1;
             Axis = axis;
         }
 
@@ -859,8 +871,8 @@ namespace Atropos
         public Vector3 Axis { get; private set; }
         public bool AxisIsSet { get; private set; }
 
-        public ConsistentAxisAngleProvider(float acceptanceSigma = 0.2f, Quaternion? frameShift = null, CancellationToken? externalStopToken = null) 
-            : base(frameShift, externalStopToken)
+        public ConsistentAxisAngleProvider(float acceptanceSigma = 0.2f, Quaternion? frameShift = null, CancellationToken? externalStopToken = null, bool useHandedness = true) 
+            : base(frameShift, externalStopToken, useHandedness)
         {
             AcceptanceSigma = acceptanceSigma;
             AverageAxis = AdvancedRollingAverage<Vector3>.Create<Vector3>(timeFrameInPeriods: 50, initialAverage: Vector3.UnitY, initialRelativeStdDev: 3.0f);
@@ -972,7 +984,7 @@ namespace Atropos
     {
         protected Vector3 previousAccelValue;
 
-        public CorrectedAccelerometerProvider(SensorType sensType, Quaternion? frameSh = null, [CallerMemberName] string callerName = "") : base(sensType, frameSh, CancellationToken.None, callerName)
+        public CorrectedAccelerometerProvider(SensorType sensType, Quaternion? frameSh = null, bool useHandedness = true, [CallerMemberName] string callerName = "") : base(sensType, frameSh, CancellationToken.None, useHandedness, callerName)
         {
             previousAccelValue = Vector3.Zero;
         }
@@ -1008,9 +1020,9 @@ namespace Atropos
         }
 
         // Also, for those cases where you just need one read off a sensor that's not necessarily running...
-        public static new async Task<Vector3> ReadSingleValue(SensorType sensType)
+        public static new async Task<Vector3> ReadSingleValue(SensorType sensType, bool useHandedness = true)
         {
-            var localProvider = new Vector3Provider(sensType);
+            var localProvider = new Vector3Provider(sensType, useHandedness: useHandedness);
             await localProvider.WhenDataReady(); // First read is sometimes an issue...
             localProvider.Proceed();
             await localProvider.WhenDataReady();
@@ -1024,17 +1036,17 @@ namespace Atropos
     {
         protected GravityOrientationProvider GravProvider;
         protected Vector3Provider GyroProvider;
-        public GravGyroOrientationProvider(Quaternion frameShift, CancellationToken externalToken)
+        public GravGyroOrientationProvider(Quaternion frameShift, CancellationToken externalToken, bool useHandedness = true)
         : base(frameShift, externalToken, 
-              new GravityOrientationProvider(frameShift, externalToken),
+              new GravityOrientationProvider(frameShift, externalToken, useHandedness),
               new Vector3Provider(SensorType.GyroscopeUncalibrated))
         {
             GravProvider = providers[0] as GravityOrientationProvider;
             GyroProvider = providers[1] as Vector3Provider;
         }
-        public GravGyroOrientationProvider(Quaternion frameShift) : this(frameShift, CancellationToken.None) { }
-        public GravGyroOrientationProvider(CancellationToken externalToken) : this(Quaternion.Identity, externalToken) { }
-        public GravGyroOrientationProvider() : this(Quaternion.Identity, CancellationToken.None) { }
+        public GravGyroOrientationProvider(Quaternion frameShift, bool useHandedness = true) : this(frameShift, CancellationToken.None, useHandedness) { }
+        public GravGyroOrientationProvider(CancellationToken externalToken, bool useHandedness = true) : this(Quaternion.Identity, externalToken, useHandedness) { }
+        public GravGyroOrientationProvider(bool useHandedness = true) : this(Quaternion.Identity, CancellationToken.None, useHandedness) { }
 
         public override Quaternion Quaternion
         {
@@ -1127,8 +1139,10 @@ namespace Atropos
 
             protected DKS data;
 
-            public GrabItAllSensorProvider(IOrientationProvider orientation)
-                : base(new Vector3Provider(SensorType.LinearAcceleration), new Vector3Provider(SensorType.Gravity), new Vector3Provider(SensorType.Gyroscope), orientation)
+            public GrabItAllSensorProvider(IOrientationProvider orientation, bool useHandedness = true)
+                : base(new Vector3Provider(SensorType.LinearAcceleration, useHandedness: useHandedness),
+                       new Vector3Provider(SensorType.Gravity, useHandedness: useHandedness),
+                       new Vector3Provider(SensorType.Gyroscope), orientation)
             {
                 LinAccel = providers[0] as Vector3Provider;
                 Grav = providers[1] as Vector3Provider;

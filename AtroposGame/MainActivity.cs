@@ -175,12 +175,14 @@ namespace Atropos
         public static void InitializeAll()
         {
             SimpleStorage.SetContext(Application.Context);
-            if ((Res.InteractionModes?.Count ?? 0) > 0) return; // Already done this; okay, cool.
+            if ((Res.InteractionModes?.Count ?? 0) > 0) return; // Already done this; okay, cool.  // TODO: Use a better indicator!!!
             InteractionLibrary.InitializeAll();
             MasterSpellLibrary.LoadAll();
             MasterFechtbuch.LoadAll();
 
             Encounters.Scenario.Current = Encounters.Scenario.Postcard;
+
+            Damageable.SetUpStandardHitReactions();
         }
 
         //private struct RoleInformation

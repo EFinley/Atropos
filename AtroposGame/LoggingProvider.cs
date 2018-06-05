@@ -81,7 +81,7 @@ namespace Atropos
     {
         private const int DEFAULTLENGTH = 3;
         protected SmoothedList<T> _smoothedData;
-        public override List<T> LoggedData { get { return _smoothedData.ToList(); } }
+        public override List<T> LoggedData { get { return _smoothedData?.ToList() ?? new List<T>(); } }
 
         public SmoothLoggingProvider(IProvider<T> provider, int smoothingLength = DEFAULTLENGTH) : this(provider, smoothingLength, CancellationToken.None) { }
         public SmoothLoggingProvider(IProvider<T> provider, CancellationToken externalToken) : this(provider, DEFAULTLENGTH, externalToken) { }

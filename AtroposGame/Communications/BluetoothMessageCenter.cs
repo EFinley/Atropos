@@ -26,13 +26,8 @@ namespace Atropos.Communications.Bluetooth
         public static string _tag = "BTMessageCenter";
         public static event EventHandler<EventArgs<Message>> OnReceiveMessage;
 
-        public static BluetoothClient Client;
         public static BluetoothServer Server;
-
-        public static void MakeClientConnectionTo(string MACaddress)
-        {
-            Log.Debug(_tag, $"Here we verify the address isn't already linked, and attempt to create a client-to-server link to {MACaddress}.");
-        }
+        public static CommsContact TemporaryAddressBook_SingleEntry;
 
         public static void ActOnMessage(object sender, EventArgs<Message> messageArg)
         {
@@ -91,20 +86,27 @@ namespace Atropos.Communications.Bluetooth
                 };
             }
             if (message.Type == MsgType.PushEffect)
-            {
+            {                
                 var substrings = message.Content.Split(onNEXT, 2);
                 var effectName = substrings[0];
                 var effectParams = substrings[1];
-                if (!MasterSpellLibrary.CastingResults.ContainsKey(effectName))
+                //if (!MasterSpellLibrary.CastingResults.ContainsKey(effectName))
+                //{
+                //    Log.Warn(_tag, $"Unable to locate game effect '{effectName}'.");
+                //    return null;
+                //}
+                if (!GameEffect.Lookup.ContainsKey(effectName))
                 {
-                    Log.Warn(_tag, $"Unable to locate game effect '{effectName}'.");
+                    Log.Warn(_tag, $"Unable to locate effect '{effectName}'.");
                     return null;
                 }
 
-                var doFunc = MasterSpellLibrary.CastingResults[effectName];
+                //var doFunc = MasterSpellLibrary.CastingResults[effectName];                
                 return (o) =>
                 {
-                    doFunc?.Invoke(effectParams);
+                    GameEffect
+                        .Lookup[effectName]?
+                        .OnReceiving(TemporaryAddressBook_SingleEntry ?? new CommsContact(), effectParams);
                 };
             }
             if (message.Type == MsgType.Query)

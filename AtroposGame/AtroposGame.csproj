@@ -17,7 +17,7 @@
     <AndroidResgenFile>Resources\Resource.Designer.cs</AndroidResgenFile>
     <AndroidResgenClass>Resource</AndroidResgenClass>
     <GenerateSerializationAssemblies>Off</GenerateSerializationAssemblies>
-    <AndroidUseLatestPlatformSdk>true</AndroidUseLatestPlatformSdk>
+    <AndroidUseLatestPlatformSdk>false</AndroidUseLatestPlatformSdk>
     <TargetFrameworkVersion>v8.0</TargetFrameworkVersion>
     <AndroidManifest>Properties\AndroidManifest.xml</AndroidManifest>
     <MonoAndroidResourcePrefix>Resources</MonoAndroidResourcePrefix>
@@ -33,9 +33,9 @@
     <DefineConstants>TRACE;DEBUG;DOTNET35</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <AndroidUseSharedRuntime>True</AndroidUseSharedRuntime>
+    <AndroidUseSharedRuntime>false</AndroidUseSharedRuntime>
     <AndroidLinkMode>None</AndroidLinkMode>
-    <EmbedAssembliesIntoApk>False</EmbedAssembliesIntoApk>
+    <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
     <AotAssemblies>false</AotAssemblies>
     <EnableLLVM>false</EnableLLVM>
     <BundleAssemblies>false</BundleAssemblies>
@@ -160,6 +160,7 @@
     <Compile Include="BypassActivity.cs" />
     <Compile Include="Characters\Character Sheet Activity.cs" />
     <Compile Include="Characters\CharacterStats.cs" />
+    <Compile Include="Characters\DamageModel.cs" />
     <Compile Include="Characters\Trait Interaction Templates.cs" />
     <Compile Include="Characters\Trait Lists.cs" />
     <Compile Include="Characters\Traits.cs" />
@@ -349,6 +350,7 @@
     <Compile Include="Utilities\EnhancedQuaternion.cs" />
     <Compile Include="Utilities\ExponentialAveragers.cs" />
     <Compile Include="Utilities\Extensions.cs" />
+    <Compile Include="Utilities\Handedness.cs" />
     <Compile Include="Utilities\NullableImproved.cs" />
     <Compile Include="Data Structures\SpecialDatapointTypes.cs" />
   </ItemGroup>
@@ -443,6 +445,7 @@
       <SubType>Designer</SubType>
     </AndroidResource>
     <AndroidResource Include="Resources\layout\TeamFormationTeammateItem.axml" />
+    <AndroidResource Include="Resources\layout\GlyphDisplayListItemRepresentation.axml" />
   </ItemGroup>
   <ItemGroup>
     <AndroidResource Include="Resources\layout\Main.axml">
@@ -832,6 +835,18 @@
   </ItemGroup>
   <ItemGroup>
     <AndroidAsset Include="Assets\MeleeClassifier.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\raw\_253324_electricity_loop.wav" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\raw\_417781_guitar_loop.wav" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\raw\_347706_fire_loop.wav" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\raw\_366159_water_loop.wav" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets" />
   <Import Project="..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets" Condition="Exists('..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets')" />

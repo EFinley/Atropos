@@ -1,30 +1,18 @@
 
-using System;
-using System.Text;
-using System.Linq;
-using System.Collections.Generic;
-
-using Android;
 using Android.App;
-using Android.Nfc;
+using Android.Hardware;
 using Android.OS;
+using Android.Views;
 using Android.Widget;
-using Android.Util;
-
-
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
 //using Accord.Math;
 //using Accord.Statistics;
-using Android.Content;
 using System.Threading.Tasks;
-using System.Numerics;
-using Vector3 = System.Numerics.Vector3;
-using Android.Views;
-using Android.Hardware;
-
 using static System.Math;
 using Log = Android.Util.Log; // Disambiguating with Math.Log( )... heh!
-using Nito.AsyncEx;
-using System.Threading;
 
 namespace Atropos
 {
@@ -32,24 +20,32 @@ namespace Atropos
     /// This is the activity started when we detect a "cast spell" NFC tag.
     /// </summary>
     [Activity(ScreenOrientation = Android.Content.PM.ScreenOrientation.Portrait)]
-    public class SpellCastingActivity : BaseActivity_Portrait, IRelayMessages
+    public class SpellCastingActivity : BaseActivity_Portrait // , IRelayMessages
     {
         private Focus ThePlayersFocus;
         private Spell SpellBeingCast;
         private TextView currentSignalsDisplay, bestSignalsDisplay, resultsDisplay;
         private List<Button> spellButtons = new List<Button>();
+
+        protected GlyphDisplayAdapter adapter;
+        protected ListView listView;
+        protected RelativeLayout mainPanel;
         protected static SpellCastingActivity Current { get { return (SpellCastingActivity)CurrentActivity; } set { CurrentActivity = value; } }
+
+        private CancellationTokenSource _cts;
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
             SetContentView(Resource.Layout.SpellCasting);
 
-            currentSignalsDisplay = FindViewById<TextView>(Resource.Id.current_signals_text);
-            bestSignalsDisplay = FindViewById<TextView>(Resource.Id.best_signals_text);
-            resultsDisplay = FindViewById<TextView>(Resource.Id.result_text);
+            var lView = FindViewById(Resource.Id.list);
+            var mPanel = FindViewById(Resource.Id.spell_page_main);
 
-            SetUpSpellButtons();
+            listView = lView as ListView;
+            mainPanel = mPanel as RelativeLayout;
+
+            //SetUpSpellButtons();
 
             // See if the current focus is already in our (local, for now) library, and load it if so.  Otherwise, just use the Master focus entry.
             var focusString = Res.SpecificTags.Get(InteractionLibrary.CurrentSpecificTag);
@@ -68,199 +64,179 @@ namespace Atropos
                 ThePlayersFocus = new Focus(InteractionLibrary.CurrentSpecificTag);
             }
 
-            // Debugging purposes - give everybody all the spells.
-            ThePlayersFocus.KnownSpells.Clear();
-            foreach (string spellName in MasterSpellLibrary.spellNames)
-            {
-                if (spellName == Spell.None.SpellName) continue;
-                ThePlayersFocus.LearnSpell(MasterSpellLibrary.Get(spellName));
-            }
+            //// Debugging purposes - give everybody all the spells.
+            //ThePlayersFocus.KnownSpells.Clear();
+            //foreach (string spellName in MasterSpellLibrary.spellNames)
+            //{
+            //    if (spellName == Spell.None.SpellName) continue;
+            //    ThePlayersFocus.LearnSpell(MasterSpellLibrary.Get(spellName));
+            //}
 
             //CurrentStage = GestureRecognizerStage.NullStage; // Used if we're relying purely on buttons onscreen, as in debugging.
-            CurrentStage = new BeginCastingSelectedSpellsStage("Scanning for zero stances", ThePlayersFocus, ThePlayersFocus.KnownSpells);
+            //CurrentStage = new BeginCastingSelectedSpellsStage("Scanning for zero stances", ThePlayersFocus, ThePlayersFocus.KnownSpells);
+
+            useVolumeTrigger = true;
+            OnVolumeButtonPressed += (o, e) => PerformSpellSelection();
         }
         protected override async void OnResume()
         {
             await base.DoOnResumeAsync(Task.Delay(500), AutoRestart: true);
+            DoSpellUILoop();
+            //PerformSpellSelection();
         }
 
         protected override void OnPause()
         {
+            _cts?.Cancel();
             base.OnPause();
         }
 
-        private void SetUpSpellButtons()
+        protected async void PerformSpellSelection()
         {
-            var layoutpanel = FindViewById<LinearLayout>(Resource.Id.Spell_casting_layoutpane);
+            SpellResult ChosenSpell = null;
+            useVolumeTrigger = false;
 
-            foreach (string spellName in MasterSpellLibrary.spellNames)
+            try
             {
-                if (spellName == Spell.None.SpellName) continue;
-                var spell = MasterSpellLibrary.Get(spellName);
-                var spellButton = new Button(this);
-                spellButton.SetText(spellName, TextView.BufferType.Normal);
-                spellButton.SetPadding(20, 20, 20, 20);
-                layoutpanel.AddView(spellButton);
-                spellButtons.Add(spellButton);
+                Log.Debug("SpellSelection", $"Diagnostics: #sensors {Res.NumSensors}; CurrentStage {(CurrentStage as GestureRecognizerStage)?.Label}; Background stages activity: {BaseActivity.BackgroundStages?.Select(s => $"{(s as GestureRecognizerStage)?.Label}:{s.IsActive}").Join()}");
+                var MagnitudeGlyph = await new GlyphCastStage(Glyph.MagnitudeGlyphs, Glyph.StartOfSpell, 2.0).AwaitResult();
+                double timeCoefficient = (MagnitudeGlyph == Glyph.L) ? 2.0 :
+                                         (MagnitudeGlyph == Glyph.M) ? 0.75 :
+                                         (MagnitudeGlyph == Glyph.H) ? -0.25 :
+                                         -1.0; // for Magnitude == Glyph.G
+                var SpellTypeGlyph = await new GlyphCastStage(Glyph.SpellTypeGlyphs, MagnitudeGlyph, timeCoefficient).AwaitResult();
 
-                spellButton.Click += (o, e) =>
+                // Now figure out what possible third "key" glyphs exist given our spell list.
+                var PossibleSpells = SpellResult.AllSpells
+                                                    .Where(s => s.Magnitude == MagnitudeGlyph && s.SpellType == SpellTypeGlyph)
+                                                    .ToDictionary(s => s.KeyGlyph);
+                var KeyGlyph = await new GlyphCastStage(PossibleSpells.Keys, SpellTypeGlyph, timeCoefficient).AwaitResult();
+                ChosenSpell = PossibleSpells.GetValueOrDefault(KeyGlyph);
+
+                // Now that we know that...
+                var lastGlyph = KeyGlyph;
+                var RemainingGlyphs = ChosenSpell.Glyphs.Skip(3); // The three we already extracted above, of course.
+                foreach (var glyph in RemainingGlyphs)
                 {
-                    //if (SpellBeingCast != null || SpellBeingCast != spell) SpellBeingCast = spell;
-                    if (SpellBeingCast != spell) SpellBeingCast = spell;
-                    else return;
-                    //CurrentStage = new BeginCastingSpecificSpellStage($"Initiating {spellName}", ThePlayersFocus, true);
-                    CurrentStage?.Deactivate();
-                    CurrentStage = new BeginCastingSelectedSpellsStage($"Initiating {spellName}", ThePlayersFocus, spell);
-                };
+                    await new GlyphCastStage(glyph, lastGlyph, timeCoefficient).AwaitResult();
+                    lastGlyph = glyph;
+                }
+                Task.Run(() => ChosenSpell?.OnCast(Current)) // Passing the Activity allows us to ask it to do things (like animate properties or other UI stuff)
+                    .LaunchAsOrphan($"Effects of {ChosenSpell.SpellName}");
+                //Finish();
+            }
+            catch (TaskCanceledException)
+            {
+                //ChosenSpell?.FailResult?.Invoke(null);
+                Log.Debug("GlyphCast", $"Spell selection / casting cancelled during glyph casting.");
+                //Finish();
+            }
+            finally
+            {
+                useVolumeTrigger = true;
             }
         }
 
-        protected void SetAllSpellButtonsEnabledState(bool enable = true)
+        private async void DoSpellUILoop()
         {
-            foreach (var sp in spellButtons) sp.Enabled = enable;
-        }
+            _cts = new CancellationTokenSource();
 
-        public void RelayMessage(string message, int RelayTargetId = 1)
-        {
-            //try
-            //{
-            //    if (RelayTargetId != 1) RunOnUiThread(() =>
-            //    {
-            //        currentSignalsDisplay.Text = message;
-            //    });
-            //    else RunOnUiThread(() => { bestSignalsDisplay.Text = message; });
-            //}
-            //catch (Exception)
-            //{
-            //    throw;
-            //}
-        }
+            // Set up the shield spell visual and its animator
+            ImageView shieldSpellGraphic = new ImageView(this);
+            shieldSpellGraphic.Visibility = ViewStates.Gone;
+            shieldSpellGraphic.SetImageResource(Resource.Drawable.qr_code_reticle_with_glow);
 
-        public class BeginCastingSpecificSpellStage : GestureRecognizerStage
-        {
-            private Focus Implement;
-            private StillnessProvider Stillness;
-            private GravityOrientationProvider Gravity;
-            private Task sayIt;
+            // Set up the barrier glow effect
+            ImageView barrierEffect = new ImageView(this);
+            barrierEffect.Alpha = (float)(Characters.Damageable.Me.Barrier / SpellResult.BarrierBaseMagnitude);
+            barrierEffect.SetImageResource(Resource.Drawable.qr_code_window);
+            mainPanel.AddView(barrierEffect);
 
-            public BeginCastingSpecificSpellStage(string label, Focus Focus, bool AutoStart = false) : base(label)
+            while (!_cts.IsCancellationRequested)
             {
-                Implement = Focus;
-                Stillness = new StillnessProvider();
-                Stillness.StartDisplayLoop(Current, 500);
-                SetUpProvider(Stillness);
-                Gravity = new GravityOrientationProvider();
-                Gravity.Activate();
-
-                if (AutoStart) Activate();
-            }
-
-            protected override async void startAction()
-            {
-                sayIt = Speech.SayAllOf($"Casting {Current.SpellBeingCast.SpellName}.  Take your zero stance to begin.");
-                await sayIt;
-                Current.SetAllSpellButtonsEnabledState(false);
-            }
-
-            protected override bool interimCriterion()
-            {
-                return Stillness.IsItDisplayUpdateTime();
-            }
-
-            protected override void interimAction()
-            {
-                Stillness.DoDisplayUpdate();
-            }
-
-            protected override bool nextStageCriterion()
-            {
-                return (Stillness.ReadsMoreThan(4f)
-                    && Current.SpellBeingCast.AngleTo(Gravity.Quaternion) < 30f);
-            }
-            protected override async void nextStageAction()
-            {
-                var newProvider = new GravityOrientationProvider();
-                newProvider.Activate();
-                await newProvider.SetFrameShiftFromCurrent();
-                await Speech.SayAllOf("Begin");
-                CurrentStage = new GlyphCastingStage($"Glyph 0", Implement, Current.SpellBeingCast.Glyphs[0], newProvider);
+                await Task.Delay(100);
+                var BarrierOpacity = (Characters.Damageable.Me.Barrier / SpellResult.BarrierBaseMagnitude ).Clamp(0, 1);
             }
         }
 
-        public class BeginCastingSelectedSpellsStage : GestureRecognizerStage
+        public class GlyphCastStage : AwaitableStage<Glyph>
         {
-            private Focus Focus;
             public StillnessProvider Stillness;
-            private AdvancedRollingAverageQuat AverageAttitude;
-            private FrameShiftedOrientationProvider AttitudeProvider;
+            //private FrameShiftedOrientationProvider AttitudeProvider;
+            private Vector3Provider GravityProvider;
+            private RollingAverage<float> AverageStillness;
 
-            private List<Spell> PreparedSpells;
-            private List<Spell> SpellsSortedByAngle { get {
-                    return PreparedSpells
-                            .OrderBy(sp => sp.AngleTo(AttitudeProvider))
+            private double TimeCoefficient;
+
+            private List<Glyph> ValidGlyphs;
+            private Glyph LastGlyph;
+            private List<Glyph> GlyphsSortedByAngle
+            {
+                get
+                {
+                    return ValidGlyphs
+                            .OrderBy(g => g.AngleTo(GravityProvider))
                             .ToList();
-                } }
-            private IEffect GetFeedbackFX(Spell spell)
-            {
-                return spell?.Glyphs?[0]?.FeedbackSFX ?? Effect.None;
+                }
             }
-            private Task sayIt;
-
-            public BeginCastingSelectedSpellsStage(string label, Focus focus, IEnumerable<Spell> possibleSpells, bool autoStart = true) : base(label)
+            private IEffect GetFeedbackFX(Glyph glyph)
             {
-                Focus = focus;
+                if (glyph.FeedbackSFX == null) glyph.FeedbackSFX = new Effect(glyph.FeedbackSFXName, glyph.FeedbackSFXid);
+                return glyph.FeedbackSFX;
+                //return glyph?.FeedbackSFX ?? Effect.None;
+            }
+
+            public GlyphCastStage(IEnumerable<Glyph> validGlyphs, Glyph lastGlyph, double timeCoefficient, bool autoStart = true)
+                : base($"Selecting glyphs among {String.Join("/", validGlyphs)}.")
+            {
                 Res.DebuggingSignalFlag = true;
 
                 Stillness = new StillnessProvider();
-                Stillness.StartDisplayLoop(Current, 500);
+                //Stillness.StartDisplayLoop(Current, 500);
                 SetUpProvider(Stillness);
+                AverageStillness = new RollingAverage<float>(30);
 
-                AverageAttitude = new AdvancedRollingAverageQuat(timeFrameInPeriods: 10); // Not sure I'm even going to bother using this.
-                AttitudeProvider = new GravityOrientationProvider();
-                AttitudeProvider.Activate();
-                AverageAttitude.Update(AttitudeProvider);
+                //AttitudeProvider = new GravityOrientationProvider();
+                //AttitudeProvider.Activate();
+                GravityProvider = new Vector3Provider(SensorType.Gravity);
+                GravityProvider.Activate();
 
-                PreparedSpells = possibleSpells.ToList();
+                ValidGlyphs = validGlyphs.ToList();
+                LastGlyph = lastGlyph;
+                TimeCoefficient = timeCoefficient;
+
+                var activity = SpellCastingActivity.Current;
+                activity.adapter = new GlyphDisplayAdapter(activity, ValidGlyphs);
+                activity.RunOnUiThread(() => activity.listView.Adapter = activity.adapter);
 
                 if (autoStart) Activate();
             }
 
-            public BeginCastingSelectedSpellsStage(string label, Focus focus, Spell singleSpell, bool autoStart = true)
-                : this(label, focus, new Spell[] { singleSpell }, autoStart) { }
+            public GlyphCastStage(Glyph glyph, Glyph lastGlyph, double timeCoefficient, bool autoStart = true)
+                : this(new Glyph[] { glyph }, lastGlyph, timeCoefficient, autoStart) { }
 
             protected override async Task startActionAsync()
             {
-                string[] spellNames = PreparedSpells.Select(s => s.SpellName).ToArray();
-                if (spellNames.Length == 0)
+                foreach (var fx in ValidGlyphs.Select(s => GetFeedbackFX(s))) fx.Play(0.0, true);
+
+                if (ValidGlyphs == null || ValidGlyphs.Count == 0)
                 {
-                    await Speech.SayAllOf("Entering spell casting mode but with no spells prepared!");
+                    await Speech.SayAllOf("Casting mistake.  You don't know any spells which begin with that sequence of glyphs.");
                     Deactivate();
-                    return;
                 }
-                else if (spellNames.Length == 1)
-                {
-                    Spell singleSpell = PreparedSpells.Single();
-                    sayIt = Speech.SayAllOf($"Casting {singleSpell.SpellName}.  Take your zero stance to begin.");
-                }
-                else
-                {
-                    string spellNamesList;
-                    if (spellNames.Length == 2) spellNamesList = $"{spellNames[0]} and {spellNames[1]}";
-                    else spellNamesList = $"{spellNames.Length} spells";
-                    sayIt = Speech.SayAllOf($"Enter spell casting mode.  You have {spellNamesList} ready for casting.  Take a spell's zero stance to begin.");
-                }
-                await sayIt;
-                foreach (var fx in PreparedSpells.Select(s => GetFeedbackFX(s))) fx.Play(0.0, true);
             }
 
             protected override bool nextStageCriterion()
             {
                 //if (!FrameShiftFunctions.CheckIsReady(AttitudeProvider)) return false;
-                var leeWay = Stillness.StillnessScore + 2f * Sqrt(Stillness.RunTime.TotalSeconds);
-                if (SpellsSortedByAngle[0].AngleTo(AttitudeProvider) < 25f + leeWay)
+                if (Stillness.RunTime.TotalSeconds < 0.75) return false;
+                var leeWay = Stillness.StillnessScore + TimeCoefficient * Sqrt(Stillness.RunTime.TotalSeconds);
+                var ease = SpellCaster.Me.EaseOfCasting;
+                if (GlyphsSortedByAngle[0].AngleTo(GravityProvider) < ease * (10f + 1.5 * leeWay)) // Was 25.0f + leeway, seems awfully generous
                 {
-                    if (SpellsSortedByAngle.Count < 2) return true;
-                    else return (SpellsSortedByAngle[0].AngleTo(AttitudeProvider) < 0.5 * SpellsSortedByAngle[1].AngleTo(AttitudeProvider));
+                    if (LastGlyph != Glyph.StartOfSpell && GlyphsSortedByAngle[0].AngleTo(GravityProvider) > LastGlyph.AngleTo(GravityProvider)) return false;
+                    if (ValidGlyphs.Count < 2) return true;
+                    else return (GlyphsSortedByAngle[0].AngleTo(GravityProvider) < 0.5 * GlyphsSortedByAngle[1].AngleTo(GravityProvider));
                 }
                 return false;
             }
@@ -269,15 +245,31 @@ namespace Atropos
             {
                 try
                 {
-                    foreach (var fx in SpellsSortedByAngle.Select(s => GetFeedbackFX(s))) fx.Deactivate();
+                    //foreach (var fx in ValidGlyphs.Select(s => GetFeedbackFX(s))) fx.Deactivate();
+                    foreach (var glyph in ValidGlyphs)
+                    {
+                        var fx = glyph.FeedbackSFX;
+                        fx.Stop();
+                        fx.Deactivate();
+                        glyph.FeedbackSFX = null;
+                    }
 
-                    Current.SpellBeingCast = SpellsSortedByAngle[0];
-                    Current.SetAllSpellButtonsEnabledState(false);
+                    //Current.SpellBeingCast = GlyphsSortedByAngle[0];
+                    //Current.SetAllSpellButtonsEnabledState(false);
 
                     Plugin.Vibrate.CrossVibrate.Current.Vibration(15);
-                    Current.SpellBeingCast.Glyphs?[0]?.ProgressSFX?.Play();
-                    AttitudeProvider.FrameShift = Current.SpellBeingCast.ZeroStance;
-                    CurrentStage = new GlyphCastingStage($"{Current.SpellBeingCast.SpellName} Glyph 0", Focus, Current.SpellBeingCast.Glyphs[0], AttitudeProvider);
+                    GlyphsSortedByAngle[0].ProgressSFX?.Play();
+                    //AttitudeProvider.FrameShift = Current.SpellBeingCast.ZeroStance;
+                    //CurrentStage = new GlyphCastingStage($"{Current.SpellBeingCast.SpellName} Glyph 0", Focus, Current.SpellBeingCast.Glyphs[0], AttitudeProvider);
+
+                    var activity = SpellCastingActivity.Current;
+                    activity.adapter = new GlyphDisplayAdapter(activity, new List<Glyph>());
+                    activity.RunOnUiThread(() => activity.listView.Adapter = activity.adapter);
+
+                    //AttitudeProvider.Deactivate();
+                    GravityProvider.Deactivate();
+
+                    StageReturn(GlyphsSortedByAngle[0]);
                 }
                 catch (Exception e)
                 {
@@ -293,126 +285,71 @@ namespace Atropos
 
             protected override void interimAction()
             {
-                foreach (var s in SpellsSortedByAngle)
+                foreach (var s in GlyphsSortedByAngle.Take(1))
                 {
                     //FeedbackFX(s).Volume = Exp(-Sqrt(s.AngleTo(AttitudeProvider) / 8.0) + 0.65); // Old version
-                    GetFeedbackFX(s).Volume = 1.2f * Exp(-0.45f * (s.AngleTo(AttitudeProvider) / 5f - 1f));
-
+                    var ease = SpellCaster.Me.EaseOfCasting;
+                    GetFeedbackFX(s).Volume = 1.2f * Exp(-0.45f * (s.AngleTo(GravityProvider) / ease / 5f - 1f));
                 }
+                //AverageStillness.Update(Stillness.StillnessScore);
+            }
+
+            protected override bool abortCriterion()
+            {
+                AverageStillness.Update(Stillness.StillnessScore);
+                return Stillness.RunTime > TimeSpan.FromMilliseconds(1250) && AverageStillness < -15;
+            }
+
+            protected override void abortAction()
+            {
+                StageCancel();
             }
         }
+    }
 
-        public class GlyphCastingStage : GestureRecognizerStage
+    public class GlyphDisplayAdapter : BaseAdapter<Glyph>
+    {
+        private readonly Activity _context;
+        private readonly List<Glyph> _items;
+
+        public GlyphDisplayAdapter(Activity context, List<Glyph> items)
+            : base()
         {
-            private Focus Implement;
-            public StillnessProvider Stillness;
-            private float Volume;
-            private AdvancedRollingAverageQuat AverageAttitude;
-            private FrameShiftedOrientationProvider AttitudeProvider;
-            private Glyph targetGlyph;
-
-            public GlyphCastingStage(string label, Focus Focus, Glyph tgtGlyph, FrameShiftedOrientationProvider oProvider = null) : base(label)
-            {
-                Implement = Focus;
-                targetGlyph = tgtGlyph;
-                Res.DebuggingSignalFlag = true;
-
-                Stillness = new StillnessProvider();
-                Stillness.StartDisplayLoop(Current, 500);
-                
-                SetUpProvider(Stillness);
-                Volume = 0.01f;
-
-                AverageAttitude = new AdvancedRollingAverageQuat(timeFrameInPeriods: 10);
-                AttitudeProvider = oProvider ?? new GravityOrientationProvider(Implement.FrameShift);
-                AttitudeProvider.Activate();
-                AverageAttitude.Update(AttitudeProvider);
-
-                Activate();
-            }
-
-            protected override void startAction()
-            {
-                targetGlyph.FeedbackSFX.Play(Volume, true);
-            }
-
-            private double score;
-            protected override bool nextStageCriterion()
-            {
-                score = targetGlyph.AngleTo(AttitudeProvider) - Stillness.StillnessScore / 4f - Sqrt(Stillness.RunTime.TotalSeconds);
-                return (score < 12f && FrameShiftFunctions.CheckIsReady(AttitudeProvider));
-            }
-            protected override async Task nextStageActionAsync()
-            {
-                try
-                {
-                    Log.Info("Casting stages", $"Success on {this.Label} at {AttitudeProvider.EulerAngles:f1}. Angle was {targetGlyph.AngleTo(AttitudeProvider):f2} degrees [spell baseline on this being {targetGlyph.OrientationSigma:f2}], " +
-                        $"steadiness was {Stillness.StillnessScore:f2} [baseline {targetGlyph.SteadinessScoreWhenDefined:f2}], time was {Stillness.RunTime.TotalSeconds:f2}s [counted as {Math.Sqrt(Stillness.RunTime.TotalSeconds):f2} degrees].");
-                    targetGlyph.FeedbackSFX.Stop();
-                    await Task.Delay(150);
-
-                    if (targetGlyph.NextGlyph == Glyph.EndOfSpell)
-                    {
-                        if (Implement != null) Implement.ZeroOrientation = Quaternion.Identity;
-                        AttitudeProvider = null;
-
-                        Plugin.Vibrate.CrossVibrate.Current.Vibration(50 + 15 * Current.SpellBeingCast.Glyphs.Count);
-                        await Current.SpellBeingCast.CastingResult(this).Before(StopToken);
-                        CurrentStage?.Deactivate();
-                        CurrentStage = NullStage;
-                        if (Current == null) return;
-                        Current.SpellBeingCast = null;
-                        //Current.SetAllSpellButtonsEnabledState(true);
-                        Current.Finish();
-                    }
-                    else
-                    {
-                        Plugin.Vibrate.CrossVibrate.Current.Vibration(25 + 10 * Current.SpellBeingCast.Glyphs.IndexOf(targetGlyph));
-                        targetGlyph.ProgressSFX.Play(1.0f);
-                        await Task.Delay(300); // Give a moment to get ready.
-                        CurrentStage = new GlyphCastingStage($"Glyph {Current.SpellBeingCast.Glyphs.IndexOf(targetGlyph) + 1}", Implement, targetGlyph.NextGlyph, AttitudeProvider);
-                    }
-                }
-                catch (Exception e)
-                {
-                    Log.Error("Glyph casting stage progression", e.Message);
-                    throw;
-                }
-            }
-
-            private DateTime allowUpdate = DateTime.Now;
-            private TimeSpan interval = TimeSpan.FromMilliseconds(100);
-            protected override bool interimCriterion()
-            {
-                Stillness.IsItDisplayUpdateTime(); // Updates max and min values.
-                if (DateTime.Now > allowUpdate)
-                {
-                    allowUpdate += interval;
-                    return true;
-                }
-                else return false;
-            }
-
-            protected override void interimAction()
-            {
-                AverageAttitude.Update(AttitudeProvider.Quaternion);
-                Volume = (float)Exp(-0.45f * (AttitudeProvider.Quaternion.AngleTo(targetGlyph.Orientation) / 5f - 1f));
-                //Volume = (float)Exp(-0.5f * (Sqrt(AttitudeProvider.Quaternion.AngleTo(targetGlyph.Orientation)) - 1f)); // Old version
-                targetGlyph.FeedbackSFX.SetVolume(Volume);
-
-                var EulerAnglesOfError = Quaternion.Divide(AttitudeProvider, targetGlyph.Orientation).ToEulerAngles();
-                string respString = null;
-
-                if (Stillness.IsItDisplayUpdateTime())
-                {
-                    Stillness.DoDisplayUpdate();
-                    respString = $"Casting {this.Label}.\n" +
-                        $"Angle to target {targetGlyph.AngleTo(AttitudeProvider):f1} degrees (score {score:f1})\n" +
-                        $"Volume set to {Volume * 100f:f1}%.";
-                    Current.RelayMessage(respString, 2);
-                }
-            }
+            _context = context;
+            _items = items;
         }
 
+        public override long GetItemId(int position)
+        {
+            return position;
+        }
+        public override Glyph this[int position]
+        {
+            get { return _items[position]; }
+        }
+        public override int Count
+        {
+            get { return _items.Count; }
+        }
+
+        public override View GetView(int position, View convertView, ViewGroup parent)
+        {
+            var v = convertView;
+
+            v = v ?? _context.LayoutInflater.Inflate(Resource.Layout.GlyphDisplayListItemRepresentation, null);
+
+            var PictureField = v.FindViewById<ImageView>(Resource.Id.glyph_picture);
+            var NameField = v.FindViewById<TextView>(Resource.Id.glyph_name);
+            var InstructionField = v.FindViewById<TextView>(Resource.Id.glyph_instruction);
+
+            Glyph glyph = _items[position];
+            if (glyph == null) return v;
+
+            var ctx = (SpellCastingActivity)_context;
+            NameField.Text = glyph.Name;
+            InstructionField.Text = glyph.Instruction_Short;
+
+            return v;
+        }
     }
 }

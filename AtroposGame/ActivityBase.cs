@@ -20,6 +20,8 @@ namespace Atropos
     using Android.Content;
     using System.Threading.Tasks;
     using System.Threading;
+    using Android.Views;
+    using Android.Runtime;
 
     /// <summary>
     /// This is the base type which collects all the stuff we need in, essentially, every activity.
@@ -65,6 +67,22 @@ namespace Atropos
         internal static List<IActivator> BackgroundStages
         {
             get { return _backgroundStages; }
+        }
+        public static void AddBackgroundStage(IActivator stage)
+        {
+            lock (_backgroundStages)
+            {
+                _backgroundStages.Add(stage);
+                stage.StopToken.Register(() =>
+                {
+                    lock (_backgroundStages)
+                    {
+                        //_backgroundStages.Remove(stage);
+                        var i = _backgroundStages.IndexOf(stage);
+                        _backgroundStages[i] = Activator.NeverActive;
+                    }
+                });
+            }
         }
         protected ScreenOffReceiver powerButtonInterceptor;
 
@@ -370,6 +388,39 @@ namespace Atropos
         {
             RunOnUiThread(() => { Toast.MakeText(this, message, length).Show(); });
         }
+
+        #region Volume trigger use (remember to set useVolumeTrigger to True in your OnCreate())
+        protected bool useVolumeTrigger = false;
+        protected event EventHandler<EventArgs> OnVolumeButtonPressed;
+        protected static object volumeButtonSyncLock = new object();
+        public override bool OnKeyDown([GeneratedEnum] Keycode keyCode, KeyEvent e)
+        {
+            if (useVolumeTrigger)
+            {
+                if (keyCode == Keycode.VolumeDown || keyCode == Keycode.VolumeUp)
+                {
+                    lock (volumeButtonSyncLock)
+                    {
+                        OnVolumeButtonPressed?.Invoke(this, EventArgs.Empty);
+                        //((Gunfight_AimStage)CurrentStage).ResolveTriggerPull();
+                        return true;
+                    }
+                }
+            }
+            return base.OnKeyDown(keyCode, e);
+        }
+        public override bool OnKeyUp([GeneratedEnum] Keycode keyCode, KeyEvent e)
+        {
+            if (useVolumeTrigger)
+            {
+                if (keyCode == Keycode.VolumeDown || keyCode == Keycode.VolumeUp)
+                {
+                    return true; // Handled it, thanks.
+                }
+            }
+            return base.OnKeyUp(keyCode, e);
+        }
+        #endregion
     }
 
     // Causes the device to (effectively) ignore short presses of the Power button. In theory.

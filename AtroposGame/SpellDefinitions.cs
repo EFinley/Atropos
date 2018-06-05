@@ -26,13 +26,17 @@ namespace Atropos
     public class Glyph
     {
         public Quaternion Orientation { get; set; }
+        public Vector3 OrientationVector { get; set; }
         public float AngleTo(Quaternion other) { return Orientation.AngleTo(other); }
+        public double AngleTo(Vector3 other) { return OrientationVector.AngleTo(other); }
         public Glyph NextGlyph { get; set; } // Or a *list* of NextGlyphs, associated with different spells?  Would need a way to know *which* spell is thus indicated... though not if spells are uniquely taught with no common gestures.
         public double SteadinessScoreWhenDefined { get; set; }
         public double OrientationSigma { get; set; }
         public string FeedbackSFXName { get; set; }
         public string ProgressSFXName { get; set; }
-        public IEffect FeedbackSFX { get { return MasterSpellLibrary.SpellSFX[FeedbackSFXName]; } }
+        //public IEffect FeedbackSFX { get { return MasterSpellLibrary.SpellSFX[FeedbackSFXName]; } }
+        public IEffect FeedbackSFX { get; set; }
+        public int FeedbackSFXid { get; set; }
         public IEffect ProgressSFX { get { return MasterSpellLibrary.SpellSFX[ProgressSFXName]; } }
 
         public string Name { get; set; }
@@ -79,32 +83,54 @@ namespace Atropos
             }
         }
 
-        // TODO - Add subtly different SFX loops for each of the ones in these first two sets
-        public static Glyph L = new Glyph() { Name = "Lesser", Instruction_Short = "Fingers down" };
-        public static Glyph M = new Glyph() { Name = "Moderate", Instruction_Short = "Thumb down" };
-        public static Glyph H = new Glyph() { Name = "High", Instruction_Short = "Fingers up" };
-        public static Glyph G = new Glyph() { Name = "Grand", Instruction_Short = "Thumb down, palm up" };
-        public static List<Glyph> MagnitudeGlyphs = new List<Glyph> { L, M, H, G };
+        private Glyph(double x, double y, double z, double w) : this(new Quaternion((float)x, (float)y, (float)z, (float)w))
+        {
 
-        public static Glyph D = new Glyph() { Name = "Defense", Instruction_Short = "Palm down" };
-        public static Glyph A = new Glyph() { Name = "Attack", Instruction_Short = "Thumb up" };
-        public static Glyph C = new Glyph() { Name = "Control", Instruction_Short = "Palm up" };
+        }
+
+        private Glyph(double x, double y, double z)
+        {
+            OrientationVector = new Vector3((float)x, (float)y, (float)z).Normalize();
+            ProgressSFXName = MasterSpellLibrary.defaultProgressSFXName;
+            FeedbackSFXName = MasterSpellLibrary.defaultFeedbackSFXName;
+        }
+
+        public static Glyph L = new Glyph(0, -1, 0) { Name = "Lesser", Instruction_Short = "Fingers down", FeedbackSFXName = "Magic.Aura", FeedbackSFXid = Resource.Raw.aura_magic  };
+        public static Glyph M = new Glyph(0, 0, -1) { Name = "Moderate", Instruction_Short = "Palm up", FeedbackSFXName = "Magic.DeepVenetian", FeedbackSFXid = Resource.Raw._170660_DeepVenetian };
+        public static Glyph H = new Glyph(0, 1, 0) { Name = "High", Instruction_Short = "Fingers up", FeedbackSFXName = "Magic.InfiniteAubergine", FeedbackSFXid = Resource.Raw._37847_infiniteauubergine };
+        public static Glyph G = new Glyph(1, 0, 1) { Name = "Grand", Instruction_Short = "Thumb down, palm up", FeedbackSFXName = "Magic.Rommble", FeedbackSFXid = Resource.Raw._249186_120bpm6sanser_g };
+        public static List<Glyph> MagnitudeGlyphs = new List<Glyph> { L, M, H }; // TODO: Add "G" only if user qualifies for it (i.e. after not just tutorials but active use)
+
+        public static Glyph D = new Glyph(1, 0, 0) { Name = "Defense", Instruction_Short = "Thumb down", FeedbackSFXName = "Magic.MidtonePianesque", FeedbackSFXid = Resource.Raw._259944_midtonePianoesqueLoop };
+        public static Glyph A = new Glyph(-1, 0, 0) { Name = "Attack", Instruction_Short = "Thumb up", FeedbackSFXName = "Magic.StrongerThanTheDark", FeedbackSFXid = Resource.Raw._316626_strongerThanTheDark_needsTrim };
+        public static Glyph C = new Glyph(0, 0, 1) { Name = "Control", Instruction_Short = "Palm down", FeedbackSFXName = "Magic.MelodicPad", FeedbackSFXid = Resource.Raw._316629_melodicPad_needs_trimming };
         public static List<Glyph> SpellTypeGlyphs = new List<Glyph> { D, A, C };
-        
-        public static Glyph F = new Glyph() { Name = "Fire", Instruction_Short = "Thumb up, palm down" };
-        public static Glyph I = new Glyph() { Name = "Ice", Instruction_Short = "Thumb down, palm down" };
-        public static Glyph Z = new Glyph() { Name = "Electricity", Instruction_Short = "Thumb up, palm up" };
-        public static Glyph X = new Glyph() { Name = "Mysteries", Instruction_Short = "Fingers up, thumb up" };
-        public static Glyph N = new Glyph() { Name = "Entropy", Instruction_Short = "Fingers down, thumb down" };
-        public static Glyph T = new Glyph() { Name = "Time", Instruction_Short = "Fingers up, thumb down" };
-        public static Glyph R = new Glyph() { Name = "Resonance", Instruction_Short = "Fingers down, thumb up" };
-        public static Glyph P = new Glyph() { Name = "Project", Instruction_Short = "Fingers up, palm down" };
-        public static Glyph S = new Glyph() { Name = "Summon", Instruction_Short = "Fingers up, palm up" };
-        public static Glyph K = new Glyph() { Name = "Kinetic", Instruction_Short = "Fingers down, palm down" };
-        public static Glyph B = new Glyph() { Name = "Biological", Instruction_Short = "Fingers down, palm up" };
-        public static List<Glyph> AllGlyphs = new List<Glyph> { L, M, H, G, D, A, C, F, I, Z, X, N, T, R, P, S, K, B };
 
+        public static Glyph P = new Glyph(0, 1, 1) { Name = "Project", Instruction_Short = "Fingers up, palm down", FeedbackSFXName = "Magic.LowSmoothLoop", FeedbackSFXid = Resource.Raw._417781_guitar_loop };
+        public static Glyph S = new Glyph(0, 1, -1) { Name = "Summon", Instruction_Short = "Fingers up, palm up", FeedbackSFXName = "Magic.Ommm", FeedbackSFXid = Resource.Raw._106561__soepy__om22k };
+        public static Glyph K = new Glyph(0, -1, 1) { Name = "Ken", Instruction_Short = "Fingers down, palm down", FeedbackSFXName = "Magic.GrittyDrone", FeedbackSFXid = Resource.Raw._371887_gritty_drone };
+        public static Glyph B = new Glyph(0, -1, -1) { Name = "Become", Instruction_Short = "Fingers down, palm up", FeedbackSFXName = "Magic.FemReverbCSharp", FeedbackSFXid = Resource.Raw._315850_femaleCSharpLoop };
+        public static Glyph F = new Glyph(-1, 0, 1) { Name = "Fire", Instruction_Short = "Thumb up, palm down", FeedbackSFXName = "Magic.FireLoop", FeedbackSFXid = Resource.Raw._347706_fire_loop };
+        public static Glyph I = new Glyph(1, 0, 1) { Name = "Ice", Instruction_Short = "Thumb down, palm down", FeedbackSFXName = "Magic.Galewinds", FeedbackSFXid = Resource.Raw._377068_galewinds };
+        public static Glyph Z = new Glyph(-1, 0, -1) { Name = "Electricity", Instruction_Short = "Thumb up, palm up", FeedbackSFXName = "Magic.ElectricLoop", FeedbackSFXid = Resource.Raw._253324_electricity_loop };
+        public static Glyph X = new Glyph(-1, 1, 0) { Name = "Mysteries", Instruction_Short = "Fingers up, thumb up", FeedbackSFXName = "Magic.AlienTheremin", FeedbackSFXid = Resource.Raw._344156_alientheremin };
+        public static Glyph N = new Glyph(1, -1, 0) { Name = "Entropy", Instruction_Short = "Fingers down, thumb down", FeedbackSFXName = "Magic.NecroLoop", FeedbackSFXid = Resource.Raw._211638_necromantic_loop };
+        public static Glyph R = new Glyph(-1, -1, 0) { Name = "Resonance", Instruction_Short = "Fingers down, thumb up", FeedbackSFXName = "Magic.NanobladeLoop", FeedbackSFXid = Resource.Raw._49685_nanoblade_loop };
+        public static Glyph T = new Glyph(1, 1, 0) { Name = "Time", Instruction_Short = "Fingers up, thumb down", FeedbackSFXName = "Magic.ViolinLoop", FeedbackSFXid = Resource.Raw._81804_violinloop };
+        public static List<Glyph> AllGlyphs = new List<Glyph> { L, M, H, G, D, A, C, P, S, K, B, F, I, Z, X, N, T, R };
+        public static List<Glyph> ElementGlyphs { get => AllGlyphs.Where(g => !MagnitudeGlyphs.Contains(g) && !SpellTypeGlyphs.Contains(g)).ToList(); }
+
+        public static Glyph StartOfSpell = new Glyph();
         public static Glyph EndOfSpell = new Glyph();
+
+        public static bool operator ==(Glyph first, Glyph second)
+        {
+            return first?.Name == second?.Name && first?.OrientationVector == second?.OrientationVector;
+        }
+        public static bool operator !=(Glyph first, Glyph second)
+        {
+            return first?.Name != second?.Name || first?.OrientationVector != second?.OrientationVector;
+        }
     }
 
     public class Spell
@@ -115,31 +141,41 @@ namespace Atropos
         public bool IsNewStyle = false;
         public float AngleTo(Quaternion orientation) { return ZeroStance.AngleTo(orientation); }
         public List<Glyph> Glyphs { get; set; }
-        private string castResultName;
-        private string failResultName;
+        public SpellResult Result { get; set; }
+
+        public string CastResultName;
+        public string FailResultName;
         private Func<object, Task> castResultFunc;
         private Func<object, Task> failResultFunc;
         public Func<object, Task> CastingResult
         {
             get { return castResultFunc; }
-            set { castResultName = MasterSpellLibrary.AddResultFunction(value); castResultFunc = value; }
+            set { CastResultName = MasterSpellLibrary.AddResultFunction(value); castResultFunc = value; }
         }
         public Func<object, Task> FailResult
         {
             get { return failResultFunc; }
-            set { failResultName = MasterSpellLibrary.AddResultFunction(value); failResultFunc = value; }
+            set { FailResultName = MasterSpellLibrary.AddResultFunction(value); failResultFunc = value; }
         }
+
+        public Glyph Magnitude { get => Glyphs.ElementAtOrDefault(0); }
+        public Glyph SpellType { get => Glyphs.ElementAtOrDefault(1); }
+        public Glyph KeyGlyph { get => Glyphs.ElementAtOrDefault(2); }
+
+        // Helper booleans for keeping track of the spell's effects.  TEMPORARY.
+        public static bool IsInEffectAsCaster = false;
+        public static bool IsInEffectAsTarget = false;
 
         public Spell(string name, Quaternion? zeroStance = null, string castResult = null, string failResult = null)
         {
             SpellName = name;
             Glyphs = new List<Glyph>();
             ZeroStance = zeroStance ?? Quaternion.Identity;
-            castResultName = castResult ?? MasterSpellLibrary.nullCastResultName;
-            failResultName = failResult ?? MasterSpellLibrary.nullCastResultName;
-            if (!MasterSpellLibrary.CastingResults.TryGetValue(castResultName, out castResultFunc))
+            CastResultName = castResult ?? MasterSpellLibrary.nullCastResultName;
+            FailResultName = failResult ?? MasterSpellLibrary.nullCastResultName;
+            if (!MasterSpellLibrary.CastingResults.TryGetValue(CastResultName, out castResultFunc))
                                         castResultFunc = MasterSpellLibrary.nullCastResultFunction;
-            if (!MasterSpellLibrary.CastingResults.TryGetValue(failResultName, out failResultFunc))
+            if (!MasterSpellLibrary.CastingResults.TryGetValue(FailResultName, out failResultFunc))
                                         failResultFunc = MasterSpellLibrary.nullCastResultFunction;
         }
 
@@ -149,12 +185,13 @@ namespace Atropos
             IsNewStyle = true;
             Glyphs = glyphs.ToList();
 
+            castResultFunc = (o) => { return Speech.SayAllOf($"{SpellName} cast."); };
             // Gimmick to make sure that object initialization can happen before this executes
             Task.Delay(50).ContinueWith(_ =>
             {
-                if (!MasterSpellLibrary.CastingResults.TryGetValue(castResultName, out castResultFunc))
-                    castResultFunc = MasterSpellLibrary.nullCastResultFunction;
-                if (!MasterSpellLibrary.CastingResults.TryGetValue(failResultName, out failResultFunc))
+                if (!MasterSpellLibrary.CastingResults.TryGetValue(CastResultName, out castResultFunc))
+                    castResultFunc = (o) => { return Speech.SayAllOf($"Successfully cast {SpellName}."); };
+                if (!MasterSpellLibrary.CastingResults.TryGetValue(FailResultName, out failResultFunc))
                     failResultFunc = MasterSpellLibrary.nullCastResultFunction;
             });
         }
@@ -173,7 +210,7 @@ namespace Atropos
 
         public override string ToString()
         {
-            return $"{SpellName};" + Glyphs.Select(g => g.ToString()).Join(":", "") + $";{ZeroStance.ToString()};{castResultName};{failResultName}";
+            return $"{SpellName};" + Glyphs.Select(g => g.ToString()).Join(":", "") + $";{ZeroStance.ToString()};{CastResultName};{FailResultName}";
         }
 
         public static Spell FromString(string inputStr)
@@ -192,6 +229,24 @@ namespace Atropos
         }
 
         public static Spell None = new Spell("No Spell");
+    }
+
+    public static class NewSpellLibrary
+    {
+        public static List<Spell> AllSpells
+            = new List<Spell>
+            {
+                new Spell("Dart", Glyph.L, Glyph.A, Glyph.P){ Result = SpellResult.Dart },
+                new Spell("Zap", Glyph.L, Glyph.A, Glyph.Z, Glyph.P){ Result = SpellResult.Zap },
+                new Spell("Barrier", Glyph.L, Glyph.D, Glyph.S){ Result = SpellResult.Barrier },
+                new Spell("Shield", Glyph.M, Glyph.D, Glyph.X, Glyph.P){ Result = SpellResult.Shield },
+                new Spell("Lance", Glyph.M, Glyph.A, Glyph.K, Glyph.P){ Result = SpellResult.Lance },
+                new Spell("Frost", Glyph.M, Glyph.A, Glyph.I, Glyph.P){ Result = SpellResult.Frost },
+                new Spell("Flame", Glyph.M, Glyph.A, Glyph.F, Glyph.P){ Result = SpellResult.Flame },
+                new Spell("Clarity", Glyph.L, Glyph.C, Glyph.X, Glyph.T){ Result = SpellResult.Clarity },
+                new Spell("Dazzle", Glyph.M, Glyph.C, Glyph.X, Glyph.P){ Result = SpellResult.Dazzle },
+                new Spell("Paralyze", Glyph.H, Glyph.C, Glyph.B, Glyph.K, Glyph.N){ Result = SpellResult.Paralyze }
+            };
     }
 
     public static class MasterSpellLibrary
@@ -288,7 +343,11 @@ namespace Atropos
                 { "Magic.ZoomSlowingDown", Res.SFX.Preregister("Magic.ZoomSlowingDown", Resource.Raw._366092_zoom_slowing_down) },
                 { "Magic.WindingDownwnwnnn", Res.SFX.Preregister("Magic.WindingDownwnwnnn", Resource.Raw._216093_windingdownwnwnnn) },
                 { "Magic.SonarAlert", Res.SFX.Preregister("Magic.SonarAlert", Resource.Raw._351602_sonar) },
-                { "Magic.Transmat", Res.SFX.Preregister("Magic.Transmat", Resource.Raw._234804_transmat) }
+                { "Magic.Transmat", Res.SFX.Preregister("Magic.Transmat", Resource.Raw._234804_transmat) },
+                { "Magic.LowSmoothLoop", Res.SFX.Preregister("Magic.LowSmoothLoop", Resource.Raw._417781_guitar_loop) },
+                { "Magic.FireLoop", Res.SFX.Preregister("Magic.FireLoop", Resource.Raw._347706_fire_loop) },
+                { "Magic.ElectricLoop", Res.SFX.Preregister("Magic.ElectricLoop", Resource.Raw._253324_electricity_loop) },
+                { "Magic.WaterLoop", Res.SFX.Preregister("Magic.WaterLoop", Resource.Raw._366159_water_loop) }
             };
             Log.Debug("Spells", $"Spell SFXes loaded after {sw.ElapsedMilliseconds} ms.");
             _sfxReadyFlag.Set();
@@ -350,7 +409,7 @@ namespace Atropos
         public static void SetUpResultFunctions()
         {
             AddResultFunction("Play " + defaultSuccessSFXName, PlaySFXResultFunctionFor(defaultSuccessSFXName));
-            AddResultFunction("SonarDemo", Spell_Results.SonarDemo);
+            //AddResultFunction("SonarDemo", (o) => { SpellResult.SonarDemo.OnCast(o); return Task.CompletedTask; });
             foreach (var fxname in SpellSFX.Keys) AddResultFunction("Play " + fxname, PlaySFXResultFunctionFor(fxname));
         }
     }
