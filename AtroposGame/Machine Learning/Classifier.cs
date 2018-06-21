@@ -468,7 +468,8 @@ namespace Atropos.Machine_Learning
             foreach (int i in Enumerable.Range(0, keys.Count))
             {
                 CueClassifiersNames.Add(keys[i]);
-                var classifier = Serializer.Deserialize<ClusterClassifier>(valsSerialform[i]) ?? Serializer.Deserialize<Classifier>(valsSerialform[i]);
+                var classifier = (Classifier)Serializer.Deserialize<ClusterClassifier>(valsSerialform[i]);
+                classifier = classifier ?? Serializer.Deserialize<Classifier>(valsSerialform[i]);
                 CueClassifiersValues.Add(classifier);
             }
 

@@ -6,6 +6,7 @@ using System.Text;
 
 using Android.App;
 using Android.Content;
+using Android.Util;
 using Android.OS;
 using Android.Runtime;
 using Android.Views;
@@ -35,6 +36,7 @@ namespace Atropos
         {
             SFX = new SFX();
             Speech = new Speech();
+            Speech_Speakers = new Speech(true);
             //Speech.Init(); // Unnecessary in v3.0?? - No, but moved to Speech() ctor.
             Storage = SimpleStorage.EditGroup("Atropos_General");
             SpecificTags = SimpleStorage.EditGroup("Atropos_SpecificTags");
@@ -68,34 +70,22 @@ namespace Atropos
 
         public static bool AllowNewActivities = true;
 
-        private const string allowSpeakerSetting = "AllowSpeaker";
-        private static Persistent<bool> _allowSpeaker = new Persistent<bool>(allowSpeakerSetting);
+        private static Persistent<bool> _allowSpeaker = new Persistent<bool>("AllowSpeaker");
         public static bool AllowSpeakerSounds { get { return (bool)_allowSpeaker; } set { _allowSpeaker.Value = value; } }
         public static List<IEffect> PersistentSFX = new List<IEffect>(); // TODO - currently this does nothing, should function to keep those effects alive.
                                                                          // Also TODO to go with this: set those up to 'duck' properly when other effects are playing.
-        private const string solipsismModeKey = "SolipsismMode";
-        //private static Persistent<bool> _allowNfc;
-        private static Persistent<bool> _solipsismMode = new Persistent<bool>(solipsismModeKey);
-        //public static bool AllowNfc { get { return (bool)_allowNfc; } set { _allowNfc = (Persistent<bool>)value; } }
+
+        private static Persistent<bool> _solipsismMode = new Persistent<bool>("SolipsismMode");
         public static bool SolipsismMode { get { return _solipsismMode; } set { _solipsismMode.Value = value; } }
 
-        private const string lefthandedModeKey = "LeftHandedMode";
-        //private static Persistent<bool> _allowNfc;
-        private static Persistent<bool> _lefthandedMode = new Persistent<bool>(lefthandedModeKey);
-        //public static bool AllowNfc { get { return (bool)_allowNfc; } set { _allowNfc = (Persistent<bool>)value; } }
+        private static Persistent<bool> _lefthandedMode = new Persistent<bool>("LeftHandedMode");
         public static bool LefthandedMode { get { return _lefthandedMode; } set { _lefthandedMode.Value = value; } }
 
-        private const string screenFlipModeKey = "ScreenFlipMode";
-        //private static Persistent<bool> _allowNfc;
-        private static Persistent<bool> _screenFlipMode = new Persistent<bool>(screenFlipModeKey);
-        //public static bool AllowNfc { get { return (bool)_allowNfc; } set { _allowNfc = (Persistent<bool>)value; } }
+        private static Persistent<bool> _screenFlipMode = new Persistent<bool>("ScreenFlipMode");
         public static bool ScreenFlipMode { get { return _screenFlipMode; } set { _screenFlipMode.Value = value; } }
 
-        private const string allowNfcSetting = "AllowNFC";
-        //private static Persistent<bool> _allowNfc;
-        private static bool _allowNfc;
-        //public static bool AllowNfc { get { return (bool)_allowNfc; } set { _allowNfc = (Persistent<bool>)value; } }
-        public static bool AllowNfc { get { return _allowNfc; } set { _allowNfc = value; } }
+        private static Persistent<bool> _allowNfc = new Persistent<bool>("AllowNFC");
+        public static bool AllowNfc { get { return _allowNfc; } set { _allowNfc.Value = value; } }
 
         public class InteractionMode
         {
@@ -145,11 +135,12 @@ namespace Atropos
         
         public static SFX SFX { get; set; }
         public static Speech Speech { get; set; }
+        public static Speech Speech_Speakers { get; set; }
         public static SimpleStorage Storage { get; set; }
         public static SimpleStorage SpecificTags { get; set; }
         public static bool DebuggingSignalFlag { get; set; } = false;
 
-        public static Activity CurrentActivity { get; set;}
+        //public static Activity CurrentActivity { get; set;}
         //public static DeviceSensorCalibration DeviceAccelerometerCalibration { get; set; }
 
         private static int _numSensors = 0;
@@ -255,6 +246,8 @@ namespace Atropos
     [Serializable]
     public class Persistent<T>
     {
+        private static string Tag { get { return $"Persistent<{typeof(T).Name}>"; } }
+
         // This section will give us a repeatable, unique-per-Type, ID based on the order in which things are constructed,
         // and by which functions/properties/etc they've been created.  This is, therefore, not *guaranteed* to
         // create the same ID for the same named variable in your code each time it is run, but unless you're creating
@@ -271,7 +264,7 @@ namespace Atropos
                 // Check that we're not running too strong a risk of ambiguity (multiple Persistent<T> with the same T and origin, within a brief space of time)
                 if ((callerName == lastCallerName) && (DateTime.Now > lastUse + warningInterval))
                 {
-                    Android.Util.Log.Warn($"Persistent<{typeof(T).Name}>.GetKey", $"Careful! Caller {callerName} is invoking back-to-back Persistent<{typeof(T).Name}> within a short time of one another.  This might result in issues if the timing is different next time around.  Consider explicitly naming the Persistent objects or separating the routine that creates them.");
+                    Log.Warn(Tag, $"Careful! Caller {callerName} is invoking back-to-back Persistent<{typeof(T).Name}> within a short time of one another.  This might result in issues if the timing is different next time around.  Consider explicitly naming the Persistent objects or separating the routine that creates them.");
                 }
                 lastCallerName = callerName;
                 lastUse = DateTime.Now;
@@ -287,23 +280,47 @@ namespace Atropos
                 return $"{callerName}{callerNameInvocations[callerName]}";
             }
         }
-        public Persistent([CallerMemberName] string keyRoot = "Default")
+        public Persistent([CallerMemberName] string keyRoot = "Default", T initialValue = default(T))
         {
             _key = GetKey(keyRoot);
+            if (initialValue.ToString() != default(T).ToString()) // Cheater's way of checking equality even with arbitrary types which don't have == operators defined.
+            {
+                HasValue = true; // If you happen to have set the initial value to the default (say, False), then it won't know this fact. Trust me that it's not worth the headache to figure this out (given nullable and non-nullable types, etc).  Better to just let the first retrieval cope with caching it instead.
+                _value = initialValue;
+            }
         }
+
+        public bool HasValue { get; set; } = false;
 
         private T _value;
         public virtual T Value
         {
             get
             {
-                _value = (_value != null) ? _value : storage.Get<T>(_key, default(T));
-                return _value;
+                if (HasValue) return _value;
+                if (storage.HasKey(_key))
+                {
+                    _value = storage.Get<T>(_key);
+                    Log.Debug(Tag, $"Retrieved {Tag}[[{_key}]]: {_value}");
+                    HasValue = true;
+                    return _value;
+                }
+                else
+                {
+                    Log.Debug(Tag, $"Unable to find stored key {_key}; using default.");
+                    _value = default(T);
+                    return _value;
+                }
             }
             set
             {
                 _value = value;
-                Task.Run(async () => { await storage.PutAsync<T>(_key, value); });
+                HasValue = true;
+                Task.Run(() => 
+                {
+                    storage.Put<T>(_key, value);
+                    Log.Debug(Tag, $"Stored {Tag}[[{_key}]] as {storage.Get<T>(_key)}");
+                });
             }
         }
 
@@ -325,6 +342,7 @@ namespace Atropos
         {
             get
             {
+                if (_storage == null) Log.Debug(Tag, $"Initializing {_storageName}");
                 _storage = _storage ?? SimpleStorage.EditGroup(_storageName); // new NamedSimpleStorage(_storageName);
                 return _storage;
             }

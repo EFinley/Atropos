@@ -21,6 +21,7 @@ namespace Atropos
         public double? Speed;
         public bool? Looping;
         public bool? UseSpeakers;
+        public bool Interrupt;
 
         [NonSerialized]
         public CancellationToken? CancelToken;

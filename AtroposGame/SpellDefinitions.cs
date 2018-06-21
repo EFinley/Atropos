@@ -38,6 +38,7 @@ namespace Atropos
         public IEffect FeedbackSFX { get; set; }
         public int FeedbackSFXid { get; set; }
         public IEffect ProgressSFX { get { return MasterSpellLibrary.SpellSFX[ProgressSFXName]; } }
+        public int IllustrationId { get; set; }
 
         public string Name { get; set; }
         public string Description { get; set; }
@@ -95,28 +96,46 @@ namespace Atropos
             FeedbackSFXName = MasterSpellLibrary.defaultFeedbackSFXName;
         }
 
-        public static Glyph L = new Glyph(0, -1, 0) { Name = "Lesser", Instruction_Short = "Fingers down", FeedbackSFXName = "Magic.Aura", FeedbackSFXid = Resource.Raw.aura_magic  };
-        public static Glyph M = new Glyph(0, 0, -1) { Name = "Moderate", Instruction_Short = "Palm up", FeedbackSFXName = "Magic.DeepVenetian", FeedbackSFXid = Resource.Raw._170660_DeepVenetian };
-        public static Glyph H = new Glyph(0, 1, 0) { Name = "High", Instruction_Short = "Fingers up", FeedbackSFXName = "Magic.InfiniteAubergine", FeedbackSFXid = Resource.Raw._37847_infiniteauubergine };
-        public static Glyph G = new Glyph(1, 0, 1) { Name = "Grand", Instruction_Short = "Thumb down, palm up", FeedbackSFXName = "Magic.Rommble", FeedbackSFXid = Resource.Raw._249186_120bpm6sanser_g };
+        public static Glyph L = new Glyph(0, -1, 0)
+            { Name = "Lesser", Instruction_Short = "Fingers down", IllustrationId = Resource.Drawable.glyphL, FeedbackSFXid = Resource.Raw.aura_magic  };
+        public static Glyph M = new Glyph(0, 0, -1)
+            { Name = "Moderate", Instruction_Short = "Palm up", IllustrationId = Resource.Drawable.glyphM, FeedbackSFXid = Resource.Raw._170660_DeepVenetian };
+        public static Glyph H = new Glyph(0, 1, 0)
+            { Name = "High", Instruction_Short = "Fingers up", IllustrationId = Resource.Drawable.glyphH, FeedbackSFXid = Resource.Raw._37847_infiniteauubergine };
+        public static Glyph G = new Glyph(1, 0, 1)
+            { Name = "Grand", Instruction_Short = "Thumb down, palm up", IllustrationId = Resource.Drawable.glyphG, FeedbackSFXid = Resource.Raw._249186_120bpm6sanser_g };
         public static List<Glyph> MagnitudeGlyphs = new List<Glyph> { L, M, H }; // TODO: Add "G" only if user qualifies for it (i.e. after not just tutorials but active use)
 
-        public static Glyph D = new Glyph(1, 0, 0) { Name = "Defense", Instruction_Short = "Thumb down", FeedbackSFXName = "Magic.MidtonePianesque", FeedbackSFXid = Resource.Raw._259944_midtonePianoesqueLoop };
-        public static Glyph A = new Glyph(-1, 0, 0) { Name = "Attack", Instruction_Short = "Thumb up", FeedbackSFXName = "Magic.StrongerThanTheDark", FeedbackSFXid = Resource.Raw._316626_strongerThanTheDark_needsTrim };
-        public static Glyph C = new Glyph(0, 0, 1) { Name = "Control", Instruction_Short = "Palm down", FeedbackSFXName = "Magic.MelodicPad", FeedbackSFXid = Resource.Raw._316629_melodicPad_needs_trimming };
+        public static Glyph D = new Glyph(1, 0, 0)
+            { Name = "Defense", Instruction_Short = "Thumb down", IllustrationId = Resource.Drawable.glyphD, FeedbackSFXid = Resource.Raw._259944_midtonePianoesqueLoop };
+        public static Glyph A = new Glyph(-1, 0, 0)
+            { Name = "Attack", Instruction_Short = "Thumb up", IllustrationId = Resource.Drawable.glyphA, FeedbackSFXid = Resource.Raw._316626_strongerThanTheDark_needsTrim };
+        public static Glyph C = new Glyph(0, 0, 1)
+            { Name = "Control", Instruction_Short = "Palm down", IllustrationId = Resource.Drawable.glyphC, FeedbackSFXid = Resource.Raw._316629_melodicPad_needs_trimming };
         public static List<Glyph> SpellTypeGlyphs = new List<Glyph> { D, A, C };
 
-        public static Glyph P = new Glyph(0, 1, 1) { Name = "Project", Instruction_Short = "Fingers up, palm down", FeedbackSFXName = "Magic.LowSmoothLoop", FeedbackSFXid = Resource.Raw._417781_guitar_loop };
-        public static Glyph S = new Glyph(0, 1, -1) { Name = "Summon", Instruction_Short = "Fingers up, palm up", FeedbackSFXName = "Magic.Ommm", FeedbackSFXid = Resource.Raw._106561__soepy__om22k };
-        public static Glyph K = new Glyph(0, -1, 1) { Name = "Ken", Instruction_Short = "Fingers down, palm down", FeedbackSFXName = "Magic.GrittyDrone", FeedbackSFXid = Resource.Raw._371887_gritty_drone };
-        public static Glyph B = new Glyph(0, -1, -1) { Name = "Become", Instruction_Short = "Fingers down, palm up", FeedbackSFXName = "Magic.FemReverbCSharp", FeedbackSFXid = Resource.Raw._315850_femaleCSharpLoop };
-        public static Glyph F = new Glyph(-1, 0, 1) { Name = "Fire", Instruction_Short = "Thumb up, palm down", FeedbackSFXName = "Magic.FireLoop", FeedbackSFXid = Resource.Raw._347706_fire_loop };
-        public static Glyph I = new Glyph(1, 0, 1) { Name = "Ice", Instruction_Short = "Thumb down, palm down", FeedbackSFXName = "Magic.Galewinds", FeedbackSFXid = Resource.Raw._377068_galewinds };
-        public static Glyph Z = new Glyph(-1, 0, -1) { Name = "Electricity", Instruction_Short = "Thumb up, palm up", FeedbackSFXName = "Magic.ElectricLoop", FeedbackSFXid = Resource.Raw._253324_electricity_loop };
-        public static Glyph X = new Glyph(-1, 1, 0) { Name = "Mysteries", Instruction_Short = "Fingers up, thumb up", FeedbackSFXName = "Magic.AlienTheremin", FeedbackSFXid = Resource.Raw._344156_alientheremin };
-        public static Glyph N = new Glyph(1, -1, 0) { Name = "Entropy", Instruction_Short = "Fingers down, thumb down", FeedbackSFXName = "Magic.NecroLoop", FeedbackSFXid = Resource.Raw._211638_necromantic_loop };
-        public static Glyph R = new Glyph(-1, -1, 0) { Name = "Resonance", Instruction_Short = "Fingers down, thumb up", FeedbackSFXName = "Magic.NanobladeLoop", FeedbackSFXid = Resource.Raw._49685_nanoblade_loop };
-        public static Glyph T = new Glyph(1, 1, 0) { Name = "Time", Instruction_Short = "Fingers up, thumb down", FeedbackSFXName = "Magic.ViolinLoop", FeedbackSFXid = Resource.Raw._81804_violinloop };
+        public static Glyph P = new Glyph(0, 1, 1)
+            { Name = "Project", Instruction_Short = "Fingers up, palm down", IllustrationId = Resource.Drawable.glyphP, FeedbackSFXid = Resource.Raw._417781_guitar_loop };
+        public static Glyph S = new Glyph(0, 1, -1)
+            { Name = "Summon", Instruction_Short = "Fingers up, palm up", IllustrationId = Resource.Drawable.glyphS, FeedbackSFXid = Resource.Raw._106561__soepy__om22k };
+        public static Glyph K = new Glyph(0, -1, 1)
+            { Name = "Ken", Instruction_Short = "Fingers down, palm down", IllustrationId = Resource.Drawable.glyphK, FeedbackSFXid = Resource.Raw._371887_gritty_drone };
+        public static Glyph B = new Glyph(0, -1, -1)
+            { Name = "Become", Instruction_Short = "Fingers down, palm up", IllustrationId = Resource.Drawable.glyphB, FeedbackSFXid = Resource.Raw._315850_femaleCSharpLoop };
+        public static Glyph F = new Glyph(-1, 0, 1)
+            { Name = "Fire", Instruction_Short = "Thumb up, palm down", IllustrationId = Resource.Drawable.glyphF, FeedbackSFXid = Resource.Raw._347706_fire_loop };
+        public static Glyph I = new Glyph(1, 0, 1)
+            { Name = "Ice", Instruction_Short = "Thumb down, palm down", IllustrationId = Resource.Drawable.glyphI, FeedbackSFXid = Resource.Raw._377068_galewinds };
+        public static Glyph Z = new Glyph(-1, 0, -1)
+            { Name = "Electricity", Instruction_Short = "Thumb up, palm up", IllustrationId = Resource.Drawable.glyphZ, FeedbackSFXid = Resource.Raw._253324_electricity_loop };
+        public static Glyph X = new Glyph(-1, 1, 0)
+            { Name = "Mysteries", Instruction_Short = "Fingers up, thumb up", IllustrationId = Resource.Drawable.glyphX, FeedbackSFXid = Resource.Raw._344156_alientheremin };
+        public static Glyph N = new Glyph(1, -1, 0)
+            { Name = "Entropy", Instruction_Short = "Fingers down, thumb down", IllustrationId = Resource.Drawable.glyphN, FeedbackSFXid = Resource.Raw._211638_necromantic_loop };
+        public static Glyph R = new Glyph(-1, -1, 0)
+            { Name = "Resonance", Instruction_Short = "Fingers down, thumb up", IllustrationId = Resource.Drawable.glyphR, FeedbackSFXid = Resource.Raw._49685_nanoblade_loop };
+        public static Glyph T = new Glyph(1, 1, 0)
+            { Name = "Time", Instruction_Short = "Fingers up, thumb down", IllustrationId = Resource.Drawable.glyphT, FeedbackSFXid = Resource.Raw._81804_violinloop };
         public static List<Glyph> AllGlyphs = new List<Glyph> { L, M, H, G, D, A, C, P, S, K, B, F, I, Z, X, N, T, R };
         public static List<Glyph> ElementGlyphs { get => AllGlyphs.Where(g => !MagnitudeGlyphs.Contains(g) && !SpellTypeGlyphs.Contains(g)).ToList(); }
 
@@ -141,7 +160,7 @@ namespace Atropos
         public bool IsNewStyle = false;
         public float AngleTo(Quaternion orientation) { return ZeroStance.AngleTo(orientation); }
         public List<Glyph> Glyphs { get; set; }
-        public SpellResult Result { get; set; }
+        public SpellDefinition Result { get; set; }
 
         public string CastResultName;
         public string FailResultName;
@@ -236,16 +255,16 @@ namespace Atropos
         public static List<Spell> AllSpells
             = new List<Spell>
             {
-                new Spell("Dart", Glyph.L, Glyph.A, Glyph.P){ Result = SpellResult.Dart },
-                new Spell("Zap", Glyph.L, Glyph.A, Glyph.Z, Glyph.P){ Result = SpellResult.Zap },
-                new Spell("Barrier", Glyph.L, Glyph.D, Glyph.S){ Result = SpellResult.Barrier },
-                new Spell("Shield", Glyph.M, Glyph.D, Glyph.X, Glyph.P){ Result = SpellResult.Shield },
-                new Spell("Lance", Glyph.M, Glyph.A, Glyph.K, Glyph.P){ Result = SpellResult.Lance },
-                new Spell("Frost", Glyph.M, Glyph.A, Glyph.I, Glyph.P){ Result = SpellResult.Frost },
-                new Spell("Flame", Glyph.M, Glyph.A, Glyph.F, Glyph.P){ Result = SpellResult.Flame },
-                new Spell("Clarity", Glyph.L, Glyph.C, Glyph.X, Glyph.T){ Result = SpellResult.Clarity },
-                new Spell("Dazzle", Glyph.M, Glyph.C, Glyph.X, Glyph.P){ Result = SpellResult.Dazzle },
-                new Spell("Paralyze", Glyph.H, Glyph.C, Glyph.B, Glyph.K, Glyph.N){ Result = SpellResult.Paralyze }
+                new Spell("Dart", Glyph.L, Glyph.A, Glyph.P){ Result = SpellDefinition.Dart },
+                new Spell("Zap", Glyph.L, Glyph.A, Glyph.Z, Glyph.P){ Result = SpellDefinition.Zap },
+                new Spell("Barrier", Glyph.L, Glyph.D, Glyph.S){ Result = SpellDefinition.Barrier },
+                new Spell("Shield", Glyph.M, Glyph.D, Glyph.X, Glyph.P){ Result = SpellDefinition.Shield },
+                new Spell("Lance", Glyph.M, Glyph.A, Glyph.K, Glyph.P){ Result = SpellDefinition.Lance },
+                new Spell("Frost", Glyph.M, Glyph.A, Glyph.I, Glyph.P){ Result = SpellDefinition.Frost },
+                new Spell("Flame", Glyph.M, Glyph.A, Glyph.F, Glyph.P){ Result = SpellDefinition.Flame },
+                new Spell("Clarity", Glyph.L, Glyph.C, Glyph.X, Glyph.T){ Result = SpellDefinition.Clarity },
+                new Spell("Dazzle", Glyph.M, Glyph.C, Glyph.X, Glyph.P){ Result = SpellDefinition.Dazzle },
+                new Spell("Paralyze", Glyph.H, Glyph.C, Glyph.B, Glyph.K, Glyph.N){ Result = SpellDefinition.Paralyze }
             };
     }
 

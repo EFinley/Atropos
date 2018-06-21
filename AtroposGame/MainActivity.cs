@@ -182,7 +182,7 @@ namespace Atropos
 
             Encounters.Scenario.Current = Encounters.Scenario.Postcard;
 
-            Damageable.SetUpStandardHitReactions();
+            //Damageable.SetUpStandardHitReactions();
         }
 
         //private struct RoleInformation

@@ -117,12 +117,12 @@ namespace Atropos.Communications.Bluetooth
         public static string SUGGEST_TEAMMATE = "Suggest connecting to teammate at: ";
         public static string PROVIDE_NAME_AND_ROLE = "My name and role are as follows: ";
 
-        public static char ACKchar = (char)6;
-        public static char START = (char)2; // Not actually used, except as a placeholder value, but that could change.
-        public static char LF = (char)10;
-        public static char ENDTRANSBLOCK = (char)23;
-        public static char GROUP_SEPARATOR = (char)29;
-        public static char RECORD_SEPARATOR = (char)30;
+        public static char ACKchar = UniqueValues.ACKchar;
+        public static char START = UniqueValues.START; // Not actually used, except as a placeholder value, but that could change.
+        public static char LF = UniqueValues.LF;
+        public static char ENDTRANSBLOCK = UniqueValues.ENDTRANSBLOCK;
+        public static char GROUP_SEPARATOR = UniqueValues.GROUP_SEPARATOR;
+        public static char RECORD_SEPARATOR = UniqueValues.RECORD_SEPARATOR;
         public static char NEXT = GROUP_SEPARATOR;
         public static char[] onNEXT = new char[] { NEXT }; // Because Split(onThis, numGroups) requires a char array as onThis.
         public static char END = LF;

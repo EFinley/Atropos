@@ -22,6 +22,7 @@ using System.Collections;
 
 namespace Atropos
 {
+
     /// <summary>
     /// Acts as a dictionary, but actually just couples together two Lists (and remains 'live' to changes to either one).
     /// Usually you'll expose this as a property, returning a new one derived just then from the two lists.
@@ -179,14 +180,57 @@ namespace Atropos
 
     public static class DictionaryExtensions
     {
-        public static IEnumerable<Tkey> KeysFor<Tkey, Tvalue>(this IDictionary<Tkey, Tvalue> source, Tvalue value) where Tvalue : IEquatable<Tvalue>
+        public static Dictionary<string, string> Parse(this Dictionary<string, string> source, params string[] parseStrings)
         {
-            return source.Where(kvp => kvp.Value.Equals(value)).Select(kvp => kvp.Key);
+            if (parseStrings.Length == 0) return source;
+            if (parseStrings.Length == 1 && parseStrings[0].Contains(",")) parseStrings = parseStrings[0].Split(',');
+            foreach (var pString in parseStrings)
+            {
+                if (pString.Count(c => c == ':') != 1) throw new ArgumentException();
+                var subStr = pString.Split(':');
+                source[subStr[0]] = subStr[1];
+            }
+            return source;
         }
 
-        public static Tkey KeyFor<Tkey, Tvalue>(this IDictionary<Tkey, Tvalue> source, Tvalue value) where Tvalue : IEquatable<Tvalue>
+        public static Dictionary<string, object> Parse(this Dictionary<string, object> source, params string[] parseStrings)
         {
-            return source.KeysFor(value).FirstOrDefault();
+            if (parseStrings.Length == 0) return source;
+            if (parseStrings.Length == 1 && parseStrings[0].Contains(",")) parseStrings = parseStrings[0].Split(',');
+            foreach (var pString in parseStrings)
+            {
+                if (pString.Count(c => c == ':') != 1) throw new ArgumentException();
+                var subStr = pString.Split(':');
+                object parsedArg;
+                if (int.TryParse(subStr[1], out int intArg)) parsedArg = intArg;
+                else if (double.TryParse(subStr[1], out double dblArg)) parsedArg = dblArg;
+                //else if (DateTime.TryParse(subStr[1], out DateTime dtArg)) parsedArg = dtArg;
+                else parsedArg = subStr[1];
+                source[subStr[0]] = parsedArg;
+            }
+            return source;
+        }
+
+        public static Dictionary<string, object> Parse(this Dictionary<string, object> source, string arg1Name, int arg1Val, string arg2Name = null, object arg2Val = null, string arg3Name = null, object arg3Val = null)
+        {
+            if (!String.IsNullOrEmpty(arg1Name)) source[arg1Name] = arg1Val;
+            if (!String.IsNullOrEmpty(arg2Name)) source[arg2Name] = arg2Val;
+            if (!String.IsNullOrEmpty(arg3Name)) source[arg3Name] = arg3Val;
+            return source;
+        }
+
+        // Second verse, same as the first (except for the type of argument #3)
+        public static Dictionary<string, object> Parse(this Dictionary<string, object> source, string arg1Name, double arg1Val, string arg2Name = null, object arg2Val = null, string arg3Name = null, object arg3Val = null)
+        {
+            if (!String.IsNullOrEmpty(arg1Name)) source[arg1Name] = arg1Val;
+            if (!String.IsNullOrEmpty(arg2Name)) source[arg2Name] = arg2Val;
+            if (!String.IsNullOrEmpty(arg3Name)) source[arg3Name] = arg3Val;
+            return source;
+        }
+
+        public static string ToParseableString<T>(this Dictionary<string, T> source)
+        {
+            return source.Select(kvp => $"{kvp.Key}:{kvp.Value}").Join(", ", "");
         }
     }
 

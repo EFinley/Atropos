@@ -26,6 +26,7 @@ using Plugin.Vibrate;
 
 using Atropos.Encounters;
 using MiscUtil;
+using System.Threading;
 
 namespace Atropos
 {
@@ -80,7 +81,7 @@ namespace Atropos
             //bestSignalsDisplay.Visibility = ViewStates.Gone;
             //resultsDisplay.Visibility = ViewStates.Gone;
 
-            stillnessMonitor = new StillnessProvider();
+            stillnessMonitor = new StillnessProvider(externalToken: StopToken);
 
             // See if the current gun is already in our (local, for now) library, and load it if so.  Otherwise, take us to calibration.
             var gunString = Res.SpecificTags.Get(InteractionLibrary.CurrentSpecificTag);
@@ -111,7 +112,7 @@ namespace Atropos
             killMarkers = FindViewById<ImageView>(Resource.Id.gunfight_killmarkers);
 
             //IActivator calibration_startStage = new Gun_Calibration_Stage("GravityCal", ThePlayersGun);
-            IActivator aiming_startStage = new Gunfight_AimStage("Aim", ThePlayersGun);
+            IActivator aiming_startStage = new Gunfight_AimStage("Aim", ThePlayersGun, StopToken);
             //CurrentStage = (InteractionLibrary.Current == InteractionLibrary.GunCalibration) ?
             //    calibration_startStage : aiming_startStage;
             CurrentStage = aiming_startStage;
@@ -238,13 +239,14 @@ namespace Atropos
             private bool exhaleCueHasBeenProvided = false;
             private Random random;
 
-            public Gunfight_AimStage(string label, Gun gun, bool AutoStart = false) : base(label)
+            public Gunfight_AimStage(string label, Gun gun, CancellationToken? externalToken = null, bool AutoStart = false) : base(label)
             {
                 Weapon = gun;
+                DependsOn(externalToken ?? CancellationToken.None);
                 //SetUpParser(Weapon.PitchAccel, Weapon.MinimumAimTime, 2, 1);
-                Stillness = new StillnessProvider();
+                Stillness = new StillnessProvider(externalToken: StopToken);
                 SetUpProvider(Stillness);
-                Gravity = new GravityOrientationProvider();
+                Gravity = new GravityOrientationProvider(null, StopToken);
                 Gravity.Activate();
                 random = new Random();
                 
@@ -364,7 +366,7 @@ namespace Atropos
                     if (Weapon.CurrentAmmoCount % 3 == 0)
                     {
                         var Incoming = new IncomingRangedAttack();
-                        EvasionMode<Vector3> Evasion = (Res.Random < 0.5) ? new EvasionMode.Dodge() : new EvasionMode.Duck();
+                        EvasionMode<Vector3> Evasion = (Res.CoinFlip) ? new EvasionMode.Dodge() : new EvasionMode.Duck();
                         var EvasionStage = new IncomingAttackPrepStage<Vector3>(Current, Incoming, Evasion);
                         EvasionStage.Activate(); 
                     }

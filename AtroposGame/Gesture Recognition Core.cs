@@ -247,37 +247,37 @@ namespace Atropos
         protected void StageReturn(T result)
         {
             _tcs?.TrySetResult(result);
-            _tcs = null;
+            //_tcs = null;
             Deactivate();
         }
 
         protected void StageCancel()
         {
             _tcs?.TrySetCanceled();
-            _tcs = null;
+            //_tcs = null;
             Deactivate();
         }
 
         protected void StageThrow(Exception exception)
         {
             _tcs?.TrySetException(exception);
-            _tcs = null;
+            //_tcs = null;
             Deactivate();
         }
 
         // Make sure that _tcs is ALWAYS completed one way or the other.  If we forget to call one of StageReturn, StageCancel, or StageThrow, then it's an implicit Cancel.
         public override void Deactivate()
         {
-            if (_tcs != null) StageCancel();
+            if (!_tcs.Task.IsCompleted) StageCancel();
             else base.Deactivate();
         }
     }
 
     public class ConditionStage<T> : AwaitableStage<T>
     {
-        private Func<T, TimeSpan, bool> SuccessCriterion;
-        private Func<T, TimeSpan, bool> AbortCriterion;
-        private Action<T, TimeSpan> InterimAction;
+        private Func<ConditionStage<T>, T, TimeSpan, bool> SuccessCriterion;
+        private Func<ConditionStage<T>, T, TimeSpan, bool> AbortCriterion;
+        private Action<ConditionStage<T>, T, TimeSpan> InterimAction;
         private IProvider<T> Provider { get => DataProvider as IProvider<T>; }
 
         public ConditionStage(IProvider<T> provider, 
@@ -294,6 +294,20 @@ namespace Atropos
                               Func<T, TimeSpan, bool> successCriterion, 
                               Func<T, TimeSpan, bool> abortCriterion = null,
                               Action<T, TimeSpan> interimAction = null)
+            : this(provider, null, null, null, "Use third cTor version")
+        {
+            SuccessCriterion = (cstg, data, t) => successCriterion?.Invoke(data, t) ?? false;
+            AbortCriterion = (cstg, data, t) => abortCriterion?.Invoke(data, t) ?? false;
+            InterimAction = (cstg, data, t) => interimAction?.Invoke(data, t);
+
+            //BaseActivity.AddBackgroundStage(this);
+        }
+
+        public ConditionStage(IProvider<T> provider,
+                              Func<ConditionStage<T>, T, TimeSpan, bool> successCriterion,
+                              Func<ConditionStage<T>, T, TimeSpan, bool> abortCriterion = null,
+                              Action<ConditionStage<T>, T, TimeSpan> interimAction = null,
+                              string disambiguationArgument = "Ignore this")
             : base($"Awaiting a condition on {provider.GetType().Name}.")
         {
             SetUpProvider(provider);
@@ -311,12 +325,12 @@ namespace Atropos
 
         protected override bool nextStageCriterion()
         {
-            return SuccessCriterion?.Invoke(Provider.Data, RunTime) ?? false;
+            return SuccessCriterion?.Invoke(this, Provider.Data, RunTime) ?? false;
         }
 
         protected override bool abortCriterion()
         {
-            return AbortCriterion?.Invoke(Provider.Data, RunTime) ?? false;
+            return AbortCriterion?.Invoke(this, Provider.Data, RunTime) ?? false;
         }
 
         protected override void nextStageAction()
@@ -336,7 +350,7 @@ namespace Atropos
 
         protected override void interimAction()
         {
-            InterimAction?.Invoke(Provider.Data, RunTime);
+            InterimAction?.Invoke(this, Provider.Data, RunTime);
         }
 
         public override void Deactivate()

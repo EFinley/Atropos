@@ -22,6 +22,7 @@ namespace Atropos
     using System.Threading;
     using Android.Views;
     using Android.Runtime;
+    using MiscUtil;
 
     /// <summary>
     /// This is the base type which collects all the stuff we need in, essentially, every activity.
@@ -86,6 +87,9 @@ namespace Atropos
         }
         protected ScreenOffReceiver powerButtonInterceptor;
 
+        private CancellationTokenSource _cts;
+        public CancellationToken StopToken { get => _cts?.Token ?? CancellationToken.None; }
+
         // Usage: In the derived class, call DoOnResume(stuff) inside your OnResume() call.
         protected void DoOnResume<T>(Action<T> DoBeforeRestart, T Argument, bool? AutoRestart = null, double? MinutesOfWakelock = null)
         {
@@ -123,7 +127,8 @@ namespace Atropos
             base.OnResume();
             //PreviousActivity = CurrentActivity;
             CurrentActivity = this;
-            Res.CurrentActivity = this;
+            //Res.CurrentActivity = this;
+            _cts = new CancellationTokenSource();
         }
         private void FinishResuming(bool? AutoRestart, double? MinutesOfWakelock)
         {
@@ -195,6 +200,7 @@ namespace Atropos
             Res.SFX.StopAll();
             SensorProvider.PauseAllListeners();
 
+            _cts.Cancel();
             CurrentStage?.Deactivate();
             foreach (var backstage in BackgroundStages) backstage?.Deactivate();
             InteractionLibrary.Current = null;
@@ -391,18 +397,20 @@ namespace Atropos
 
         #region Volume trigger use (remember to set useVolumeTrigger to True in your OnCreate())
         protected bool useVolumeTrigger = false;
+        protected bool listeningForVolumeTrigger = true;
         protected event EventHandler<EventArgs> OnVolumeButtonPressed;
+        protected event EventHandler<EventArgs> OnVolumeButtonReleased;
         protected static object volumeButtonSyncLock = new object();
         public override bool OnKeyDown([GeneratedEnum] Keycode keyCode, KeyEvent e)
         {
-            if (useVolumeTrigger)
+            if (useVolumeTrigger && listeningForVolumeTrigger)
             {
                 if (keyCode == Keycode.VolumeDown || keyCode == Keycode.VolumeUp)
                 {
                     lock (volumeButtonSyncLock)
                     {
+                        listeningForVolumeTrigger = false;
                         OnVolumeButtonPressed?.Invoke(this, EventArgs.Empty);
-                        //((Gunfight_AimStage)CurrentStage).ResolveTriggerPull();
                         return true;
                     }
                 }
@@ -411,14 +419,60 @@ namespace Atropos
         }
         public override bool OnKeyUp([GeneratedEnum] Keycode keyCode, KeyEvent e)
         {
-            if (useVolumeTrigger)
+            if (useVolumeTrigger && !listeningForVolumeTrigger)
             {
                 if (keyCode == Keycode.VolumeDown || keyCode == Keycode.VolumeUp)
                 {
-                    return true; // Handled it, thanks.
+                    lock (volumeButtonSyncLock)
+                    {
+                        listeningForVolumeTrigger = true;
+                        OnVolumeButtonReleased?.Invoke(this, EventArgs.Empty);
+                        return true;
+                    }
                 }
             }
             return base.OnKeyUp(keyCode, e);
+        }
+        #endregion
+
+        #region Options Menu stuff
+        protected virtual int MenuLayout { get { return Resource.Menu.action_items; } }
+        public override bool OnCreateOptionsMenu(IMenu menu)
+        {
+            if (MenuLayout == -1) return true;
+            var inflater = MenuInflater;
+            inflater.Inflate(MenuLayout, menu);
+            return true;
+        }
+
+        public override bool OnOptionsItemSelected(IMenuItem item)
+        {
+            if (item.ItemId == Resource.Id.menuaction_character)
+            {
+                Toast.MakeText(this, Resource.String.popup_placeholder_character, ToastLength.Short).Show();
+                return true;
+            }
+            else if (item.ItemId == Resource.Id.menuaction_wifi)
+            {
+                LaunchDirectly(typeof(Communications.Bluetooth.BTDirectActivity));
+                return true;
+            }
+            else if (item.ItemId == Resource.Id.menuaction_settings)
+            {
+                LaunchDirectly(typeof(SettingsActivity));
+                return true;
+            }
+            else return base.OnOptionsItemSelected(item);
+        }
+
+        public static object extraData = null;
+        protected void LaunchDirectly(Type activity, object extraData = null)
+        {
+            BaseActivity.extraData = extraData;
+            var intent = new Intent(Application.Context, activity);
+            intent.AddFlags(ActivityFlags.SingleTop);
+            intent.AddFlags(ActivityFlags.NewTask);
+            Application.Context.StartActivity(intent);
         }
         #endregion
     }

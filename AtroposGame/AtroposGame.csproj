@@ -18,7 +18,7 @@
     <AndroidResgenClass>Resource</AndroidResgenClass>
     <GenerateSerializationAssemblies>Off</GenerateSerializationAssemblies>
     <AndroidUseLatestPlatformSdk>false</AndroidUseLatestPlatformSdk>
-    <TargetFrameworkVersion>v8.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v8.1</TargetFrameworkVersion>
     <AndroidManifest>Properties\AndroidManifest.xml</AndroidManifest>
     <MonoAndroidResourcePrefix>Resources</MonoAndroidResourcePrefix>
     <MonoAndroidAssetsPrefix>Assets</MonoAndroidAssetsPrefix>
@@ -33,7 +33,7 @@
     <DefineConstants>TRACE;DEBUG;DOTNET35</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <AndroidUseSharedRuntime>false</AndroidUseSharedRuntime>
+    <AndroidUseSharedRuntime>true</AndroidUseSharedRuntime>
     <AndroidLinkMode>None</AndroidLinkMode>
     <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
     <AotAssemblies>false</AotAssemblies>
@@ -199,12 +199,15 @@
     <Compile Include="External Code\TimedLock.cs" />
     <Compile Include="Gesture Recognition Core.cs" />
     <Compile Include="GunfightActivity.cs" />
-    <Compile Include="Hacking\ActionOpportunities.cs" />
-    <Compile Include="Hacking\HackingState.cs" />
-    <Compile Include="Hacking\ICEbreakers.cs" />
-    <Compile Include="Hacking\NodeNarrative.cs" />
-    <Compile Include="Hacking\OpportunityCriteria.cs" />
-    <Compile Include="Hacking\StateChanges.cs" />
+    <Compile Include="Hacking\HackingTask.cs" />
+    <Compile Include="Hacking\Old\ActionOpportunities.cs" />
+    <Compile Include="Hacking\Old\HackingState.cs" />
+    <Compile Include="Hacking\Old\ICEbreakers.cs" />
+    <Compile Include="Hacking\Old\NodeNarrative.cs" />
+    <Compile Include="Hacking\Old\OpportunityCriteria.cs" />
+    <Compile Include="Hacking\Old\StateChanges.cs" />
+    <Compile Include="Hacking\HackingActivity.cs" />
+    <Compile Include="Hacking\HackingResults.cs" />
     <Compile Include="Lock Training Activity.cs" />
     <Compile Include="LockedObjectDefinitions.cs" />
     <Compile Include="LockOpeningActivities.cs" />
@@ -353,6 +356,7 @@
     <Compile Include="Utilities\Handedness.cs" />
     <Compile Include="Utilities\NullableImproved.cs" />
     <Compile Include="Data Structures\SpecialDatapointTypes.cs" />
+    <Compile Include="Utilities\UniqueValues.cs" />
   </ItemGroup>
   <ItemGroup>
     <AndroidAsset Include="Assets\FTLTLT.TTF" />
@@ -847,6 +851,78 @@
   </ItemGroup>
   <ItemGroup>
     <AndroidResource Include="Resources\raw\_366159_water_loop.wav" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\glyphA.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\glyphB.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\glyphC.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\glyphD.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\glyphF.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\glyphG.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\glyphH.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\glyphI.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\glyphK.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\glyphL.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\glyphM.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\glyphN.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\glyphP.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\glyphR.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\glyphS.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\glyphT.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\glyphX.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\glyphZ.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\barrier_glow.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\shield_rune_ring.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\layout\HackTaskListItemRepresentation.axml">
+      <Generator>MSBuild:UpdateGeneratedFiles</Generator>
+      <SubType>Designer</SubType>
+    </AndroidResource>
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\layout\SimpleListPage.axml">
+      <Generator>MSBuild:UpdateGeneratedFiles</Generator>
+      <SubType>Designer</SubType>
+    </AndroidResource>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets" />
   <Import Project="..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets" Condition="Exists('..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets')" />

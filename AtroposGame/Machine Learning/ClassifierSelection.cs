@@ -169,6 +169,9 @@ namespace Atropos.Machine_Learning
                     //if (be0.Dimensions + be1.Dimensions + be2.Dimensions < 6)
                         fExList.Add(new FeatureListExtractor(be0.Name, be1.Name, be2.Name));
                     //fExList.Add(new FeatureListExtractor(INTEGRATE + bestExtractors[0].Name));
+                    fExList.Add(new FeatureClusterExtractor(be0.Name, be1.Name));
+                    fExList.Add(new FeatureClusterExtractor(be0.Name, be2.Name));
+                    fExList.Add(new FeatureClusterExtractor(be1.Name, be2.Name));
                     fExList.Add(new FeatureClusterExtractor(be0.Name, be1.Name, be2.Name));
                 }
             }

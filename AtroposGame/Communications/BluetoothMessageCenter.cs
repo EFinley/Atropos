@@ -95,7 +95,7 @@ namespace Atropos.Communications.Bluetooth
                 //    Log.Warn(_tag, $"Unable to locate game effect '{effectName}'.");
                 //    return null;
                 //}
-                if (!GameEffect.Lookup.ContainsKey(effectName))
+                if (!GameEffect.Definition.ContainsKey(effectName))
                 {
                     Log.Warn(_tag, $"Unable to locate effect '{effectName}'.");
                     return null;
@@ -105,8 +105,20 @@ namespace Atropos.Communications.Bluetooth
                 return (o) =>
                 {
                     GameEffect
-                        .Lookup[effectName]?
+                        .Definition[effectName]?
                         .OnReceiving(TemporaryAddressBook_SingleEntry ?? new CommsContact(), effectParams);
+                };
+            }
+            if (message.Type == MsgType.PushEffect2)
+            {
+                var effectInstance = GameEffectInstance.FromStringForm(message.Content);
+
+                //var doFunc = MasterSpellLibrary.CastingResults[effectName];                
+                return (o) =>
+                {
+                    effectInstance?
+                        .SourceEffect?
+                        .OnReceiving2(effectInstance);
                 };
             }
             if (message.Type == MsgType.Query)

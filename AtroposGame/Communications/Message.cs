@@ -32,6 +32,7 @@ namespace Atropos.Communications
         PushSFX,
         PushSpeech,
         PushEffect,
+        PushEffect2,
         SetScenarioVariable,
         LaunchActivity,
         Reply

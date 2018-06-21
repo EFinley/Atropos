@@ -67,25 +67,186 @@ namespace Atropos
         }
     }
 
-    public abstract class GameEffect
+    public static class GameEffect
+    {
+        public static List<GameEffectDefinition> AllDefinitions = new List<GameEffectDefinition>();
+        public static Dictionary<string, GameEffectDefinition> Definition
+        {
+            get { return AllDefinitions.ToDictionary(geffDef => geffDef.Name); }
+        }
+
+        public static List<GameEffectInstance> AllInstances = new List<GameEffectInstance>();
+        public static List<GameEffectInstance> GetInstances(string effectname)
+        {
+            return AllInstances.Where(gEffInst => gEffInst.SourceEffect.Name == effectname).ToList();
+        }
+        public static GameEffectInstance GetInstance(string effectname)
+        {
+            var instances = GetInstances(effectname);
+            if (instances.Count == 0) return null;
+            if (instances.Count > 1) Log.Warn("GameEffect", $"GetInstance called on {effectname}, expecting just one, but found {instances.Count} instead.  Returning the first one.");
+            return instances[0];
+        }
+        public static GameEffectInstance GetInstance(GameEffectDefinition definition)
+        {
+            return AllInstances.SingleOrDefault(i => i.SourceEffectName == definition.Name);
+        }
+
+        //public static void ChangeInstances(Func<GameEffectInstance, bool> predicate, Action<GameEffectInstance> changeToMake)
+        //{
+        //    var instances = GameEffect.AllInstances.Where(predicate);
+        //    if (instances == null || instances.Count() == 0) throw new Exception();
+        //    foreach (var instance in instances)
+        //    {
+        //        instance.SourceEffect?.ChangeInstance(changeToMake);
+        //    }
+        //}
+    }
+
+    public abstract class GameEffectDefinition
     {
         public abstract string Name { get; }
         public abstract Task OnGenerate(object data);
         public abstract Task OnReceiving(Communications.CommsContact source, object data);
+        public abstract void OnReceiving2(GameEffectInstance instance);
 
-        public GameEffect()
+        public GameEffectDefinition() { }
+
+        public virtual List<string> Keywords { get; set; } = new List<string>();
+        protected static List<string> Listify(params string[] args)
         {
-            //AllEffects.Add(this);
+            if (args.Length == 1) args = args[0].Split(',');
+            return args.ToList();
+        }
+        public Dictionary<string, object> Parameters = new Dictionary<string, object>();
+        //public object this[string paramName] { get => Parameters[paramName]; }
+
+        public event EventHandler<EventArgs<GameEffectInstance>> OnStart;
+        public event EventHandler<EventArgs<GameEffectInstance>> OnChange;
+        public event EventHandler<EventArgs<GameEffectInstance>> OnEnd;
+
+        public void AnnounceStart(GameEffectInstance instance) { OnStart.Raise(instance); }
+        public void AnnounceChange(GameEffectInstance instance) { OnChange.Raise(instance); }
+        public void AnnounceEnd(GameEffectInstance instance) { OnEnd.Raise(instance); }
+
+
+        public GameEffectInstance GetInstance()
+        {
+            return GameEffect.GetInstance(this);
+        }
+        public List<GameEffectInstance> GetInstances()
+        {
+            return GameEffect.AllInstances.Where(i => i.SourceEffectName == Name).ToList();
         }
 
-        public static List<GameEffect> AllEffects = new List<GameEffect>();
-        public static Dictionary<string, GameEffect> Lookup
+        public GameEffectInstance StartInstance(params string[] parameters)
         {
-            get { return AllEffects.ToDictionary(geff => geff.Name); }
+            var instance = new GameEffectInstance(Name) { Parameters = new Dictionary<string, string>().Parse(parameters) };
+            instance.CreationTime = DateTime.Now;
+            return StartInstance(instance);
+        }
+        public GameEffectInstance StartInstance(GameEffectInstance instance)
+        { 
+            if (instance.Parameters.ContainsKey("Overwrite"))
+            {
+                throw new NotImplementedException();
+            }
+            else GameEffect.AllInstances.Add(instance);
+            OnStart.Raise(instance);
+            return instance;
+        }
+        public GameEffectInstance ChangeInstance(params string[] parameters)
+        {
+            var instance = GameEffect.GetInstance(Name);
+            return ChangeInstance(instance, parameters);
+        }
+        public GameEffectInstance ChangeInstance(Guid ID, params string[] parameters)
+        {
+            var instance = GameEffect.AllInstances.SingleOrDefault(i => i.Guid == ID);
+            if (instance == null) return null;
+            return ChangeInstance(instance, parameters);
+        }
+        public GameEffectInstance ChangeInstance(GameEffectInstance instance, params string[] parameters)
+        { 
+            instance.Parameters = instance.Parameters.Parse(parameters);
+            OnChange.Raise(instance);
+            return instance;
+        }
+        public GameEffectInstance ChangeInstance(Action<GameEffectInstance> changeToMake)
+        {
+            var instance = GameEffect.GetInstance(Name);
+            return ChangeInstance(instance, changeToMake);
+        }
+        public GameEffectInstance ChangeInstance(Guid ID, Action<GameEffectInstance> changeToMake)
+        {
+            var instance = GameEffect.AllInstances.Single(i => i.Guid == ID);
+            if (instance == null) return null;
+            return ChangeInstance(instance, changeToMake);
+        }
+        public GameEffectInstance ChangeInstance(GameEffectInstance instance, Action<GameEffectInstance> changeToMake)
+        {
+            changeToMake?.Invoke(instance);
+            OnChange.Raise(instance);
+            return instance;
+        }
+        public GameEffectInstance EndInstance(GameEffectInstance inst)
+        {
+            GameEffect.AllInstances.Remove(inst);
+            OnEnd.Raise(inst);
+            return inst;
+        }
+        public GameEffectInstance EndInstance()
+        {
+            return EndInstance(GameEffect.GetInstance(Name));
+        }
+        public void EndAll()
+        {
+            foreach (var inst in GameEffect.GetInstances(Name)) EndInstance(inst);
         }
     }
 
-    public class SpellResult : GameEffect
+    [Serializable]
+    public class GameEffectInstance
+    {
+        public string SourceEffectName { get; set; }
+        public GameEffectDefinition SourceEffect { get => GameEffect.Definition[SourceEffectName]; }
+        //public string Originator { get; set; } // TBD: Make this other than a string - Communications.TeamMember or Characters.Char, I'm not sure which.
+        //public string Recipient { get; set; } // Ditto.
+        public DateTime CreationTime { get; set; }
+        public Guid Guid { get; set; }
+        public Dictionary<string, string> Parameters { get; set; } = new Dictionary<string, string>();
+
+        public GameEffectInstance(string sourceEffectName)
+        {
+            SourceEffectName = sourceEffectName;
+            Guid = Guid.NewGuid();
+            //GameEffect.AllInstances.Add(this);
+        }
+
+        public string this[string paramName] { get => Parameters[paramName]; set => Parameters[paramName] = value; }
+
+        public string ToStringForm()
+        {
+            return $"{SourceEffectName}{UniqueValues.NEXT}{CreationTime}{UniqueValues.NEXT}{Guid}{UniqueValues.NEXT}{Parameters.ToParseableString()}";
+        }
+
+        public static GameEffectInstance FromStringForm(string strForm)
+        {
+            var substrs = strForm.Split(UniqueValues.onNEXT, 4);
+            var result = new GameEffectInstance(substrs[0]);
+
+            if (DateTime.TryParse(substrs[1], out DateTime dt)) result.CreationTime = dt;
+            else result.CreationTime = DateTime.Now;
+
+            if (Guid.TryParse(substrs[2], out Guid guid)) result.Guid = guid;
+            else result.Guid = Guid.NewGuid();
+
+            result.Parameters = new Dictionary<string, string>().Parse(substrs[3]);
+            return result;
+        }
+    }
+
+    public class SpellDefinition : GameEffectDefinition
     {
         public const string SpellPrefix = "Spell.";
         public string SpellName;
@@ -98,38 +259,30 @@ namespace Atropos
 
         public int CastSFXresourceID;
         public string CastSFXname;
-        public virtual Effect CastSFX
-        {
-            get
-            {
-                if (CastSFXresourceID > 0) return new Effect(SpellName + ".SFX", CastSFXresourceID);
-                else return MasterSpellLibrary.SpellSFX.GetValueOr(CastSFXname, Effect.None) as Effect;
-            }
-        }
+        public virtual Effect CastSFX { get => new Effect(SpellName + ".SFX", CastSFXresourceID); }
         public SoundOptions CastSFXSoundOptions = SoundOptions.OnSpeakers;
 
-        //public static event EventHandler<EventArgs<object>> UponCasting;
+        protected List<string> _intrinsicKeywords = new List<string>();
+        protected List<string> _specificKeywords = new List<string>();
+        public override List<string> Keywords { get => _intrinsicKeywords.Concat(_specificKeywords).ToList(); set => _specificKeywords = value; }
+
+        public static event EventHandler<EventArgs<object>> UponCast;
         protected Func<object, Task> onCast;
-        public async void OnCast(object data)
+        public async void OnCast(object data = null)
         {
-            CastSFX.Play(CastSFXSoundOptions);
-            Log.Debug(_tag, $"Successfully cast {SpellName}.");
-            await Task.Run(() => 
-            {
-                //UponCasting.Raise(data);
-                onCast?.Invoke(data);
-            });
+            UponCast.Raise(data);
+            await OnGenerate(data);
         }
-        public override async Task OnGenerate(object data)
+        public override async Task OnGenerate(object data = null)
         {
             CastSFX.Play(CastSFXSoundOptions);
             Log.Debug(_tag, $"Successfully cast {SpellName}.");
-            //UponCasting.Raise(data);
             await onCast?.Invoke(data);
         }
 
         //public event EventHandler<EventArgs<object>> UponReceiving;
         protected Func<Communications.CommsContact, object, Task> onHitBy;
+        protected Action<GameEffectInstance> onHitBy2;
         //public async void OnHitBy(Communications.CommsContact source, object data)
         //{
         //    var recipientSoundOptions = CastSFXSoundOptions;
@@ -146,6 +299,18 @@ namespace Atropos
             Log.Debug(_tag, $"Being affected by {SpellName}.");
 
             await onHitBy?.Invoke(source, data);
+        }
+        public override void OnReceiving2(GameEffectInstance instance)
+        {
+            var recipientSoundOptions = CastSFXSoundOptions;
+            recipientSoundOptions.UseSpeakers = false; // No need for us both to put it up on speakers, but target might not be in a position to hear the speakers from the caster.
+            CastSFX.Play(recipientSoundOptions);
+            Log.Debug(_tag, $"Being affected by {SpellName}.");
+
+            StartInstance(instance);
+            
+            if (onHitBy2 != null) onHitBy2.Invoke(instance);
+            else onHitBy.Invoke(null, $"{SpellCaster.EFFICACY}:{instance[SpellCaster.EFFICACY]}");
         }
 
         public async Task SendDamage(DamageType type, double baseMagnitude, double toBarrier = 1.0)
@@ -213,11 +378,15 @@ namespace Atropos
 
         private const string _tag = "SpellResults";
 
-        public SpellResult(string name, params Glyph[] glyphs) : base()
+        public SpellDefinition(string name, params Glyph[] glyphs) : base()
         {
             SpellName = name;
             Glyphs = glyphs.ToList();
-            AllEffects.Add(this);
+            GameEffect.AllDefinitions.Add(this);
+            _intrinsicKeywords.Add("Spell");
+            _intrinsicKeywords.Add("Magic");
+            if (glyphs[0] == Glyph.A) _intrinsicKeywords.Add("Attack");
+            if (glyphs[0] == Glyph.D) _intrinsicKeywords.Add("Defense");
         }
 
         //protected static 
@@ -231,7 +400,7 @@ namespace Atropos
         //    }
         //};
 
-        public static SpellResult Dart = new SpellResult("Dart", Glyph.L, Glyph.A, Glyph.P)
+        public static SpellDefinition Dart = new SpellDefinition("Dart", Glyph.L, Glyph.A, Glyph.P)
         {
             CastSFXresourceID = Resource.Raw.fzazzle_magic,
             CastSFXname = "Magic.Fzazzle",
@@ -239,22 +408,12 @@ namespace Atropos
             onHitBy = async (caster, o) => await SufferDamage(o)
         };
 
-        public static SpellResult Zap = new SpellResult("Zap", Glyph.L, Glyph.A, Glyph.Z, Glyph.P)
+        public static SpellDefinition Zap = new SpellDefinition("Zap", Glyph.L, Glyph.A, Glyph.Z, Glyph.P)
         {
             CastSFXresourceID = Resource.Raw._136542_electricZap_small,
             CastSFXname = "Magic.ElectricZapSmall",
+            Keywords = Listify("Electricity"),
             onCast = async (o) => await Zap.SendDamage(DamageType.Lightning, 25, 0.75),
-            //{
-            //    Zap.SendEffect();
-            //    //if (opponent != null)
-            //    //{
-                    
-            //    //    //opponent.SendMessage(Communications.MsgType, "You have been zapped.");
-            //    //    Log.Debug(_tag, $"Sent 'You have been zapped' to {opponent.Name}.");
-            //    //}
-            //    //else
-            //    //    Log.Debug(_tag, "Unable to send zapped message; no opponent available.");
-            //},
             onHitBy = async (caster, o) =>
             {
                 //if (!Shield.IsInEffectAsCaster) Speech.Say("You have been zapped.");
@@ -270,31 +429,40 @@ namespace Atropos
             }
         };
 
-        public static DateTime LastBarrierCasting = DateTime.Now - TimeSpan.FromSeconds(180);
-        private static TimeSpan MinBarrierInterval = TimeSpan.FromSeconds(15);
-        public static double BarrierBaseMagnitude = 80.0;
-        public static SpellResult Barrier = new SpellResult("Barrier", Glyph.L, Glyph.D, Glyph.S)
+        //public static DateTime LastBarrierCasting = DateTime.Now - TimeSpan.FromSeconds(180);
+        //private static TimeSpan MinBarrierInterval = TimeSpan.FromSeconds(15);
+        //public static double BarrierBaseMagnitude = 80.0;
+        public static SpellDefinition Barrier = new SpellDefinition("Barrier", Glyph.L, Glyph.D, Glyph.S)
         {
             CastSFXresourceID = Resource.Raw.ring_buzz_magic,
             CastSFXname = "Magic.RingBuzz",
             onCast = async (o) =>
             {
-                var x = (DateTime.Now - LastBarrierCasting).TotalSeconds / MinBarrierInterval.TotalSeconds;
+                var MinBarrierInterval = (TimeSpan)Barrier.Parameters["MinBarrierInterval"];
+                var BarrierBaseMagnitude = (double)Barrier.Parameters["BarrierBaseMagnitude"];
+                var timeSinceLastCasting = DateTime.Now - (Barrier.GetInstance()?.CreationTime ?? (DateTime.Now - TimeSpan.FromMinutes(5)));
+                var x = (timeSinceLastCasting).TotalSeconds / MinBarrierInterval.TotalSeconds;
                 if (x < 1)
                 {
                     Speech.Say("Too soon; unable to erect new barrier");
-                    LastBarrierCasting = DateTime.Now;
+                    Barrier.GetInstance().CreationTime = DateTime.Now;
                     return;
                 }
                 Speech.Say("Barrier raised.");
                 var y = (0.66 * Math.Acos(1.0 / x)); // Just above 0 at x just above 1, then about 70% at x = 2, 80% at x = 3, 85% at x = 4, etc.
                 var barrierAmount = BarrierBaseMagnitude * SpellCaster.Me.SpellEfficacy * y;
+                Log.Debug(_tag, $"Raised a barrier for {barrierAmount} points.");
                 Damageable.Me.Barrier = Math.Max(Damageable.Me.Barrier, barrierAmount);
-                LastBarrierCasting = DateTime.Now + MinBarrierInterval.MultipliedBy(1 - y);
+                Barrier.GetInstance().CreationTime = DateTime.Now + MinBarrierInterval.MultipliedBy(1 - y);
+            },
+            Parameters = new Dictionary<string, object>
+            {
+                { "MinBarrierInterval", TimeSpan.FromSeconds(15) },
+                { "BarrierBaseMagnitude", 80.0 }
             }
         };
 
-        public static SpellResult Shield = new SpellResult("Shield", Glyph.M, Glyph.D, Glyph.X, Glyph.P)
+        public static SpellDefinition Shield = new SpellDefinition("Shield", Glyph.M, Glyph.D, Glyph.X, Glyph.P)
         {
             CastSFXresourceID = Resource.Raw.kblaa_magic,
             CastSFXname = "Magic.Kblaa",
@@ -321,7 +489,7 @@ namespace Atropos
             }
         };
 
-        public static SpellResult Lance = new SpellResult("Lance", Glyph.M, Glyph.A, Glyph.R, Glyph.P)
+        public static SpellDefinition Lance = new SpellDefinition("Lance", Glyph.M, Glyph.A, Glyph.R, Glyph.P)
         {
             CastSFXresourceID = Resource.Raw._366093_kwongg,
             CastSFXname = "Magic.DenseMetallicBoom",
@@ -376,7 +544,7 @@ namespace Atropos
         //    }
         //};
 
-        public static SpellResult Frost = new SpellResult("Frost", Glyph.M, Glyph.A, Glyph.I, Glyph.P)
+        public static SpellDefinition Frost = new SpellDefinition("Frost", Glyph.M, Glyph.A, Glyph.I, Glyph.P)
         {
             CastSFXresourceID = Resource.Raw._346916_fwissh,
             CastSFXname = "Magic.Fwissh",
@@ -496,7 +664,7 @@ namespace Atropos
             }
         };
 
-        public static SpellResult Flame = new SpellResult("Flame", Glyph.H, Glyph.A, Glyph.F, Glyph.P)
+        public static SpellDefinition Flame = new SpellDefinition("Flame", Glyph.H, Glyph.A, Glyph.F, Glyph.P)
         {
             CastSFXresourceID = Resource.Raw._248116_fwehshh,
             CastSFXname = "Magic.Fwehshh",
@@ -513,8 +681,8 @@ namespace Atropos
                 var efficacy = double.Parse(oStr.Split(':',';')[1]);
 
                 var burning = new Effect("BurningSFX", Resource.Raw._347706_fire_loop); // MasterSpellLibrary.SpellSFX["Magic.FireLoop"] as Effect;
-                burning.SpeakerMode = true;
-                burning.Play(new SoundOptions() { UseSpeakers = true, Looping = true, Volume = 0.5 });
+                //burning.SpeakerMode = true;
+                burning.Play(new SoundOptions() { Looping = true, Volume = 0.5 });
 
                 //var stillnessProvider = new SmoothLoggingProvider<float>(new StillnessProvider(), 10);
                 var stillnessProvider = new StillnessProvider();
@@ -525,29 +693,36 @@ namespace Atropos
                 var movedHowFast = new ConditionStage<float>(stillnessProvider,
                     (f, t) =>
                     {
-                        var cutoffScore = -15; // + stillnessProvider.RunTime.TotalSeconds;
+                        var cutoffScore = -17;// + stillnessProvider.RunTime.TotalSeconds / 5.0;
                         //return f < cutoffScore && t > TimeSpan.FromMilliseconds(1250);
                         averageStillness.Update(f);
                         var result = ( averageStillness.Average < cutoffScore && t > TimeSpan.FromMilliseconds(1250));
-                        if (result) Log.Debug(_tag, $"Current stillness average {averageStillness.Average:f2} after {t.TotalMilliseconds:f1} ms.");
+                        if (result)
+                        {
+                            burning.Stop();
+                            Log.Debug(_tag, $"Current stillness average {averageStillness.Average:f2} after {t.TotalMilliseconds:f1} ms.");
+                        }
                         return result;
                     },
                     (f, t) => false,
                     async (f, t) =>
                     {
-                        var fierceness = ((f >= 0) ? 1.0 : (-19 + stillnessProvider.RunTime.TotalSeconds) / f) * efficacy;
+                        //var fierceness = ((f >= -1) ? 1.0 : (-19 + stillnessProvider.RunTime.TotalSeconds / 2).Clamp(-19, 0) / f) * efficacy;
+                        var fierceness = (2.0 - Math.Abs(f.Clamp(-15, 0) + 10) / 10);
                         burning.Volume = 0.5 * fierceness;
-                        Log.Debug(_tag, $"Fire progress - stillness is {f:f2}, average is {averageStillness.Average:f2}, wants to be less than {(-19 + stillnessProvider.RunTime.TotalSeconds):f2}.");
-                        //SufferDamage(DamageType.Fire, 10 * fierceness * efficacy, 0.5);
+                        Log.Debug(_tag, $"Fire progress - fierceness is {fierceness:f2}, inst/curr/avg stillness is {stillnessProvider.InstantaneousScore:f1}/{stillnessProvider.StillnessScore:f1}/{averageStillness.Average:f1}"); //, wants to be less than {(-17 + stillnessProvider.RunTime.TotalSeconds / 5.0):f1}."
 
                         var imOnFireStrings = new string[] { "Ow", "Ow", "Ouch", "Burning!", "On fire", "Yipe" };
-                        if (Res.Random < 0.15 && speakingTask.IsCompleted) speakingTask = Speech.SayAllOf($"{imOnFireStrings.GetRandom()}");
+                        if (Res.Random < 0.15 && speakingTask.IsCompleted)
+                            speakingTask = Speech.SayAllOf($"{imOnFireStrings.GetRandom()}", SoundOptions.OnHeadphones);
 
                         if (Damageable.Me.Barrier > 0)
                         {
                             if (Damageable.Me.Barrier > fierceness / 3)
                             {
+                                var origBarrier = Damageable.Me.Barrier;
                                 Damageable.Me.Barrier -= fierceness / 3;
+                                Log.Debug(_tag, $"Shield eroded by fire - from {origBarrier:f2} to {Damageable.Me.Barrier:f2}.");
                             }
                             else
                             {
@@ -576,7 +751,7 @@ namespace Atropos
                                 damageThreshold = accumulatedDamage + 10;
 
                                 var impct = Damageable.Me.DamageSuffered.Last(i => i.IncurringHit.Type == DamageType.Fire);
-                                speakingTask = Speech.SayAllOf(impct.Description);
+                                speakingTask = Speech.SayAllOf(impct.Description, SoundOptions.OnHeadphones);
                             }
                         }
                         Plugin.Vibrate.CrossVibrate.Current.Vibration(Res.Random * 15);
@@ -598,7 +773,7 @@ namespace Atropos
             }
         };
 
-        public static SpellResult Clarity = new SpellResult("Clarity", Glyph.L, Glyph.C, Glyph.X, Glyph.K)
+        public static SpellDefinition Clarity = new SpellDefinition("Clarity", Glyph.L, Glyph.C, Glyph.X, Glyph.K)
         {
             CastSFXresourceID = Resource.Raw.tinkly_magic,
             CastSFXname = "Magic.Tinkly",
@@ -616,7 +791,7 @@ namespace Atropos
             }
         };
 
-        public static SpellResult Dazzle = new SpellResult("Dazzle", Glyph.M, Glyph.C, Glyph.X, Glyph.P)
+        public static SpellDefinition Dazzle = new SpellDefinition("Dazzle", Glyph.M, Glyph.C, Glyph.X, Glyph.P)
         {
             CastSFXresourceID = Resource.Raw._234804_transmat,
             CastSFXname = "Magic.Transmat",
@@ -636,7 +811,7 @@ namespace Atropos
             }
         };
 
-        public static SpellResult Paralyze = new SpellResult("Paralyze", Glyph.H, Glyph.C, Glyph.N, Glyph.I, Glyph.B)
+        public static SpellDefinition Paralyze = new SpellDefinition("Paralyze", Glyph.H, Glyph.C, Glyph.N, Glyph.I, Glyph.B)
         {
             CastSFXresourceID = Resource.Raw._366092_zoom_slowing_down,
             CastSFXname = "Magic.ZoomSlowingDown",
@@ -677,12 +852,12 @@ namespace Atropos
             }
         };
 
-        public static List<SpellResult> AllSpells
+        public static List<SpellDefinition> AllSpells
         {
             get => GameEffect
-                    .AllEffects
+                    .AllDefinitions
                     .Where(geff => geff.Name.StartsWith(SpellPrefix))
-                    .Select(geff => geff as SpellResult)
+                    .Select(geff => geff as SpellDefinition)
                     .ToList();
         }
     }

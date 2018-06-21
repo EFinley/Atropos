@@ -82,6 +82,14 @@ namespace Atropos.DataStructures
             };
         }
 
+        public static Datapoint<T> From<T>(IDatapoint val)
+            where T : struct
+        {
+            if (!(val is Datapoint<T>)) throw new ArgumentException($"Cannot create a Datapoint<{typeof(T).Name}> from the provided {val.GetType().Name}!");
+
+            return Operator.Convert<IDatapoint, Datapoint<T>>(val);
+        }
+
         public static Datapoint<T1, T2> From<T1, T2>(IDatapoint val)
             where T1 : struct
             where T2 : struct

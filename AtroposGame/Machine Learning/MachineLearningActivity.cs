@@ -316,6 +316,7 @@ namespace Atropos.Machine_Learning
             //Log.Debug($"MachineLearning|TEST", $"Round-trip checks... v1s deserializes to {v1d}.");
             //Log.Debug($"MachineLearning|TEST", $"Round-trip checks... v1 {Serializer.Check(v1)}.");
             var c = new Classifier();
+            c.Dataset = new DataSet<DKS>();
             Log.Debug("MachineLearning|TEST", $"Round-trip check... classifier {Serializer.Check(c)}");
             var cTree = new ClassifierTree(new DataSet<DKS>(), new Classifier(), new Dictionary<string, Classifier>());
             var cTreeSer = Serializer.Serialize(cTree);
@@ -327,7 +328,7 @@ namespace Atropos.Machine_Learning
         {
             await base.DoOnResumeAsync(Task.Delay(500), AutoRestart: false);
             ButtonStates.Update(this);
-            // Attempting to prevent the dataset name field acquiring focus initially - we'll see if it works.
+            // Attempting to prevent the dataset name field acquiring focus initially - seems to work.
             Task.Delay(100).ContinueWith((t) => { _datasetNameField.Enabled = true; }).LaunchAsOrphan();
         }
 
@@ -674,6 +675,7 @@ namespace Atropos.Machine_Learning
                             Toast.MakeText(this, "Dataset compressed and saved to clipboard.", ToastLength.Short).Show();
                         }
                     }
+                    else return;
 
                     //Dataset.Save();
                     ButtonStates.Update(this);
@@ -798,6 +800,7 @@ namespace Atropos.Machine_Learning
                     DismissProgressIndicator();
                     ShowProgressIndicator("Calculating", "Reassessing data set using new AI...");
                     ButtonStates.Compute.State = ButtonStates.IsReassessing;
+                    ButtonStates.Update(this);
                     int minSamples = Dataset.MinSamplesInAnyClass();
                     double percentage = (minSamples < 20) ? 100.0 :
                                         (minSamples < 40) ? 50.0 :

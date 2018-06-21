@@ -71,7 +71,7 @@ namespace Atropos.Machine_Learning
         public void ProvideCue(GestureClass gestureClass = null)
         {
             Current.SelectedGestureClass = gestureClass ?? Current.Dataset.Classes.GetRandom();
-            Speech.Say(gestureClass.className, speakRate: 2.0);
+            Speech.Say(Current.SelectedGestureClass.className, speakRate: 2.0);
             Stopwatch.Start();
         }
 

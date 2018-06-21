@@ -91,7 +91,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:checked="false"
-        android:id="@+id/chbox_flipscreen_mode" />
+        android:id="@+id/chbox_screenflip_mode" />
     <CheckBox
         android:text="Use NFC tags"
         android:layout_width="match_parent"

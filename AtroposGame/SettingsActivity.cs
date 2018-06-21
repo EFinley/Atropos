@@ -37,11 +37,15 @@ namespace Atropos
             CheckBox lefthandedMode = FindViewById<CheckBox>(Resource.Id.chbox_lefthanded_mode);
             lefthandedMode.CheckedChange += (o, e) => { Res.LefthandedMode = lefthandedMode.Checked; Handedness.Update(); };
 
-            CheckBox screenFlipMode = FindViewById<CheckBox>(Resource.Id.chbox_flipscreen_mode);
+            CheckBox screenFlipMode = FindViewById<CheckBox>(Resource.Id.chbox_screenflip_mode);
             screenFlipMode.CheckedChange += (o, e) => { Res.ScreenFlipMode = screenFlipMode.Checked; Handedness.Update(); };
 
             CheckBox allowSpeakers = FindViewById<CheckBox>(Resource.Id.chbox_allow_speakers);
-            allowSpeakers.Click += (o, e) => { Res.AllowSpeakerSounds = allowSpeakers.Checked; };
+            allowSpeakers.Click += (o, e) => 
+            {
+                Res.AllowSpeakerSounds = allowSpeakers.Checked;
+                Res.Speech_Speakers.SpeakerMode = allowSpeakers.Checked;
+            };
 
             CheckBox allowNfc = FindViewById<CheckBox>(Resource.Id.chbox_use_nfc);
             allowNfc.Click += (o, e) => { Res.AllowNfc = allowNfc.Checked; };
@@ -85,15 +89,15 @@ namespace Atropos
         }
     }
 
-    public class SelectorActivity : Activity, IRelayToasts
+    public class SelectorActivity : BaseActivity, IRelayToasts
     {
         public virtual int layoutID { get; set; }
-        private static SelectorActivity _currentActivity;
-        public static SelectorActivity CurrentActivity
-        {
-            get { return _currentActivity; }
-            set { _currentActivity = value; BaseActivity.CurrentToaster = value; }
-        }
+        //private static SelectorActivity _currentActivity;
+        //public static SelectorActivity CurrentActivity
+        //{
+        //    get { return _currentActivity; }
+        //    set { _currentActivity = value; BaseActivity.CurrentToaster = value; }
+        //}
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
@@ -108,35 +112,32 @@ namespace Atropos
             RunOnUiThread(() => { Toast.MakeText(this, message, length).Show(); });
         }
 
-        public override bool OnCreateOptionsMenu(IMenu menu)
-        {
-            var inflater = MenuInflater;
-            inflater.Inflate(Resource.Menu.action_items, menu);
-            return true;
-        }
+        //public override bool OnCreateOptionsMenu(IMenu menu)
+        //{
+        //    var inflater = MenuInflater;
+        //    inflater.Inflate(Resource.Menu.action_items, menu);
+        //    return true;
+        //}
 
-        public override bool OnOptionsItemSelected(IMenuItem item)
-        {
-            switch (item.ItemId)
-            {
-                case Resource.Id.menuaction_character:
-                    Toast.MakeText(this, Resource.String.popup_placeholder_character, ToastLength.Short).Show();
-                    return true;
-                //case Resource.Id.menuaction_nfc:
-                //    Toast.MakeText(this, Resource.String.popup_placeholder_nfc, ToastLength.Short).Show();
-                //    return true;
-                case Resource.Id.menuaction_wifi:
-                    //LaunchDirectly(typeof(Communications.WiFiDirectActivity));
-                    //LaunchDirectly(typeof(Communications.BLECommsActivity));
-                    LaunchDirectly(typeof(Communications.Bluetooth.BTDirectActivity));
-                    return true;
-                case Resource.Id.menuaction_settings:
-                    LaunchDirectly(typeof(SettingsActivity));
-                    return true;
-                default:
-                    return base.OnOptionsItemSelected(item);
-            }
-        }
+        //public override bool OnOptionsItemSelected(IMenuItem item)
+        //{
+        //    if (item.ItemId == Resource.Id.menuaction_character)
+        //    {
+        //        Toast.MakeText(this, Resource.String.popup_placeholder_character, ToastLength.Short).Show();
+        //        return true;
+        //    }
+        //    else if (item.ItemId == Resource.Id.menuaction_wifi)
+        //    {
+        //        LaunchDirectly(typeof(Communications.Bluetooth.BTDirectActivity));
+        //        return true;
+        //    }
+        //    else if (item.ItemId == Resource.Id.menuaction_settings)
+        //    {
+        //        LaunchDirectly(typeof(SettingsActivity));
+        //        return true;
+        //    }
+        //    else return base.OnOptionsItemSelected(item);
+        //}
 
         protected void SetupButton(int resId, Action action, object extradata = null, bool isImplemented = true)
         {
@@ -227,15 +228,15 @@ namespace Atropos
                 isImplemented);
         }
 
-        public static object extraData = null;
-        protected void LaunchDirectly(Type activity, object extraData = null)
-        {
-            SelectorActivity.extraData = extraData;
-            var intent = new Intent(Application.Context, activity);
-            intent.AddFlags(ActivityFlags.SingleTop);
-            intent.AddFlags(ActivityFlags.NewTask);
-            Application.Context.StartActivity(intent);
-        }
+        //public static object extraData = null;
+        //protected void LaunchDirectly(Type activity, object extraData = null)
+        //{
+        //    SelectorActivity.extraData = extraData;
+        //    var intent = new Intent(Application.Context, activity);
+        //    intent.AddFlags(ActivityFlags.SingleTop);
+        //    intent.AddFlags(ActivityFlags.NewTask);
+        //    Application.Context.StartActivity(intent);
+        //}
 
         protected void SetTypeface(int resId, string fontFilename)
         {

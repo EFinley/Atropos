@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="300dip">
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/htask_background" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:gravity="center">
+        <LinearLayout
+            android:id="@+id/htask_success_bar"
+            android:layout_width="15dp"
+            android:layout_height="match_parent"
+            android:layout_margin="6dp" />
+        <LinearLayout
+            android:id="@+id/htask_risk_bar"
+            android:layout_width="15dp"
+            android:layout_height="match_parent"
+            android:layout_margin="6dp" />
+        <RelativeLayout
+            android:id="@+id/htask_graphic"
+            android:layout_width="0dip"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:layout_margin="6dp" />
+        <LinearLayout
+            android:id="@+id/htask_symbols"
+            android:layout_height="match_parent"
+            android:layout_width="50dp"
+            android:gravity="center"
+            android:layout_margin="6dp" />
+    </LinearLayout>
+</RelativeLayout>

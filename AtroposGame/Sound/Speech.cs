@@ -107,9 +107,10 @@ namespace Atropos
         ///     this.Speak(text, queue, locale, pitch, volume (nonfunctional on Android))
         ///     
         /// </summary>
-        public Speech()
+        public Speech(bool SpeakerMode = false)
         {
             this.Init().ContinueWith(t => { Log.Debug("TTS", "==================TTS engine initialized============="); }) ;
+            if (SpeakerMode) this.SpeakerMode = true;
 
             //listen = new Listener();
             //listen.sw.Start();
@@ -118,14 +119,19 @@ namespace Atropos
 
         private string[] againPrompts = new string[] { "Again", "As before", "Once more", "Same again", "Ditto", "Like before", "Same instructions" };
 
-        public Task SayNow(string content, stringOrID[] parameters = null, bool queue = false, CrossLocale? crossLocale = null, double? pitch = 1.0, double? speakRate = 1.0, double? volume = 1.0, CancellationToken? cancelToken = null)
+
+        private CancellationTokenSource _currentCTS;
+        public Task SayNow(string content, stringOrID[] parameters = null, bool interrupt = false, CrossLocale? crossLocale = null, double? pitch = 1.0, double? speakRate = 1.0, double? volume = 1.0, CancellationToken? cancelToken = null)
         {
             RecentUtterances = RecentUtterances.Where(u => u.timeOfUttering > DateTime.Now - SuppressUtteranceInterval).ToList();
             if (RecentUtterances.Count(u => u.content == content) > 0)
                 content = againPrompts.GetRandom();
 
+            if (interrupt && _currentCTS != null) _currentCTS.Cancel();
+
             //return Speak(utteranceContent, crossLocale, (float?)pitch, (float?)speakRate, (float?)volume);
             //var cts = new CancellationTokenSource();
+            _currentCTS = CancellationTokenSource.CreateLinkedTokenSource(cancelToken ?? CancellationToken.None);
             var ret = Speak(content, crossLocale, (float?)pitch, (float?)speakRate, (float?)volume, cancelToken);
             //return Task.WhenAny(ret, Task.Delay(200 * utteranceContent.Length));
             //return pollForCompletion();
@@ -134,18 +140,18 @@ namespace Atropos
         }
 
         public static void Say(string content, stringOrID[] parameters = null, 
-            bool queue = false, CrossLocale? crossLocale = null, double? pitch = 1.0, 
+            bool interrupt = false, CrossLocale? crossLocale = null, double? pitch = 1.0, 
             double? speakRate = 1.0, double? volume = 1.0, 
             Action doOnStart = null, bool? useSpeakerMode = null,
             CancellationToken? cancelToken = null)
         {
-            SayAllOf(content, parameters, queue, crossLocale, pitch, speakRate, volume, doOnStart, useSpeakerMode, cancelToken)
+            SayAllOf(content, parameters, interrupt, crossLocale, pitch, speakRate, volume, doOnStart, useSpeakerMode, cancelToken)
                 .LaunchAsOrphan($"Speech: {content}");
         }
 
         public static void Say(string content, SoundOptions options)
         {
-            Say(content, null, false, null,
+            Say(content, null, options.Interrupt, null,
                 options.Pitch ?? 1.0,
                 options.Speed ?? 1.0,
                 options.Volume ?? 1.0,
@@ -155,29 +161,30 @@ namespace Atropos
         }
 
         public static async Task SayAllOf(string content, stringOrID[] parameters = null,
-            bool queue = false, CrossLocale? crossLocale = null, double? pitch = 1.0,
+            bool interrupt = false, CrossLocale? crossLocale = null, double? pitch = 1.0,
             double? speakRate = 1.0, double? volume = 1.0,
             Action doOnStart = null, bool? useSpeakerMode = null,
             CancellationToken? cancelToken = null)
         {
-            bool previousSpeakerMode = Res.Speech.SpeakerMode;
+            //bool previousSpeakerMode = Res.Speech.SpeakerMode;
 
-            if (Res.AllowSpeakerSounds)
-                useSpeakerMode = useSpeakerMode ?? previousSpeakerMode;
-            else useSpeakerMode = false;
+            //if (Res.AllowSpeakerSounds)
+            //    useSpeakerMode = useSpeakerMode ?? previousSpeakerMode;
+            //else useSpeakerMode = false;
+            var speechEngine = (useSpeakerMode != true) ? Res.Speech : Res.Speech_Speakers;
 
             if (doOnStart != null) Task.Run(async () =>
             {
-                await Res.Speech.listener.ListenForStart();
+                await speechEngine.listener.ListenForStart();
                 doOnStart();
             }).LaunchAsOrphan("DoOnStart listener");
-            await Res.Speech.SayNow(content, parameters, queue, crossLocale, pitch, speakRate, volume, cancelToken);
-            Res.Speech.SpeakerMode = previousSpeakerMode;
+            await speechEngine.SayNow(content, parameters, interrupt, crossLocale, pitch, speakRate, volume, cancelToken);
+            //Res.Speech.SpeakerMode = previousSpeakerMode;
         }
 
         public static async Task SayAllOf(string content, SoundOptions options)
         {
-            await SayAllOf(content, null, false, null,
+            await SayAllOf(content, null, options.Interrupt, null,
                 options.Pitch ?? 1.0,
                 options.Speed ?? 1.0,
                 options.Volume ?? 1.0,

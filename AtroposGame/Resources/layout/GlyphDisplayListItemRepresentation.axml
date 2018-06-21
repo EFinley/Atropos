@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -7,16 +7,17 @@
     android:padding="6dip">
     <ImageView
         android:id="@+id/glyph_picture"
-        android:layout_width="65dip"
-        android:layout_height="65dip"
-        android:src="@drawable/atropos_sigil" />
+        android:layout_width="wrap_content"
+        android:layout_height="100dip"
+        android:src="@drawable/glyphA" />
     <TextView
         android:id="@+id/glyph_name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textSize="30dp"
         android:textAlignment="gravity"
-        android:singleLine="true" />
+        android:singleLine="true"
+        android:text="Name" />
     <TextView
         android:id="@+id/glyph_instruction"
         android:layout_width="wrap_content"
@@ -24,5 +25,6 @@
         android:textSize="15dp"
         android:textStyle="italic"
         android:textAlignment="gravity"
-        android:singleLine="true" />
+        android:singleLine="true"
+        android:text="Instructions" />
 </LinearLayout>

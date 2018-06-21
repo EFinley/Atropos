@@ -101,15 +101,50 @@ namespace Atropos.Characters
         public List<Impact> DamageSuffered = new List<Impact>();
 
         public double Toughness { get; set; } = 35; // One-sigma reduction in effectiveness per this many points of effective severity.
-        public double Barrier { get; set; } = 25; // A free initial (but small) barrier seems like a good gameplay addition.
-        public bool Shielded { get; set; } = false;
+        public double Barrier
+        {
+            get { return double.Parse(SpellDefinition.Barrier.GetInstance()?["Magnitude"] ?? "0.0"); }
+            set
+            {
+                var inst = SpellDefinition.Barrier.GetInstance();
+                if (inst == null)
+                {
+                    if (value == 0) return;
+                    inst = SpellDefinition.Barrier.StartInstance($"Magnitude:{value}");
+                }
+                SpellDefinition.Barrier.ChangeInstance(inst, $"Magnitude:{value}");
+                if (value == 0)
+                {
+                    SpellDefinition.Barrier.EndInstance(inst);
+                }
+            }
+        }
+        //public double Barrier { get; set; } = 0.25;
+        public bool Shielded
+        {
+            get { return SpellDefinition.Shield.GetInstance() != null; }
+            set
+            {
+                if (value)
+                {
+                    if (Shielded) SpellDefinition.Shield.EndInstance();
+                    SpellDefinition.Shield.StartInstance("Active: yes");
+                }
+                else
+                {
+                    SpellDefinition.Shield.EndInstance();
+                }
+            }
+        }
+        //public bool Shielded { get; set; } = false;
 
         public event EventHandler<EventArgs<Impact>> OnAnyImpact;
         public event EventHandler<EventArgs<Impact>> OnShieldStruck;
         public event EventHandler<EventArgs<Impact>> OnBarrierStruck;
         public event EventHandler<EventArgs<Impact>> OnFleshStruck;
 
-        public static void SetUpStandardHitReactions()
+        //public static void SetUpStandardHitReactions()
+        static Damageable()
         {
             Damageable.Me.OnShieldStruck += (o, e) => { Speech.Say($"Shield struck by {e.Value.IncurringHit.Type}."); };
             Damageable.Me.OnFleshStruck += (o, e) => { Speech.Say($"Took a {e.Value.FullDescription}"); };

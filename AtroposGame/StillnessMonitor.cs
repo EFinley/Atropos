@@ -228,6 +228,48 @@ namespace Atropos
         }
     }
 
+    public class ShakingMonitor : ConditionStage<Vector3>
+    {
+        public Vector3 LastAccel = Vector3.Zero;
+
+        private TimeSpan WithinTime, MinTime;
+        public Queue<DateTime> ReversalTimestamps = new Queue<DateTime>();
+
+        public int DebugCounter = 0;
+
+        public ShakingMonitor(int numShakes = 5, TimeSpan withinTime = default(TimeSpan), TimeSpan minTime = default(TimeSpan)) : 
+            base(new Vector3Provider(SensorType.LinearAcceleration) { Delay = SensorDelay.Fastest },
+                (ths, v, t) =>
+                {
+                    var _this = ths as ShakingMonitor;
+
+                    // Trim extraneous shakes (ones too old to count)
+                    while (_this.ReversalTimestamps.Count > 0 && DateTime.Now - _this.ReversalTimestamps.First() > _this.WithinTime)
+                        _this.ReversalTimestamps.Dequeue();
+
+                    // Get the dot product of the previous read and the current one.
+                    var dot = _this.LastAccel.Dot(v);
+                    _this.LastAccel = v;
+
+                    // Does this count as a "shake"?  If so, record it.
+                    // Since normal use produces accels in the 1-4 m/s2 range, a dot product of -1 implies a fairly violent course correction within that 20ms.  Doable, but not trivial.
+                    if (dot < -1) _this.ReversalTimestamps.Enqueue(DateTime.Now);
+
+                    var count = _this.ReversalTimestamps.Count;
+                    if (count == 0 && _this.DebugCounter > 0) { _this.DebugCounter = 0; Log.Debug("Shaking", "Resetting counter to zero."); }
+                    else if (count > _this.DebugCounter) { _this.DebugCounter = count; Log.Debug("Shaking", $"One shake detected... tally is {count} over {(DateTime.Now - _this.ReversalTimestamps.First()).TotalMilliseconds:f0}ms."); }
+
+
+                    // Okay, so... do we have enough shakes within the time allotted?
+                    return _this.ReversalTimestamps.Count >= numShakes
+                         && DateTime.Now - _this.ReversalTimestamps.First() > _this.MinTime;
+                })
+        {
+            WithinTime = (withinTime == default(TimeSpan)) ? TimeSpan.FromMilliseconds(750) : withinTime;
+            MinTime = (minTime == default(TimeSpan)) ? TimeSpan.FromMilliseconds(250) : minTime;
+        }
+    }
+
     //public class YawCorrectingStillnessAndOrientationProvider : StillnessAndOrientationProvider
     //{
     //    protected Quaternion yawCorrection;

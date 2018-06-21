@@ -13,6 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using static System.Math;
 using Log = Android.Util.Log; // Disambiguating with Math.Log( )... heh!
+using Android.Animation;
 
 namespace Atropos
 {
@@ -31,8 +32,6 @@ namespace Atropos
         protected ListView listView;
         protected RelativeLayout mainPanel;
         protected static SpellCastingActivity Current { get { return (SpellCastingActivity)CurrentActivity; } set { CurrentActivity = value; } }
-
-        private CancellationTokenSource _cts;
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
@@ -81,33 +80,37 @@ namespace Atropos
         protected override async void OnResume()
         {
             await base.DoOnResumeAsync(Task.Delay(500), AutoRestart: true);
-            DoSpellUILoop();
+            InitSpellVisualEffects();
+            if (SpellDefinition.Barrier.GetInstance() == null)
+            {
+                Characters.Damageable.Me.Barrier = 25;
+                SpellDefinition.Barrier.GetInstance().CreationTime = DateTime.Now - TimeSpan.FromMinutes(5);
+            }
             //PerformSpellSelection();
         }
 
         protected override void OnPause()
         {
-            _cts?.Cancel();
             base.OnPause();
         }
 
         protected async void PerformSpellSelection()
         {
-            SpellResult ChosenSpell = null;
+            SpellDefinition ChosenSpell = null;
             useVolumeTrigger = false;
 
             try
             {
-                Log.Debug("SpellSelection", $"Diagnostics: #sensors {Res.NumSensors}; CurrentStage {(CurrentStage as GestureRecognizerStage)?.Label}; Background stages activity: {BaseActivity.BackgroundStages?.Select(s => $"{(s as GestureRecognizerStage)?.Label}:{s.IsActive}").Join()}");
+                //Log.Debug("SpellSelection", $"Diagnostics: #sensors {Res.NumSensors}; CurrentStage {(CurrentStage as GestureRecognizerStage)?.Label}; Background stages activity: {BaseActivity.BackgroundStages?.Select(s => $"{(s as GestureRecognizerStage)?.Label}:{s.IsActive}").Join()}");
                 var MagnitudeGlyph = await new GlyphCastStage(Glyph.MagnitudeGlyphs, Glyph.StartOfSpell, 2.0).AwaitResult();
                 double timeCoefficient = (MagnitudeGlyph == Glyph.L) ? 2.0 :
                                          (MagnitudeGlyph == Glyph.M) ? 0.75 :
-                                         (MagnitudeGlyph == Glyph.H) ? -0.25 :
-                                         -1.0; // for Magnitude == Glyph.G
+                                         (MagnitudeGlyph == Glyph.H) ? -2.0 :
+                                         -5.0; // for Magnitude == Glyph.G
                 var SpellTypeGlyph = await new GlyphCastStage(Glyph.SpellTypeGlyphs, MagnitudeGlyph, timeCoefficient).AwaitResult();
 
                 // Now figure out what possible third "key" glyphs exist given our spell list.
-                var PossibleSpells = SpellResult.AllSpells
+                var PossibleSpells = SpellDefinition.AllSpells
                                                     .Where(s => s.Magnitude == MagnitudeGlyph && s.SpellType == SpellTypeGlyph)
                                                     .ToDictionary(s => s.KeyGlyph);
                 var KeyGlyph = await new GlyphCastStage(PossibleSpells.Keys, SpellTypeGlyph, timeCoefficient).AwaitResult();
@@ -137,26 +140,54 @@ namespace Atropos
             }
         }
 
-        private async void DoSpellUILoop()
+        private void InitSpellVisualEffects()
         {
-            _cts = new CancellationTokenSource();
+            // Set up the barrier glow effect
+            ImageView barrierEffect = new ImageView(this);
+            barrierEffect.SetImageResource(Resource.Drawable.barrier_glow);
+            mainPanel.AddView(barrierEffect);
+
+            SpellDefinition.Barrier.OnChange += (o, e) =>
+            {
+                barrierEffect.Alpha = (float)(double.Parse(e.Value["Magnitude"]) / (double)SpellDefinition.Barrier.Parameters["BarrierBaseMagnitude"]);
+            };
 
             // Set up the shield spell visual and its animator
             ImageView shieldSpellGraphic = new ImageView(this);
             shieldSpellGraphic.Visibility = ViewStates.Gone;
-            shieldSpellGraphic.SetImageResource(Resource.Drawable.qr_code_reticle_with_glow);
+            shieldSpellGraphic.SetImageResource(Resource.Drawable.shield_rune_ring);
+            mainPanel.AddView(shieldSpellGraphic);
 
-            // Set up the barrier glow effect
-            ImageView barrierEffect = new ImageView(this);
-            barrierEffect.Alpha = (float)(Characters.Damageable.Me.Barrier / SpellResult.BarrierBaseMagnitude);
-            barrierEffect.SetImageResource(Resource.Drawable.qr_code_window);
-            mainPanel.AddView(barrierEffect);
+            var ObjAnimator = ObjectAnimator.OfFloat(shieldSpellGraphic, "rotation", 0, 360);
+            ObjAnimator.RepeatMode = ValueAnimatorRepeatMode.Restart;
+            ObjAnimator.RepeatCount = ValueAnimator.Infinite;
+            ObjAnimator.SetDuration(2500);
+            StopToken.Register(ObjAnimator.End);
 
-            while (!_cts.IsCancellationRequested)
+            SpellDefinition.Shield.OnStart += (o, e) =>
             {
-                await Task.Delay(100);
-                var BarrierOpacity = (Characters.Damageable.Me.Barrier / SpellResult.BarrierBaseMagnitude ).Clamp(0, 1);
-            }
+                Current.RunOnUiThread(() =>
+                {
+                    shieldSpellGraphic.Visibility = ViewStates.Visible;
+                    // TODO - Begin spinning here.
+                    ObjAnimator.Start();
+                });
+            };
+            SpellDefinition.Shield.OnEnd += (o, e) =>
+            {
+                Current.RunOnUiThread(() =>
+                {
+                    shieldSpellGraphic.Visibility = ViewStates.Gone;
+                    ObjAnimator.End();
+                    shieldSpellGraphic.Rotation = 0;
+                });
+            };
+
+            //while (!_cts.IsCancellationRequested)
+            //{
+            //    await Task.Delay(100);
+            //    var BarrierOpacity = (Characters.Damageable.Me.Barrier / SpellDefinition.BarrierBaseMagnitude ).Clamp(0, 1);
+            //}
         }
 
         public class GlyphCastStage : AwaitableStage<Glyph>
@@ -194,12 +225,12 @@ namespace Atropos
                 Stillness = new StillnessProvider();
                 //Stillness.StartDisplayLoop(Current, 500);
                 SetUpProvider(Stillness);
-                AverageStillness = new RollingAverage<float>(30);
+                AverageStillness = new RollingAverage<float>(70);
 
                 //AttitudeProvider = new GravityOrientationProvider();
                 //AttitudeProvider.Activate();
                 GravityProvider = new Vector3Provider(SensorType.Gravity);
-                GravityProvider.Activate();
+                GravityProvider.Activate(StopToken);
 
                 ValidGlyphs = validGlyphs.ToList();
                 LastGlyph = lastGlyph;
@@ -209,6 +240,7 @@ namespace Atropos
                 activity.adapter = new GlyphDisplayAdapter(activity, ValidGlyphs);
                 activity.RunOnUiThread(() => activity.listView.Adapter = activity.adapter);
 
+                DependsOn(Current.StopToken);
                 if (autoStart) Activate();
             }
 
@@ -267,7 +299,7 @@ namespace Atropos
                     activity.RunOnUiThread(() => activity.listView.Adapter = activity.adapter);
 
                     //AttitudeProvider.Deactivate();
-                    GravityProvider.Deactivate();
+                    //GravityProvider.Deactivate();
 
                     StageReturn(GlyphsSortedByAngle[0]);
                 }
@@ -297,11 +329,25 @@ namespace Atropos
             protected override bool abortCriterion()
             {
                 AverageStillness.Update(Stillness.StillnessScore);
-                return Stillness.RunTime > TimeSpan.FromMilliseconds(1250) && AverageStillness < -15;
+                return Stillness.RunTime > TimeSpan.FromMilliseconds(1250) && AverageStillness < -18;
             }
 
             protected override void abortAction()
             {
+                foreach (var glyph in ValidGlyphs)
+                {
+                    var fx = glyph.FeedbackSFX;
+                    fx.Stop();
+                    fx.Deactivate();
+                    glyph.FeedbackSFX = null;
+                }
+
+                Plugin.Vibrate.CrossVibrate.Current.Vibration(50);
+
+                var activity = SpellCastingActivity.Current;
+                activity.adapter = new GlyphDisplayAdapter(activity, new List<Glyph>());
+                activity.RunOnUiThread(() => activity.listView.Adapter = activity.adapter);
+
                 StageCancel();
             }
         }
@@ -348,6 +394,7 @@ namespace Atropos
             var ctx = (SpellCastingActivity)_context;
             NameField.Text = glyph.Name;
             InstructionField.Text = glyph.Instruction_Short;
+            PictureField.SetImageResource(glyph.IllustrationId);
 
             return v;
         }

@@ -14,6 +14,7 @@ using System.Threading;
 using Nito.AsyncEx;
 using System.Numerics;
 using Atropos.Machine_Learning;
+using Only = Atropos.Hacking.StandardCriteria;
 
 namespace Atropos.Hacking
 {
@@ -31,7 +32,7 @@ namespace Atropos.Hacking
             var stage = new SpasticStage();
             stage.Activate();
             await stage.CompletionSignal.WaitAsync();
-            return new StateChange(Authority.Root);
+            return new HackOutcome() { new StateChange(Authority.Root), new StateChange(Alert.SilentAlarm) };
         }
 
         private class SpasticStage : GestureRecognizerStage
