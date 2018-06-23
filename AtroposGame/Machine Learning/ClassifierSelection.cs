@@ -83,6 +83,7 @@ namespace Atropos.Machine_Learning
                     var s = new Sequence<DKS>() { SourcePath = seq.SourcePath };
                     if (seq.TrueClassIndex == currentGC.index) s.TrueClassIndex = 0;
                     else s.TrueClassIndex = 1;
+                    //s.TrueClassName = Dataset.ActualGestureClasses[s.TrueClassIndex].className;
                     d.AddSequence(s, skipBitmap: true);
                 }
                 assessmentFunc = assessClassifier_singleGC;

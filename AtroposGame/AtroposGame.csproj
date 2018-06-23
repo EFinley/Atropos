@@ -234,6 +234,7 @@
     <Compile Include="Melee Training Activity.cs" />
     <Compile Include="MeleeDefinitions.cs" />
     <Compile Include="Melee\Choreographer.cs" />
+    <Compile Include="Melee\ChoreographyGenerator.cs" />
     <Compile Include="Melee\MeleeBetaActivity.cs" />
     <Compile Include="MiscUtil\ApplicationChooser.cs" />
     <Compile Include="MiscUtil\BufferAcquisitionException.cs" />
@@ -364,6 +365,8 @@
     <AndroidAsset Include="Assets\Fonts\FTLTLT.TTF" />
     <AndroidAsset Include="Assets\Fonts\PRISTINA.TTF" />
     <None Include="App.config" />
+    <AndroidAsset Include="Assets\MeleeDefense.classifier" />
+    <AndroidAsset Include="Assets\MeleeOffense.classifier" />
     <None Include="packages.config" />
     <None Include="Properties\AndroidManifest.xml">
       <SubType>Designer</SubType>
@@ -836,9 +839,6 @@
   </ItemGroup>
   <ItemGroup>
     <AndroidResource Include="Resources\values\Colors.xml" />
-  </ItemGroup>
-  <ItemGroup>
-    <AndroidAsset Include="Assets\MeleeClassifier.txt" />
   </ItemGroup>
   <ItemGroup>
     <AndroidResource Include="Resources\raw\_253324_electricity_loop.wav" />

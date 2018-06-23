@@ -436,12 +436,10 @@ namespace Atropos
         #endregion
 
         #region Options Menu stuff
-        protected virtual int MenuLayout { get { return Resource.Menu.action_items; } }
         public override bool OnCreateOptionsMenu(IMenu menu)
         {
-            if (MenuLayout == -1) return true;
             var inflater = MenuInflater;
-            inflater.Inflate(MenuLayout, menu);
+            inflater.Inflate(Resource.Menu.action_items, menu);
             return true;
         }
 

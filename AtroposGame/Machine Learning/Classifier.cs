@@ -114,6 +114,7 @@ namespace Atropos.Machine_Learning
                 svm = teacher.Learn(inputs, outputs);
 
                 Dataset = dataSet; // Recorded so we can access it through the Classifier (like inside icebreakers etc).
+                MatchingDatasetClasses = Dataset.ActualGestureClasses.ToArray();
 
                 // Calibration for probabilistic work... see
                 // http://accord-framework.net/docs/html/T_Accord_MachineLearning_VectorMachines_Learning_ProbabilisticOutputCalibration.htm
@@ -198,6 +199,7 @@ namespace Atropos.Machine_Learning
                 var prevRecog = sample.RecognizedAsName;
                 var prevRecogErr = sample.RecognitionScore;
                 sample.RecognizedAsIndex = await Recognize(sample);
+                //sample.RecognizedAsName = dataSet.ActualGestureClasses[sample.RecognizedAsIndex].className;
 
                 // We will only perform sampling of the ones we have a formal classification for.  The few we might have which are still "guessed at" can be ignored.
                 if (sample.TrueClassIndex >= 0)
@@ -329,6 +331,7 @@ namespace Atropos.Machine_Learning
                 var extractors = featureExtractor.Extractors;
                 var losses = new List<double>();
                 Dataset = dataSet;
+                MatchingDatasetClasses = dataSet.ActualGestureClasses.ToArray();
 
                 foreach (var extractor in extractors)
                 {
