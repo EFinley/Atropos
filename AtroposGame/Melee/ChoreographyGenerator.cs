@@ -100,8 +100,7 @@ namespace Atropos.Melee
                         OppClassifierKey = offenseKey,
                         OppGestureIndex = offendersMoveIndex
                     };
-                }
-                
+                }                
 
                 // Now actually send out the event.
                 OnExchangeChosen.Raise(exchange);

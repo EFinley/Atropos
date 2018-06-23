@@ -261,4 +261,80 @@ namespace Atropos.Melee
             Opponent.SendMessage(result);
         }
     }
+
+    public class SolipsisticChoreographer : ActivatorBase, IChoreographer
+    {
+        private IChoreographyGenerator Generator;
+        protected Dictionary<string, Classifier> Classifiers;
+
+        private bool IsOnPlayerTwo = false;
+        private AsyncAutoResetEvent ReceivedSubmission = new AsyncAutoResetEvent();
+        private ChoreographyCue PlayerOneCue;
+
+        public SolipsisticChoreographer(Dictionary<string, Classifier> classifiers, int millisecondsGapMean = 2500, int millisecondsGapSigma = 1000)
+        {
+            Generator = new SimpleChoreographyGenerator(classifiers, millisecondsGapMean, millisecondsGapSigma);
+            Classifiers = classifiers;
+        }
+
+        public event EventHandler<EventArgs<ChoreographyCue>> OnPromptCue;
+
+        public void SubmitResult(ChoreographyCue cue)
+        {
+            //if (double.IsNaN(cue.Score))
+            //{
+            //    Speech.Say("What the heck was that?");
+            //}
+            //else if (cue.Score < 0)
+            //{
+            //    var recognizedAsName = Classifiers[cue.ClassifierKey].MatchingDatasetClasses[cue.GestureClassIndex].className;
+            //    Speech.Say($"Looked more like {recognizedAsName}, with {(-1 * cue.Score):f1} points.", SoundOptions.AtSpeed(2.0));
+            //}
+            //else
+            //{
+            //    Speech.Say($"Score {cue.Score:f1}, {cue.Delay.TotalSeconds:f1} seconds", SoundOptions.AtSpeed(2.0));
+            //}
+
+            if (IsOnPlayerTwo)
+            {
+                if (double.IsNaN(PlayerOneCue.Score)) Speech.Say("First gesture unrecognized.", SoundOptions.AtSpeed(2.0));
+                else if (double.IsNaN(cue.Score)) Speech.Say("Second gesture unrecognized.", SoundOptions.AtSpeed(2.0));
+                else
+                {
+                    var P1netscore = Math.Sqrt(PlayerOneCue.Score - PlayerOneCue.Delay.TotalSeconds);
+                    var P2netscore = Math.Sqrt(cue.Score - cue.Delay.TotalSeconds);
+                    if (Math.Abs(P1netscore - P2netscore) < 0.25) Speech.Say("Tie.");
+                    else if (P1netscore > P2netscore) Speech.Say("Point to first.", SoundOptions.AtSpeed(2.0));
+                    else Speech.Say("Point to second.", SoundOptions.AtSpeed(2.0));
+                }
+
+                Generator.SubmitResults(PlayerOneCue, cue);
+                IsOnPlayerTwo = false;
+                PlayerOneCue = null;
+            }
+            else
+            {
+                PlayerOneCue = cue;
+                IsOnPlayerTwo = true;
+                ReceivedSubmission.Set();
+            }
+        }
+
+        public override void Activate(CancellationToken? externalStopToken = null)
+        {
+            base.Activate(externalStopToken);
+
+            Generator.OnExchangeChosen += async (o, e) =>
+            {
+                IsOnPlayerTwo = false;
+                OnPromptCue.Raise(e.Value.MyCue);
+                await ReceivedSubmission.WaitAsync();
+                await Task.Delay(1000);
+                var cue = e.Value.OpponentCue;
+                cue.CueTime = DateTime.Now + TimeSpan.FromMilliseconds(250);
+                OnPromptCue.Raise(cue);
+            };
+            Generator.Activate(StopToken);
+        }
+    }
 }

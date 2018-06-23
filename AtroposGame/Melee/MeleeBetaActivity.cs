@@ -37,6 +37,8 @@ using Atropos.Machine_Learning;
 using Atropos.Machine_Learning.Button_Logic;
 using DKS = Atropos.DataStructures.DatapointSpecialVariants.DatapointKitchenSink;
 using Android.Content.Res;
+using Atropos.Communications;
+using Message = Atropos.Communications.Message;
 
 namespace Atropos.Melee
 {
@@ -46,6 +48,9 @@ namespace Atropos.Melee
     {
         public const string OFFENSE = "MeleeOffense";
         public const string DEFENSE = "MeleeDefense";
+        public const string PROPOSE = "ProposeChoreographer";
+
+        private const string _tag = "Atropos|MeleeActivity";
 
         protected static new MeleeBetaActivity Current { get { return (MeleeBetaActivity)CurrentActivity; } set { CurrentActivity = value; } }
         protected static new MachineLearningStage CurrentStage
@@ -156,6 +161,8 @@ namespace Atropos.Melee
             await base.DoOnResumeAsync(Task.Delay(500), AutoRestart: false);
             LoadMeleeClassifier();
 
+            Communications.Bluetooth.BluetoothMessageCenter.OnReceiveMessage += HandleProposal;
+
             //var newSW = new System.Diagnostics.Stopwatch();
             //var chor = new Choreographer(CueClassifiers[OFFENSE], CueClassifiers[DEFENSE], 500, 100);
 
@@ -172,6 +179,7 @@ namespace Atropos.Melee
         protected override void OnPause()
         {
             base.OnPause();
+            Communications.Bluetooth.BluetoothMessageCenter.OnReceiveMessage -= HandleProposal;
         }
         #endregion
 
@@ -240,21 +248,9 @@ namespace Atropos.Melee
                         {
                             if (Choreographer == null)
                             {
-                                if (!CueClassifiers.ContainsKey(OFFENSE)) throw new Exception($"{OFFENSE} classifier not found.");
-                                if (!CueClassifiers.ContainsKey(DEFENSE)) throw new Exception($"{DEFENSE} classifier not found.");
-                                Choreographer = new SimpleChoreographer(CueClassifiers);
-                                Choreographer.OnPromptCue += async (o, eargs) =>
-                                {
-                                    CurrentCue = eargs.Value;
-                                    Classifier = CueClassifiers[CurrentCue.ClassifierKey];
-                                    //await GimmeCue(eargs.Value.GestureClass);
-                                    SelectedGestureClass = Classifier.MatchingDatasetClasses[CurrentCue.GestureClassIndex];
-                                    var delay = CurrentCue.CueTime - DateTime.Now;
-                                    await Task.Delay(delay);
-                                    Speech.Say(SelectedGestureClass.className, SoundOptions.AtSpeed(2.0));
-                                    Stopwatch.Restart();
-                                    if (_singleMode) Choreographer.Deactivate();
-                                };
+                                Choreographer = InitChoreographer().Result;
+
+                                Choreographer.OnPromptCue += RespondToPromptCue;
                                 Choreographer.Activate();
                             }
                             else
@@ -317,6 +313,67 @@ namespace Atropos.Melee
         }
         #endregion
 
+        private Message opponentsProposal;
+        private AsyncAutoResetEvent opponentsProposalSignal = new AsyncAutoResetEvent();
+        protected async Task<IChoreographer> InitChoreographer()
+        {
+            if (!CueClassifiers.ContainsKey(OFFENSE)) throw new Exception($"{OFFENSE} classifier not found.");
+            if (!CueClassifiers.ContainsKey(DEFENSE)) throw new Exception($"{DEFENSE} classifier not found.");
+
+            // Establish the choreographer - this depends on whether you're connected or not (and on Solipsism mode)
+            if (Communications.Bluetooth.BluetoothMessageCenter.TemporaryAddressBook_SingleEntry == null)
+            {
+                if (!Res.SolipsismMode) return new SimpleChoreographer(CueClassifiers);
+                else return new SolipsisticChoreographer(CueClassifiers);
+            }
+            else
+            {
+                Message myProposal = new Message(MsgType.Notify, PROPOSE);
+                Communications.Bluetooth.BluetoothMessageCenter.TemporaryAddressBook_SingleEntry.SendMessage(myProposal);
+                await opponentsProposalSignal.WaitAsync();
+                if (String.Compare(myProposal.ID, opponentsProposal.ID) == 0)
+                {
+                    Log.Debug(_tag, "Tie GUID encountered - WTF???");
+                    return await InitChoreographer();
+                }
+                else if (String.Compare(myProposal.ID, opponentsProposal.ID) > 0)
+                {
+                    Log.Debug(_tag, "My GUID wins - I'm choreographer.");
+                    return new SendingChoreographer(Communications.Bluetooth.BluetoothMessageCenter.TemporaryAddressBook_SingleEntry, CueClassifiers);
+                }
+                else
+                {
+                    Log.Debug(_tag, "My GUID loses - the other guy is choreographer this time.");
+                    return new ReceivingChoreographer(Communications.Bluetooth.BluetoothMessageCenter.TemporaryAddressBook_SingleEntry);
+                }
+            }
+        }
+        private void HandleProposal(object sender, EventArgs<Message> e)
+        {
+            var msg = e.Value;
+            if (msg.Type != Communications.MsgType.Notify || !msg.Content.StartsWith(PROPOSE)) return;
+            opponentsProposal = msg;
+            opponentsProposalSignal.Set();
+        }
+
+        protected async void RespondToPromptCue(object o, EventArgs<ChoreographyCue> eargs)
+        {
+            CurrentCue = eargs.Value;
+            Classifier = CueClassifiers[CurrentCue.ClassifierKey];
+            //await GimmeCue(eargs.Value.GestureClass);
+            SelectedGestureClass = Classifier.MatchingDatasetClasses[CurrentCue.GestureClassIndex];
+            if (CurrentCue.CueTime < DateTime.Now)
+            {
+                Log.Debug(_tag, $"Timing issue - CurrentCue.CueTime is {CurrentCue.CueTime}, now is {DateTime.Now}.");
+                CurrentCue.CueTime = DateTime.Now + TimeSpan.FromMilliseconds(250);
+            }
+            var delay = CurrentCue.CueTime - DateTime.Now;
+            await Task.Delay(delay);
+            Speech.Say(SelectedGestureClass.className, SoundOptions.AtSpeed(2.0));
+            Stopwatch.Restart();
+            if (_singleMode) Choreographer.Deactivate();
+        }
+
         protected void ResolveEndOfGesture(Sequence<DKS> resultSequence)
         {
             MostRecentSample = resultSequence;
@@ -348,7 +405,11 @@ namespace Atropos.Melee
             }
             else if (!_userTrainingMode)
             {
-                if (MostRecentSample.RecognizedAsIndex == -1)
+                if (CurrentCue == null)
+                {
+                    CurrentCue = new ChoreographyCue();
+                }
+                else if (MostRecentSample.RecognizedAsIndex == -1)
                 {
                     CurrentCue.Score = double.NaN;
                 }
