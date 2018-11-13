@@ -397,37 +397,57 @@ namespace Atropos
 
         #region Volume trigger use (remember to set useVolumeTrigger to True in your OnCreate())
         protected bool useVolumeTrigger = false;
-        protected bool listeningForVolumeTrigger = true;
+        protected bool volumeTriggerBeingHeld = false;
         protected event EventHandler<EventArgs> OnVolumeButtonPressed;
         protected event EventHandler<EventArgs> OnVolumeButtonReleased;
+        protected event EventHandler<EventArgs> OnVolumeButtonClicked;
+        protected event EventHandler<EventArgs<TimeSpan>> OnVolumeButtonHeld;
+
         protected static object volumeButtonSyncLock = new object();
+        protected System.Diagnostics.Stopwatch volumeButtonStopwatch = new System.Diagnostics.Stopwatch();
         public override bool OnKeyDown([GeneratedEnum] Keycode keyCode, KeyEvent e)
         {
-            if (useVolumeTrigger && listeningForVolumeTrigger)
+            if (useVolumeTrigger && !volumeTriggerBeingHeld)
             {
                 if (keyCode == Keycode.VolumeDown || keyCode == Keycode.VolumeUp)
                 {
                     lock (volumeButtonSyncLock)
                     {
-                        listeningForVolumeTrigger = false;
-                        OnVolumeButtonPressed?.Invoke(this, EventArgs.Empty);
-                        return true;
+                        if (!volumeTriggerBeingHeld)
+                        {
+                            volumeTriggerBeingHeld = true;
+                            volumeButtonStopwatch.Restart();
+                            OnVolumeButtonPressed?.Invoke(this, EventArgs.Empty);
+                            return true; 
+                        }
                     }
+                    if (volumeTriggerBeingHeld) return true;
                 }
             }
             return base.OnKeyDown(keyCode, e);
         }
         public override bool OnKeyUp([GeneratedEnum] Keycode keyCode, KeyEvent e)
         {
-            if (useVolumeTrigger && !listeningForVolumeTrigger)
+            if (useVolumeTrigger && volumeTriggerBeingHeld)
             {
                 if (keyCode == Keycode.VolumeDown || keyCode == Keycode.VolumeUp)
                 {
-                    lock (volumeButtonSyncLock)
+                    if (volumeTriggerBeingHeld)
                     {
-                        listeningForVolumeTrigger = true;
-                        OnVolumeButtonReleased?.Invoke(this, EventArgs.Empty);
-                        return true;
+                        lock (volumeButtonSyncLock)
+                        {
+                            OnVolumeButtonReleased?.Invoke(this, EventArgs.Empty);
+                            volumeTriggerBeingHeld = false;
+
+                            volumeButtonStopwatch.Stop();
+                            // If they're not listening for OnHeld, then any length will do; otherwise, only a short click counts.
+                            if (OnVolumeButtonHeld.GetInvocationList().Length == 0
+                                || volumeButtonStopwatch.ElapsedMilliseconds < 250)
+                                OnVolumeButtonClicked.Raise();
+                            else OnVolumeButtonHeld.Raise(volumeButtonStopwatch.Elapsed);
+
+                            return true;
+                        } 
                     }
                 }
             }
