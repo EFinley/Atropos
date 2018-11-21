@@ -14,402 +14,692 @@ using System.Threading.Tasks;
 using static System.Math;
 using Log = Android.Util.Log; // Disambiguating with Math.Log( )... heh!
 using Android.Animation;
+using Atropos.Machine_Learning;
+using Atropos.DataStructures;
+using DKS = Atropos.DataStructures.DatapointSpecialVariants.DatapointKitchenSink;
+using Android.Runtime;
+using Android.Content.Res;
+using System.IO;
+using Atropos.Utilities;
 
 namespace Atropos.Hacking
 {
-    [Activity(ScreenOrientation = Android.Content.PM.ScreenOrientation.Portrait)]
-    public class HackingActivity : BaseActivity_Portrait
+    [Activity(ScreenOrientation = Android.Content.PM.ScreenOrientation.Portrait, WindowSoftInputMode = SoftInput.AdjustPan)]
+    public class HackingActivity
+        : MachineLearningActivity<DKS>
     {
-        protected HackTaskDisplayAdapter adapter;
-        public HackingTask CurrentTask;
-        public List<HackingTask> TaskList = new List<HackingTask>();
+        public const string HACKING = "Hacking"; // Used for filename of classifier to load
+        private const string _tag = "Atropos|HackingActivity";
+
+        public static new HackingActivity Current { get { return (HackingActivity)CurrentActivity; } set { CurrentActivity = value; } }
+
+        #region Required inheritance members
+        protected override void ResetStage(string label)
+        {
+            //CurrentStage = new MachineLearningStage(label, Dataset,
+            //    new LoggingSensorProvider<DKS>(new AdvancedProviders.GrabItAllSensorProvider(new GravGyroOrientationProvider())));
+            CurrentStage = new MachineLearningStage(label, Dataset, ContinuousLogger);
+        }
+        #endregion
+
+        #region Data Members (and tightly linked functions / properties)
+        protected bool _collectingData = false;
+        protected bool _finalizingGesture = false;
+
+        //protected HackTaskDisplayAdapter adapter;
+        //public HackingActionsList HackingActionsList { get; set; }
+        public HackingMap Map { get; set; }
+
+        //public List<HackingAction> RootLevelActions = new List<HackingAction>();
         protected ListView listView;
         protected RelativeLayout mainPanel;
-        protected static HackingActivity Current { get { return (HackingActivity)CurrentActivity; } set { CurrentActivity = value; } }
 
+        protected System.Diagnostics.Stopwatch Stopwatch = new System.Diagnostics.Stopwatch();
+        protected System.Diagnostics.Stopwatch SingleClickWatch = new System.Diagnostics.Stopwatch();
+        //protected int SingleClickCount = 0;
+
+        public virtual double GetAccelForDatapoint(DKS datapoint) { return datapoint.LinAccel.Length(); }
+        #endregion
+
+        #region Activity Lifecycle Methods
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
+
             SetContentView(Resource.Layout.SimpleListPage);
+            //FindAllViews();
+
+            Dataset = new DataSet<DKS>();
+            Classifier = new Classifier(); // Just in case; it's not actually going to get used in this version.
 
             var lView = FindViewById(Resource.Id.list);
             var mPanel = FindViewById(Resource.Id.listpage_backdrop);
 
             listView = lView as ListView;
             mainPanel = mPanel as RelativeLayout;
-            
+
+            //listView.ItemClick += ListView_ItemClick;
+
+            //HackingActionsList = new HackingActionsList();
+            //HackingActionsList.SetUpBasicNetwork();
+            //HackingActionsList.SetUpFirewall();
+            //HackingActionsList.RegisterAllActions();
+
+            Map = new HackingMap();
+            Map.SetUpDefaults();
+            Map.SetupObjectiveChain("Root Access", "Security Server", "Suppress Cameras");
+            Map.SetupFirewall();
+            //Map.OnTransition += (o, e) => UpdateMapView();
+            UpdateMapView();
+
+            Speech.Say("Penetrating access point. Raising hud and gestural interface. Loading icebreakers. Scrambler countermeasures detected and partially neutralized.", SoundOptions.AtSpeed(2.0));
+
             useVolumeTrigger = true;
-            OnVolumeButtonPressed += (o, e) => PerformSpellSelection();
+            //OnVolumeButtonPressed += (o, e) => PerformSpellSelection();
         }
+
+        //private void ListView_ItemClick(object sender, AdapterView.ItemClickEventArgs e)
+        //{
+        //    var selectedAction = ((HackTaskDisplayAdapter) listView.Adapter)._items[e.Position];
+
+        //    if (HackingNavigation.CurrentAction == null || !Object.ReferenceEquals(selectedAction, HackingNavigation.CurrentAction))
+        //        selectedAction.Select();
+        //    else selectedAction.Execute();
+
+        //    UpdateListView();
+        //}
+
         protected override async void OnResume()
         {
-            await base.DoOnResumeAsync(Task.Delay(500), AutoRestart: true);
-            InitHackingOpportunity();
+            await base.DoOnResumeAsync(Task.Delay(500), AutoRestart: false);
+            ContinuousLogger.TrueActivate(StopToken);
+            LoadHackingClassifier();
+            //InitHackingOpportunity();
         }
 
         protected override void OnPause()
         {
             base.OnPause();
         }
+        #endregion
 
-        protected async void PerformSpellSelection()
+        #region Button Click / Volume Button Hold events
+        public override bool OnKeyDown([GeneratedEnum] Keycode keyCode, KeyEvent e)
         {
-            //useVolumeTrigger = false;
+            if (keyCode == Keycode.VolumeDown || keyCode == Keycode.VolumeUp)
+            {
+                lock (SelectedGestureClass)
+                {
+                    if (!_collectingData && !_finalizingGesture)
+                    {
+                        _collectingData = true;
 
-            //try
-            //{
-            //    //Log.Debug("SpellSelection", $"Diagnostics: #sensors {Res.NumSensors}; CurrentStage {(CurrentStage as GestureRecognizerStage)?.Label}; Background stages activity: {BaseActivity.BackgroundStages?.Select(s => $"{(s as GestureRecognizerStage)?.Label}:{s.IsActive}").Join()}");
-            //    var MagnitudeGlyph = await new GlyphCastStage(Glyph.MagnitudeGlyphs, Glyph.StartOfSpell, 2.0).AwaitResult();
-            //    double timeCoefficient = (MagnitudeGlyph == Glyph.L) ? 2.0 :
-            //                             (MagnitudeGlyph == Glyph.M) ? 0.75 :
-            //                             (MagnitudeGlyph == Glyph.H) ? -2.0 :
-            //                             -5.0; // for Magnitude == Glyph.G
-            //    var SpellTypeGlyph = await new GlyphCastStage(Glyph.SpellTypeGlyphs, MagnitudeGlyph, timeCoefficient).AwaitResult();
+                        ResetStage("Hacking stage");
+                        //SingleClickWatch.Restart();
+                        CurrentStage.Activate();
+                        return true;
+                    }
+                }
+                if (_collectingData) return true;
+            }
+            return base.OnKeyDown(keyCode, e);
+        }
+        public override bool OnKeyUp([GeneratedEnum] Keycode keyCode, KeyEvent e)
+        {
+            if (keyCode == Keycode.VolumeDown || keyCode == Keycode.VolumeUp)
+            {
+                if (_collectingData && !_finalizingGesture)
+                {
+                    lock (SelectedGestureClass)
+                    {
+                        _collectingData = false;
+                        _finalizingGesture = true;
 
-            //    // Now figure out what possible third "key" glyphs exist given our spell list.
-            //    var PossibleSpells = HackTaskDefinition.AllSpells
-            //                                        .Where(s => s.Magnitude == MagnitudeGlyph && s.SpellType == SpellTypeGlyph)
-            //                                        .ToDictionary(s => s.KeyGlyph);
-            //    var KeyGlyph = await new GlyphCastStage(PossibleSpells.Keys, SpellTypeGlyph, timeCoefficient).AwaitResult();
-            //    ChosenSpell = PossibleSpells.GetValueOrDefault(KeyGlyph);
+                        // Halt the gesture-collection stage and query it.
+                        Task.Run(async () =>
+                        {
+                            await Task.Delay(250);
 
-            //    // Now that we know that...
-            //    var lastGlyph = KeyGlyph;
-            //    var RemainingGlyphs = ChosenSpell.Glyphs.Skip(3); // The three we already extracted above, of course.
-            //    foreach (var glyph in RemainingGlyphs)
-            //    {
-            //        await new GlyphCastStage(glyph, lastGlyph, timeCoefficient).AwaitResult();
-            //        lastGlyph = glyph;
-            //    }
-            //    Task.Run(() => ChosenSpell?.OnSelection(Current)) // Passing the Activity allows us to ask it to do things (like animate properties or other UI stuff)
-            //        .LaunchAsOrphan($"Effects of {ChosenSpell.TaskName}");
-            //    //Finish();
-            //}
-            //catch (TaskCanceledException)
+                            var resultData = CurrentStage.StopAndReturnResults();
+                            var resultSeq = new Sequence<DKS>() { SourcePath = resultData };
+                            resultSeq.Metadata = CurrentStage.GetMetadata(GetAccelForDatapoint);
+                            ResolveEndOfGesture(resultSeq);
+
+                        });
+                        return true; // Handled it, thanks.  
+                    }
+                }
+            }
+            return base.OnKeyUp(keyCode, e);
+        }
+        #endregion
+
+        protected async void ResolveEndOfGesture(Sequence<DKS> resultSequence)
+        {
+            MostRecentSample = resultSequence;
+
+            //string StageLabel = $"User gesture (#{Dataset.SequenceCount + 1})";
+
+            if (Classifier == null) return;
+            MostRecentSample = Analyze(MostRecentSample).Result;
+
+            // If right or wrong, tweak the display properties of the sample.  This depends on the active mode.
+            //DisplaySampleInfo(MostRecentSample);            
+
+            //if (MostRecentSample.RecognizedAsIndex >= 0)
             //{
-            //    //ChosenSpell?.FailResult?.Invoke(null);
-            //    Log.Debug("GlyphCast", $"Spell selection / casting cancelled during glyph casting.");
-            //    //Finish();
+            //    var sc = MostRecentSample.RecognitionScore;
+            //    var prefix = (sc < 1) ? "Arguably " :
+            //                 (sc < 1.5) ? "Maybe " :
+            //                 (sc < 2) ? "Probably " :
+            //                 (sc < 2.5) ? "Clearly " :
+            //                 (sc < 3) ? "Certainly " :
+            //                 "A perfect ";
+            //    Speech.Say(prefix + MostRecentSample.RecognizedAsName);
             //}
-            //finally
+            //else
             //{
-            //    useVolumeTrigger = true;
+            //    Speech.Say("Gesture unrecognized.");
+            //    return;
             //}
+
+            await ActOnGestureIndex(MostRecentSample.RecognizedAsIndex);
+
+            //_collectingData = false;
+            _finalizingGesture = false;
         }
 
-        private void InitHackingOpportunity()
+        public async Task ActOnGestureIndex(int gestureIndex)
         {
-            TaskList.AddRange(new List<HackingTask>()
+            if (gestureIndex < 0) return; // Means it wasn't recognized as any gesture at all.
+            HackingAction_New chosenAction;
+
+            try
             {
-                new HackingTask("System Scan", "clickDragTR"),
-                new HackingTask("Elevate Privileges", "loopTL")
+                //Func<HackingAction, bool> mpredicate = (HackingAction h) =>
+                //{
+                //    if (h == null) return false;
+                //    if (!h.Availability.IsVisible) return false;
+                //    if (h.Availability.IsKnownBlocked) return false;
+                //    if (h.Gesture == null) return false;
+                //    if (h.Gesture == HackGesture.None) return false;
+                //    return true;
+                //};
+                //var ActionsWithGestures = HackingActionsList
+                ////.AllActionsList
+                //.ActionsList.Values
+                ////.Where(h => h != null && h.Availability.IsVisible && !h.Availability.IsKnownBlocked && h.Gesture != null && h.Gesture != HackGesture.None)
+                //.Where(mpredicate);
+                //var ActionsByGesture = ActionsWithGestures.ToDictionary(h => h.Gesture.GestureIndex);
+                //chosenAction = ActionsByGesture.GetValueOr(gestureIndex, null);
+                //Log.Debug(_tag, $"Selected action: {chosenAction.Name}");
+                var AvailableActions = new List<HackingAction_New>();
+                if (Map.CurrentLeft != null) AvailableActions.Add(HackingAction_New.GoLeft);
+                if (Map.CurrentRight != null) AvailableActions.Add(HackingAction_New.GoRight);
+                if (Map.CurrentAbove != null) AvailableActions.Add(HackingAction_New.GoUp);
+                if (Map.CurrentBelow != null) AvailableActions.Add(HackingAction_New.GoDown);
+                AvailableActions.AddRange(Map.CurrentNode.Actions);
+                var ActionsByGesture = AvailableActions.ToDictionary(h => h.Gesture.GestureIndex);
+                chosenAction = ActionsByGesture.GetValueOr(gestureIndex, null);
+                Log.Debug(_tag, $"Selected action: {chosenAction?.Name}");
+            }
+            catch (NullReferenceException)
+            {
+                Log.Debug(_tag, $"Null reference exception when trying to construct dictionary.");
+                return;
+            }
+
+            //if (gestureIndex == HackGesture.RightThenUp.GestureIndex && HackingNavigation.CurrentAction != null)
+            //{
+            //    HackingNavigation.CurrentAction.Cancel();
+            //    PulseImage(HackGesture.RightThenUp.IconID, MostRecentSample.Bitmap);
+            //    UpdateListView();
+            //    return;
+            //}
+            //if (chosenAction == null) { Log.Debug(_tag, $"Cannot find action with gesture index {gestureIndex}."); return; }
+
+
+            //if (chosenAction.IsSelectable && (HackingNavigation.CurrentAction == null || !Object.ReferenceEquals(chosenAction, HackingNavigation.CurrentAction)))
+            //{
+            //    if (gestureIndex != HackGesture.Typing.GestureIndex) PulseImage(chosenAction.Gesture.IconID, MostRecentSample.Bitmap);
+            //    else PulseImage(chosenAction.Gesture.IconID); // No bitmap to pulse
+            //    chosenAction.Select();
+            //}
+            //else
+            //{
+            //    if (gestureIndex != HackGesture.Typing.GestureIndex) PulseImage(chosenAction.Gesture.IconID, MostRecentSample.Bitmap, 500);
+            //    else PulseImage(chosenAction.Gesture.IconID, null, 350); // No bitmap to pulse
+            //    chosenAction.Execute();
+            //}
+
+            //UpdateListView();
+
+            PulseImage(HackGesture.IndexedGestures[gestureIndex].IconID, MostRecentSample.Bitmap);
+
+            // Validate the gesture - are we really allowed to do what's just been requested?
+            if (!Map.CurrentNode.ValidateGesture(HackGesture.IndexedGestures[gestureIndex]))
+            {
+                Map.CurrentNode.OnValidationFailed(HackGesture.IndexedGestures[gestureIndex]);
+                return;
+            }
+
+            if (chosenAction == HackingAction_New.GoLeft && Map.CurrentLeft != null) await TransitionNode(HackingMapNode.Dir.Left);
+            else if (chosenAction == HackingAction_New.GoRight && Map.CurrentRight != null)
+            {
+                if (!Map.CurrentNode.IsBlocking) await TransitionNode(HackingMapNode.Dir.Right);
+                else Speech.Say("Blocked. Clear current ice first.");
+            }
+            else if (chosenAction == HackingAction_New.GoUp && Map.CurrentAbove != null) await TransitionNode(HackingMapNode.Dir.Above);
+            else if (chosenAction == HackingAction_New.GoDown && Map.CurrentBelow != null) await TransitionNode(HackingMapNode.Dir.Below);
+            else
+            {
+                Map.ExecutableActionsCounter++;
+                chosenAction?.OnExecute?.Invoke(chosenAction, Map.CurrentNode);
+                await FadeMapView();
+                UpdateMapView();
+            }
+        }
+
+        public async Task TransitionNode(HackingMapNode.Dir direction)
+        {
+            await FadeMapView();
+            Map.RaiseTransition(direction);
+            UpdateMapView();
+        }
+
+        public void PulseImage(int? resourceID = null, Android.Graphics.Bitmap bitmap = null, int duration_ms = 1000)
+        {
+            var NewPanel = new LinearLayout(this);
+            NewPanel.LayoutParameters = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent);
+            NewPanel.Orientation = Android.Widget.Orientation.Vertical;
+            NewPanel.Elevation = 10;
+            NewPanel.SetGravity(GravityFlags.Center);
+            NewPanel.ScaleX = 1.5f;
+            NewPanel.ScaleY = 1.5f;
+            //NewPanel.Alpha = 0;
+
+            if (resourceID.HasValue)
+            {
+                var IconImage = new ImageView(this);
+                IconImage.LayoutParameters = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.WrapContent);
+                IconImage.SetImageResource(resourceID.Value);
+                NewPanel.AddView(IconImage);
+            }
+            if (bitmap != null)
+            {
+                var BitmapImage = new ImageView(this);
+                BitmapImage.LayoutParameters = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.WrapContent);
+                BitmapImage.SetImageBitmap(bitmap);
+                BitmapImage.ScaleX = 2.0f;
+                BitmapImage.ScaleY = 2.0f;
+                BitmapImage.TranslationY = 0.65f * bitmap.Height;
+                NewPanel.AddView(BitmapImage);
+            }
+
+            RunOnUiThread(() =>
+            {
+                mainPanel.AddView(NewPanel);
+                mainPanel.RequestLayout();
+                mainPanel.Invalidate();
+
+                var mPropertyAnimator = Android.Animation.ObjectAnimator.OfFloat(NewPanel, "alpha", 0);
+                mPropertyAnimator.SetDuration(duration_ms);
+                mPropertyAnimator.AnimationEnd += (o, e) =>
+                {
+                    mainPanel.RemoveView(NewPanel);
+                };
+                mPropertyAnimator.Start();
             });
 
-            //// Set up the barrier glow effect
-            //ImageView barrierEffect = new ImageView(this);
-            //barrierEffect.SetImageResource(Resource.Drawable.barrier_glow);
-            //mainPanel.AddView(barrierEffect);
+            //Task.Delay(1000).Wait();
 
-            //SpellDefinition.Barrier.OnChange += (o, e) =>
-            //{
-            //    barrierEffect.Alpha = (float)(double.Parse(e.Value["Magnitude"]) / (double)SpellDefinition.Barrier.Parameters["BarrierBaseMagnitude"]);
-            //};
+            //RunOnUiThread(() =>
+            //{ 
+            //    mainPanel.RemoveView(NewPanel);
 
-            //// Set up the shield spell visual and its animator
-            //ImageView shieldSpellGraphic = new ImageView(this);
-            //shieldSpellGraphic.Visibility = ViewStates.Gone;
-            //shieldSpellGraphic.SetImageResource(Resource.Drawable.shield_rune_ring);
-            //mainPanel.AddView(shieldSpellGraphic);
-
-            //var ObjAnimator = ObjectAnimator.OfFloat(shieldSpellGraphic, "rotation", 0, 360);
-            //ObjAnimator.RepeatMode = ValueAnimatorRepeatMode.Restart;
-            //ObjAnimator.RepeatCount = ValueAnimator.Infinite;
-            //ObjAnimator.SetDuration(2500);
-            //StopToken.Register(ObjAnimator.End);
-
-            //SpellDefinition.Shield.OnStart += (o, e) =>
-            //{
-            //    Current.RunOnUiThread(() =>
-            //    {
-            //        shieldSpellGraphic.Visibility = ViewStates.Visible;
-            //        // TODO - Begin spinning here.
-            //        ObjAnimator.Start();
-            //    });
-            //};
-            //SpellDefinition.Shield.OnEnd += (o, e) =>
-            //{
-            //    Current.RunOnUiThread(() =>
-            //    {
-            //        shieldSpellGraphic.Visibility = ViewStates.Gone;
-            //        ObjAnimator.End();
-            //        shieldSpellGraphic.Rotation = 0;
-            //    });
-            //};
+            //});
         }
 
-        public void UpdateListView()
+        protected void LoadHackingClassifier()
         {
-            adapter = new HackTaskDisplayAdapter(this, TaskList);
-            listView.Adapter = adapter;
-        }
-
-        public class GlyphCastStage : AwaitableStage<Glyph>
-        {
-            public StillnessProvider Stillness;
-            //private FrameShiftedOrientationProvider AttitudeProvider;
-            private Vector3Provider GravityProvider;
-            private RollingAverage<float> AverageStillness;
-
-            private double TimeCoefficient;
-
-            private List<Glyph> ValidGlyphs;
-            private Glyph LastGlyph;
-            private List<Glyph> GlyphsSortedByAngle
-            {
-                get
-                {
-                    return ValidGlyphs
-                            .OrderBy(g => g.AngleTo(GravityProvider))
-                            .ToList();
-                }
-            }
-            private IEffect GetFeedbackFX(Glyph glyph)
-            {
-                if (glyph.FeedbackSFX == null) glyph.FeedbackSFX = new Effect(glyph.FeedbackSFXName, glyph.FeedbackSFXid);
-                return glyph.FeedbackSFX;
-                //return glyph?.FeedbackSFX ?? Effect.None;
-            }
-
-            public GlyphCastStage(IEnumerable<Glyph> validGlyphs, Glyph lastGlyph, double timeCoefficient, bool autoStart = true)
-                : base($"Selecting glyphs among {String.Join("/", validGlyphs)}.")
-            {
-                Res.DebuggingSignalFlag = true;
-
-                Stillness = new StillnessProvider();
-                //Stillness.StartDisplayLoop(Current, 500);
-                SetUpProvider(Stillness);
-                AverageStillness = new RollingAverage<float>(70);
-
-                //AttitudeProvider = new GravityOrientationProvider();
-                //AttitudeProvider.Activate();
-                GravityProvider = new Vector3Provider(SensorType.Gravity);
-                GravityProvider.Activate(StopToken);
-
-                ValidGlyphs = validGlyphs.ToList();
-                LastGlyph = lastGlyph;
-                TimeCoefficient = timeCoefficient;
-
-                var activity = HackingActivity.Current;
-                activity.adapter = new HackTaskDisplayAdapter(activity, Current.TaskList);
-                activity.RunOnUiThread(() => activity.listView.Adapter = activity.adapter);
-
-                DependsOn(Current.StopToken);
-                if (autoStart) Activate();
-            }
-
-            public GlyphCastStage(Glyph glyph, Glyph lastGlyph, double timeCoefficient, bool autoStart = true)
-                : this(new Glyph[] { glyph }, lastGlyph, timeCoefficient, autoStart) { }
-
-            protected override async Task startActionAsync()
-            {
-                foreach (var fx in ValidGlyphs.Select(s => GetFeedbackFX(s))) fx.Play(0.0, true);
-
-                if (ValidGlyphs == null || ValidGlyphs.Count == 0)
-                {
-                    await Speech.SayAllOf("Casting mistake.  You don't know any spells which begin with that sequence of glyphs.");
-                    Deactivate();
-                }
-            }
-
-            protected override bool nextStageCriterion()
-            {
-                //if (!FrameShiftFunctions.CheckIsReady(AttitudeProvider)) return false;
-                if (Stillness.RunTime.TotalSeconds < 0.75) return false;
-                var leeWay = Stillness.StillnessScore + TimeCoefficient * Sqrt(Stillness.RunTime.TotalSeconds);
-                var ease = Hacker.Me.EaseOfTasks;
-                if (GlyphsSortedByAngle[0].AngleTo(GravityProvider) < ease * (10f + 1.5 * leeWay)) // Was 25.0f + leeway, seems awfully generous
-                {
-                    if (LastGlyph != Glyph.StartOfSpell && GlyphsSortedByAngle[0].AngleTo(GravityProvider) > LastGlyph.AngleTo(GravityProvider)) return false;
-                    if (ValidGlyphs.Count < 2) return true;
-                    else return (GlyphsSortedByAngle[0].AngleTo(GravityProvider) < 0.5 * GlyphsSortedByAngle[1].AngleTo(GravityProvider));
-                }
-                return false;
-            }
-
-            protected override void nextStageAction()
+            foreach (var option in new string[] { HACKING }) // Might want to add more classifiers later on.
             {
                 try
                 {
-                    //foreach (var fx in ValidGlyphs.Select(s => GetFeedbackFX(s))) fx.Deactivate();
-                    foreach (var glyph in ValidGlyphs)
+                    ClassifierTree cTree = null;
+                    string contents;
+
+                    AssetManager assets = this.Assets;
+                    var filename = $"{option}.{Classifier.FileExtension}";
+                    var filepath = $"{GetExternalFilesDir(null)}/{filename}";
+
+                    try
                     {
-                        var fx = glyph.FeedbackSFX;
-                        fx.Stop();
-                        fx.Deactivate();
-                        glyph.FeedbackSFX = null;
+                        using (var streamReader = new StreamReader(filepath))
+                        {
+                            contents = streamReader.ReadToEnd();
+
+                            cTree = Serializer.Deserialize<ClassifierTree>(contents);
+                            if (cTree != null) Log.Debug("Loading classifier", $"Loading our {option} classifier tree (from phone-specific file)");
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        cTree = null;
                     }
 
-                    //Current.SpellBeingCast = GlyphsSortedByAngle[0];
-                    //Current.SetAllSpellButtonsEnabledState(false);
+                    if (cTree == null)
+                    {
+                        using (StreamReader sr = new StreamReader(assets.Open(filename)))
+                        {
+                            contents = sr.ReadToEnd();
+                            cTree = Serializer.Deserialize<ClassifierTree>(contents);
+                            if (cTree != null) Log.Debug("Loading classifier", $"Loaded our {option} classifier tree (from asset file).");
+                        }
+                    }
+                    if (cTree == null) throw new Exception($"Classifier deserialization failed - filename {filepath}");
 
-                    Plugin.Vibrate.CrossVibrate.Current.Vibration(15);
-                    GlyphsSortedByAngle[0].ProgressSFX?.Play();
-                    //AttitudeProvider.FrameShift = Current.SpellBeingCast.ZeroStance;
-                    //CurrentStage = new GlyphCastingStage($"{Current.SpellBeingCast.SpellName} Glyph 0", Focus, Current.SpellBeingCast.Glyphs[0], AttitudeProvider);
-
-                    var activity = HackingActivity.Current;
-                    activity.adapter = new HackTaskDisplayAdapter(activity, Current.TaskList);
-                    activity.RunOnUiThread(() => activity.listView.Adapter = activity.adapter);
-
-                    //AttitudeProvider.Deactivate();
-                    //GravityProvider.Deactivate();
-
-                    StageReturn(GlyphsSortedByAngle[0]);
+                    CueClassifiers[option] = cTree.MainClassifier;
+                    if (option == HACKING) Classifier = cTree.MainClassifier;
+                    Dataset = new DataSet<DKS> { Name = cTree.MainClassifier.MatchingDatasetName };
+                    foreach (var gClass in cTree.GestureClasses)
+                    {
+                        Dataset.AddClass(gClass);
+                    }
+                    SelectedGestureClass = Dataset.Classes.FirstOrDefault();
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
-                    Log.Error("Spell selection stage", e.Message);
-                    throw;
+                    Log.Debug("MachineLearning|Load Classifier", ex.ToString());
+                    Speech.Say("Cannot launch hacking - no hacking classifier found.");
+                    Finish();
                 }
             }
-
-            protected override bool interimCriterion()
-            {
-                return true;
-            }
-
-            protected override void interimAction()
-            {
-                foreach (var s in GlyphsSortedByAngle.Take(1))
-                {
-                    //FeedbackFX(s).Volume = Exp(-Sqrt(s.AngleTo(AttitudeProvider) / 8.0) + 0.65); // Old version
-                    var ease = Hacker.Me.EaseOfTasks;
-                    GetFeedbackFX(s).Volume = 1.2f * Exp(-0.45f * (s.AngleTo(GravityProvider) / ease / 5f - 1f));
-                }
-                //AverageStillness.Update(Stillness.StillnessScore);
-            }
-
-            protected override bool abortCriterion()
-            {
-                AverageStillness.Update(Stillness.StillnessScore);
-                return Stillness.RunTime > TimeSpan.FromMilliseconds(1250) && AverageStillness < -18;
-            }
-
-            protected override void abortAction()
-            {
-                foreach (var glyph in ValidGlyphs)
-                {
-                    var fx = glyph.FeedbackSFX;
-                    fx.Stop();
-                    fx.Deactivate();
-                    glyph.FeedbackSFX = null;
-                }
-
-                Plugin.Vibrate.CrossVibrate.Current.Vibration(50);
-
-                var activity = HackingActivity.Current;
-                activity.adapter = new HackTaskDisplayAdapter(activity, Current.TaskList);
-                activity.RunOnUiThread(() => activity.listView.Adapter = activity.adapter);
-
-                StageCancel();
-            }
-        }
-    }
-
-    public class HackTaskDisplayAdapter : BaseAdapter<HackingTask>
-    {
-        private readonly Activity _context;
-        private readonly List<HackingTask> _items;
-
-        public HackTaskDisplayAdapter(Activity context, List<HackingTask> items)
-            : base()
-        {
-            _context = context;
-            _items = items;
         }
 
-        public override long GetItemId(int position)
+        public override async Task<Sequence<DKS>> Analyze(Sequence<DKS> sequence)
         {
-            return position;
-        }
-        public override HackingTask this[int position]
-        {
-            get { return _items[position]; }
-        }
-        public override int Count
-        {
-            get { return _items.Count; }
-        }
-
-        protected LinearLayout.LayoutParams PercentLayout(double amt, bool horizontal = false)
-        {
-            if (!horizontal)
-                return new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MatchParent, 0, (float)amt);
-            else return new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MatchParent, (float)amt);
-        }
-
-        public override View GetView(int position, View convertView, ViewGroup parent)
-        {
-            var v = convertView;
-
-            v = v ?? _context.LayoutInflater.Inflate(Resource.Layout.GlyphDisplayListItemRepresentation, null);
-
-            HackingTask htask = _items[position];
-            if (htask == null) return v;
-
-            htask.SuccessBar.Bar = v.FindViewById<LinearLayout>(Resource.Id.htask_success_bar);
-            htask.RiskBar.Bar = v.FindViewById<LinearLayout>(Resource.Id.htask_risk_bar);
-            htask.Graphic.GraphicsPane = v.FindViewById<RelativeLayout>(Resource.Id.htask_graphic);
-            htask.BackgroundView = v.FindViewById<View>(Resource.Id.htask_background);
-            var SymbolsPane = v.FindViewById<LinearLayout>(Resource.Id.htask_symbols);
-
-            var ctx = (HackingActivity)_context;
-            foreach (var Bar in new HackingBar[] { htask.SuccessBar, htask.RiskBar })
+            if (Classifier != null && Classifier.MachineOnline)
             {
-                var black_part = new View(_context) { LayoutParameters = PercentLayout(Bar.RemainingPercentage), Alpha = 0.1f };
-                black_part.SetBackgroundColor(Bar.Colour);
-                Bar.Bar.AddView(black_part);
-
-                var upper_part = new View(_context) { LayoutParameters = PercentLayout(Bar.TopPercentage), Alpha = 0.45f };
-                upper_part.SetBackgroundColor(Bar.Colour);
-                Bar.Bar.AddView(upper_part);
-
-                var lower_part = new View(_context) { LayoutParameters = PercentLayout(Bar.BottomPercentage) };
-                lower_part.SetBackgroundColor(Bar.Colour);
-                Bar.Bar.AddView(lower_part);
+                sequence.RecognizedAsIndex = await Classifier.Recognize(sequence);
             }
+            return sequence;
+        }        
 
-            htask.Graphic.SetImageResource(_context, htask);
+        //private void InitHackingOpportunity()
+        //{
+        //    RootLevelActions.Clear();
+        //    //RootLevelActions.AddRange(HackingActionsList.AllActionsList.Where(h => h != null && h is HackingActionGroup hGroup && hGroup.IsRootLevel));
+        //    RootLevelActions = HackingNavigation.Root.SubActions;
 
-            if (htask == ((HackingActivity)BaseActivity.CurrentActivity).CurrentTask)
-            {
-                htask.BackgroundView.SetBackgroundColor(Android.Graphics.Color.CornflowerBlue);
-                htask.BackgroundView.Alpha = 0.1f;
+        //    UpdateListView();
+        //}
 
-                if (htask.GestureA != null)
-                {
-                    var symbolA = new ImageView(_context);
-                    symbolA.SetImageResource(htask.GestureA.IconID);
-                    SymbolsPane.AddView(symbolA);
-                }
-                if (htask.GestureB != null)
-                {
-                    var symbolB = new ImageView(_context);
-                    symbolB.SetImageResource(htask.GestureB.IconID);
-                    SymbolsPane.AddView(symbolB);
-                }
-            }
+        //public void UpdateListView()
+        //{
+        //    RunOnUiThread(() =>
+        //   {
+        //       adapter = new HackTaskDisplayAdapter(this, RootLevelActions.Where(h => h != null && h.Availability.IsVisible).ToList());
+        //       listView.Adapter = adapter;
+        //   });
+        //}
+        
+        private TextView SetUpMapNavTextView(string text, bool isVertical, bool isTopDown, params LayoutRules[] rules)
+        {
+            TextView result;
+            if (!isVertical) result = new TextView(this);
             else
             {
-                if (htask.SelectionGesture != null)
-                {
-                    var symbol = new ImageView(_context);
-                    symbol.SetImageResource(htask.SelectionGesture.IconID);
-                    SymbolsPane.AddView(symbol);
-                }
+                //result = new VerticalTextView(this);
+                //((VerticalTextView)result).SetTopDown(isTopDown);
+                result = new TextView(this);
+                if (isTopDown) this.RotateText(result, Resource.Animation.rotatetext_right);
+                else this.RotateText(result, Resource.Animation.rotatetext_left);
             }
+            var layoutParameters = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WrapContent, ViewGroup.LayoutParams.WrapContent);
+            foreach (var rule in rules) layoutParameters.AddRule(rule);
+            result.LayoutParameters = layoutParameters;
+            result.Text = " " + text + " ";
+            result.TextSize = 40;
+            result.SetTextColor(Android.Graphics.Color.WhiteSmoke);
+            result.SetPadding(2, 7, 2, 7);
+            result.SetBackgroundResource(Android.Resource.Drawable.AlertDarkFrame);
+            result.Alpha = 0;
+            result.Elevation = 20;
+            mainPanel.AddView(result);
+            var anim = ObjectAnimator.OfFloat(result, "alpha", 1);
+            anim.SetDuration(1250);
+            anim.Start();
+            return result;
+        }
 
-            return v;
+        protected TextView topText, bottomText, rightText, leftText;
+        protected LinearLayout panelContents;
+        public void UpdateMapView()
+        {
+            RunOnUiThread(() =>
+            {
+                if (topText != null) mainPanel.RemoveView(topText);
+                if (bottomText != null) mainPanel.RemoveView(bottomText);
+                if (leftText != null) mainPanel.RemoveView(leftText);
+                if (rightText != null) mainPanel.RemoveView(rightText);
+                if (panelContents != null) mainPanel.RemoveView(panelContents);
+
+                panelContents = new LinearLayout(this);
+                panelContents.Orientation = Android.Widget.Orientation.Vertical;
+                panelContents.SetGravity(GravityFlags.Center);
+                mainPanel.SetGravity(GravityFlags.Center);
+                var panelLayout = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WrapContent, ViewGroup.LayoutParams.WrapContent);
+                panelLayout.AddRule(LayoutRules.CenterInParent);
+                //panelLayout.TopMargin = panelLayout.BottomMargin = panelLayout.LeftMargin = panelLayout.RightMargin = 50;
+                //panelContents.SetPadding(50, 50, 50, 50); // Doesn't work properly
+
+                var label = new TextView(this);
+                label.Text = Map.CurrentNode.Longname;
+                label.TextSize = 40;
+                panelContents.AddView(label);
+
+                foreach (var action in Map.CurrentNode.Actions)
+                {
+                    var promptLabel = new LinearLayout(this);
+                    promptLabel.Orientation = Android.Widget.Orientation.Horizontal;
+                    promptLabel.LayoutParameters = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WrapContent, ViewGroup.LayoutParams.WrapContent);
+                    promptLabel.SetBackgroundResource(Android.Resource.Drawable.AlertDarkFrame);
+
+                    var promptIcon = new ImageView(this);
+                    promptIcon.SetBackgroundResource(action.Gesture.IconID);
+                    promptIcon.ScaleX = promptIcon.ScaleY = 0.3f;
+                    promptLabel.AddView(promptIcon);
+
+                    var promptText = new TextView(this);
+                    promptText.Text = action.Name + " ";
+                    promptText.TextSize = 30;
+                    promptLabel.AddView(promptText);
+
+                    panelContents.AddView(promptLabel);
+                }
+
+                if (Map.CurrentAbove != null)
+                {
+                    topText = SetUpMapNavTextView(Map.CurrentAbove.Shortname, false, false, LayoutRules.AlignParentTop, LayoutRules.CenterHorizontal);
+                    panelLayout.AddRule(LayoutRules.Below, topText.Id);
+                }
+
+                if (Map.CurrentBelow != null)
+                {
+                    bottomText = SetUpMapNavTextView(Map.CurrentBelow.Shortname, false, false, LayoutRules.AlignParentBottom, LayoutRules.CenterHorizontal);
+                    panelLayout.AddRule(LayoutRules.Above, bottomText.Id);
+                }
+
+                if (Map.CurrentLeft != null)
+                {
+                    leftText = SetUpMapNavTextView(Map.CurrentLeft.Shortname, true, true, LayoutRules.AlignParentLeft, LayoutRules.CenterVertical);
+                    panelLayout.AddRule(LayoutRules.RightOf, leftText.Id);
+                }
+
+                if (Map.CurrentRight != null)
+                {
+                    rightText = SetUpMapNavTextView(Map.CurrentRight.Shortname, true, false, LayoutRules.AlignParentRight, LayoutRules.CenterVertical);
+                    if (Map.CurrentNode.IsBlocking) rightText.SetTextColor(Android.Graphics.Color.Red);
+                    panelLayout.AddRule(LayoutRules.LeftOf, rightText.Id);
+                }
+
+                panelContents.LayoutParameters = panelLayout;
+                mainPanel.AddView(panelContents);
+
+            });
+        }
+
+        public void FadeMapNavTextView(View view, int duration = 250)
+        {
+            RunOnUiThread(() =>
+            {
+                var mPropertyAnimator = Android.Animation.ObjectAnimator.OfFloat(view, "alpha", 0);
+                mPropertyAnimator.SetDuration(duration.Clamp(0, int.MaxValue));
+                mPropertyAnimator.AnimationEnd += (o, e) =>
+                {
+                    mainPanel.RemoveView(view);
+                    view = null;
+                };
+                mPropertyAnimator.Start();
+            });
+        }
+
+        public async Task FadeMapView(int duration = 250)
+        {
+            if (Map.CurrentAbove != null) FadeMapNavTextView(topText, duration);
+            if (Map.CurrentBelow != null) FadeMapNavTextView(bottomText, duration);
+            if (Map.CurrentRight != null) FadeMapNavTextView(rightText, duration);
+            if (Map.CurrentLeft != null) FadeMapNavTextView(leftText, duration);
+
+            FadeMapNavTextView(panelContents, duration);
+            await Task.Delay(duration);
         }
     }
+
+    //public class HackTaskDisplayAdapter : BaseAdapter<HackingAction>
+    //{
+    //    private readonly Activity _context;
+    //    public readonly List<HackingAction> _items;
+
+    //    public HackTaskDisplayAdapter(Activity context, List<HackingAction> items)
+    //        : base()
+    //    {
+    //        _context = context;
+    //        _items = items;
+    //    }
+
+    //    public override long GetItemId(int position)
+    //    {
+    //        return position;
+    //    }
+    //    public override HackingAction this[int position]
+    //    {
+    //        get { return _items[position]; }
+    //    }
+    //    public override int Count
+    //    {
+    //        get { return _items.Count; }
+    //    }
+
+    //    protected LinearLayout.LayoutParams PercentLayout(double amt, bool horizontal = false)
+    //    {
+    //        if (!horizontal)
+    //            return new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MatchParent, 0, (float)amt);
+    //        else return new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MatchParent, (float)amt);
+    //    }
+
+    //    public override View GetView(int position, View convertView, ViewGroup parent)
+    //    {
+    //        var v = convertView;
+
+    //        v = v ?? _context.LayoutInflater.Inflate(Resource.Layout.HackActionListItemRepresentation, null);
+
+    //        HackingAction htask = _items[position];
+    //        if (htask == null) return v;
+
+    //        var namefield = v.FindViewById<TextView>(Resource.Id.htask_namefield);
+    //        var iconview = v.FindViewById<ImageView>(Resource.Id.htask_gestureicon);
+    //        var listview = v.FindViewById<ListView>(Resource.Id.htask_subtasks);
+
+    //        namefield.Text = htask.DisplayDescription;
+    //        iconview.SetImageResource(htask.Gesture.IconID);
+
+    //        if (htask is HackingActionGroup hgroup && HackingNavigation.ActionStack.Contains(htask))
+    //        {
+    //            var adapter = new HackTaskDisplayAdapter(_context, hgroup.SubActions);
+    //            listview.Adapter = adapter;
+    //            listview.Visibility = ViewStates.Visible;
+    //            listview.DisableScrolling();
+    //        }
+    //        else listview.Visibility = ViewStates.Gone;
+
+    //        if (htask.Availability.IsVisible)
+    //        {
+    //            v.Visibility = ViewStates.Visible;
+    //            if (htask.Availability.IsKnownBlocked)
+    //            {
+    //                v.SetBackgroundColor(Android.Graphics.Color.Argb(100, 255, 0, 0));
+    //                iconview.SetImageResource(Resource.Drawable.blank_gesture_icon);
+    //            }
+    //            else v.SetBackgroundColor(Android.Graphics.Color.Argb(0, 0, 0, 0));
+    //        }
+    //        else
+    //            v.Visibility = ViewStates.Gone;
+
+    //        //htask.SuccessBar.Bar = v.FindViewById<LinearLayout>(Resource.Id.htask_success_bar);
+    //        //htask.RiskBar.Bar = v.FindViewById<LinearLayout>(Resource.Id.htask_risk_bar);
+    //        //htask.Graphic.GraphicsPane = v.FindViewById<RelativeLayout>(Resource.Id.htask_graphic);
+    //        //htask.BackgroundView = v.FindViewById<View>(Resource.Id.htask_background);
+    //        //var SymbolsPane = v.FindViewById<LinearLayout>(Resource.Id.htask_symbols);
+
+    //        //var ctx = (HackingActivity)_context;
+    //        //foreach (var Bar in new HackingBar[] { htask.SuccessBar, htask.RiskBar })
+    //        //{
+    //        //    var black_part = new View(_context) { LayoutParameters = PercentLayout(Bar.RemainingPercentage), Alpha = 0.1f };
+    //        //    black_part.SetBackgroundColor(Bar.Colour);
+    //        //    Bar.Bar.AddView(black_part);
+
+    //        //    var upper_part = new View(_context) { LayoutParameters = PercentLayout(Bar.TopPercentage), Alpha = 0.45f };
+    //        //    upper_part.SetBackgroundColor(Bar.Colour);
+    //        //    Bar.Bar.AddView(upper_part);
+
+    //        //    var lower_part = new View(_context) { LayoutParameters = PercentLayout(Bar.BottomPercentage) };
+    //        //    lower_part.SetBackgroundColor(Bar.Colour);
+    //        //    Bar.Bar.AddView(lower_part);
+    //        //}
+
+    //        //htask.Graphic.SetImageResource(_context, htask);
+
+    //        //if (htask == ((HackingActivity)BaseActivity.CurrentActivity).CurrentTask)
+    //        //{
+    //        //    htask.BackgroundView.SetBackgroundColor(Android.Graphics.Color.CornflowerBlue);
+    //        //    htask.BackgroundView.Alpha = 0.1f;
+
+    //        //    if (htask.GestureA != null)
+    //        //    {
+    //        //        var symbolA = new ImageView(_context);
+    //        //        symbolA.SetImageResource(htask.GestureA.IconID);
+    //        //        SymbolsPane.AddView(symbolA);
+    //        //    }
+    //        //    if (htask.GestureB != null)
+    //        //    {
+    //        //        var symbolB = new ImageView(_context);
+    //        //        symbolB.SetImageResource(htask.GestureB.IconID);
+    //        //        SymbolsPane.AddView(symbolB);
+    //        //    }
+    //        //}
+    //        //else
+    //        //{
+    //        //    if (htask.SelectionGesture != null)
+    //        //    {
+    //        //        var symbol = new ImageView(_context);
+    //        //        symbol.SetImageResource(htask.SelectionGesture.IconID);
+    //        //        SymbolsPane.AddView(symbol);
+    //        //    }
+    //        //}
+
+    //        return v;
+    //    }
+    //}
 }
