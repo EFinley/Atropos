@@ -23,6 +23,8 @@ namespace Atropos
     [Activity]
     public abstract class RoleActivity : Activity, IRelayToasts
     {
+        // Note that this is carefully distinct from BaseActivity.Current, because (a) we don't inherit from there, and
+        // (b) we need the current RoleActivity to 'stick' as we shift down into individual activities.
         private static RoleActivity _currentActivity;
         public static RoleActivity CurrentActivity
         {
@@ -82,6 +84,8 @@ namespace Atropos
 
                 //scanner.ScanContinuously(opts, HandleScanResult);
             }
+
+            BaseActivity.CurrentStage?.Deactivate();
         }
 
         protected override void OnPause()
@@ -286,7 +290,7 @@ namespace Atropos
         //}
     }
 
-    [Activity(Label = "Atropos :: Hitter ::")]
+    [Activity(Label = "Atropos :: Hitter ::", ScreenOrientation = Android.Content.PM.ScreenOrientation.Portrait)]
     public class SamuraiActivity : RoleActivity
     {
         //public override int layoutID { get; set; } = Resource.Layout.Samurai;
@@ -298,7 +302,7 @@ namespace Atropos
         }
     }
 
-    [Activity(Label = "Atropos :: Sorceror ::")]
+    [Activity(Label = "Atropos :: Sorceror ::", ScreenOrientation = Android.Content.PM.ScreenOrientation.Portrait)]
     public class MageActivity : RoleActivity
     {
         //public override int layoutID { get; set; } = Resource.Layout.Mage;
@@ -310,19 +314,19 @@ namespace Atropos
         }
     }
 
-    [Activity(Label = "Atropos :: Hacker ::")]
+    [Activity(Label = "Atropos :: Hacker ::", ScreenOrientation = Android.Content.PM.ScreenOrientation.Portrait)]
     public class DeckerActivity : RoleActivity
     {
         //public override int layoutID { get; set; } = Resource.Layout.Decker;
 
         protected override void SetUpButtons()
         {
-            SetupButton(() => { }, "Hack", Resource.Drawable.command_prompt_image, Color.Green, false);
+            SetupButton(typeof(Hacking.HackingActivity), "Hack", Resource.Drawable.command_prompt_image, Color.Green);
             SetupButton(typeof(GunfightActivity), "Shoot", Resource.Drawable.handgun_image, Color.MediumPurple);
         }
     }
 
-    [Activity(Label = "Atropos :: Spy ::")]
+    [Activity(Label = "Atropos :: Spy ::", ScreenOrientation = Android.Content.PM.ScreenOrientation.Portrait)]
     public class OperativeActivity : RoleActivity
     {
         //public override int layoutID { get; set; } = Resource.Layout.Operative;
@@ -334,7 +338,7 @@ namespace Atropos
         }
     }
 
-    [Activity]
+    [Activity(ScreenOrientation = Android.Content.PM.ScreenOrientation.Portrait)]
     public class ToolkitActivity : RoleActivity
     {
         //public override int layoutID { get; set; } = Resource.Layout.OperativeToolbox;
@@ -342,8 +346,8 @@ namespace Atropos
         protected override void SetUpButtons()
         {
             SetupButton(typeof(BypassActivity), "Bypass", Resource.Drawable.magnifier_image, Color.MediumSeaGreen);
-            SetupButton(typeof(Locks.SafecrackingActivity), "Crack", Resource.Drawable.vault_dial_image, Color.IndianRed);
-            SetupButton(typeof(Atropos.Locks.LockPickingActivity), "Pick", Resource.Drawable.lockpicks_image, Color.MediumBlue);
+            SetupButton(typeof(Locks.New.SafecrackingActivity), "Crack", Resource.Drawable.vault_dial_image, Color.IndianRed);
+            SetupButton(typeof(Locks.New.LockPickingActivity), "Pick", Resource.Drawable.lockpicks_image, Color.MediumBlue);
         }
     }
 

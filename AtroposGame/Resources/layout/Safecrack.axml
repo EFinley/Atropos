@@ -62,7 +62,7 @@
                     android:paddingRight="20dip"
                     android:visibility="gone" />
                 <TextView
-                    android:text="This end up         Hold steady..."
+                    android:text="This Face Up"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:id="@+id/vault_notification"
