@@ -56,17 +56,18 @@ namespace Atropos.Machine_Learning
         protected override void ResetStage(string label)
         {
             //if (!_advancedCueMode)
-                CurrentGestureStage = new MachineLearningStage(label, Dataset, 
-                    new LoggingSensorProvider<DKS>(new AdvancedProviders.GrabItAllSensorProvider(new GravGyroOrientationProvider())));
+                //CurrentGestureStage = new MachineLearningStage(label, Dataset, 
+                //    new LoggingSensorProvider<DKS>(new AdvancedProviders.GrabItAllSensorProvider(new GravGyroOrientationProvider())));
+            CurrentStage = new MachineLearningStage(label, Dataset, ContinuousLogger);
             //else CurrentStage = new SelfEndpointingSingleGestureRecognizer(label, Classifier,
             //            new ClusterLoggingProvider<Vector3, Vector3>(SensorType.LinearAcceleration, SensorType.Gravity));
         }
 
         protected override void AlternativeResetStage(string label, params object[] info)
         {
-            CurrentGestureStage?.Deactivate();
-            CurrentGestureStage = null;
-            CurrentGestureStage = new SelfEndpointingSingleGestureRecognizer(label, Classifier,
+            CurrentStage?.Deactivate();
+            CurrentStage = null;
+            CurrentStage = new SelfEndpointingSingleGestureRecognizer(label, Classifier,
                         new LoggingSensorProvider<DKS>(new AdvancedProviders.GrabItAllSensorProvider(new GravGyroOrientationProvider())));
         }
     }
@@ -124,8 +125,8 @@ namespace Atropos.Machine_Learning
         where T : struct
     {
         protected static MachineLearningActivity<T> Current { get { return (MachineLearningActivity<T>)CurrentActivity; } set { CurrentActivity = value; } }
-        //protected static MachineLearningStage CurrentGestureStage { get { return (MachineLearningStage)BaseActivity.CurrentStage; } set { BaseActivity.CurrentStage = value; } }
-        protected static MachineLearningStage CurrentGestureStage { get; set; }
+        protected static new MachineLearningStage CurrentStage { get { return (MachineLearningStage)BaseActivity.CurrentStage; } set { BaseActivity.CurrentStage = value; } }
+        //protected static MachineLearningStage CurrentGestureStage { get; set; }
 
         public interface IMachineLearningActivity
         {
@@ -166,9 +167,22 @@ namespace Atropos.Machine_Learning
 
         protected abstract void ResetStage(string label);
         protected virtual void AlternativeResetStage(string label, params object[] info) { ResetStage(label); }
+
+        protected ContinuousLoggingProvider<DKS> ContinuousLogger;
+
         protected CuePrompter<T> CuePrompter { get; set; }
         public virtual void SetUpAdapters(IDataset dataSet) { throw new NotImplementedException(); }
         #endregion
+
+        protected override void OnCreate(Bundle savedInstanceState)
+        {
+            base.OnCreate(savedInstanceState);
+
+            ContinuousLogger = new ContinuousLoggingProvider<DKS>(new AdvancedProviders.GrabItAllSensorProvider(new GravGyroOrientationProvider()));
+            //ContinuousLogger.TrueActivate(StopToken);
+            ResetStage("Learning gesture");
+
+        }
 
         public virtual async Task<Sequence<T>> Analyze(Sequence<T> sequence)
         {
@@ -289,8 +303,6 @@ namespace Atropos.Machine_Learning
             SetUpButtonClicks();
             SetUpAdapters(Dataset);
 
-            ResetStage("Learning gesture");
-
             _classnameSpinner.ItemSelected += OnClassnameSpinnerChanged;
 
             ////// Testing stuff... deserialization issues cropping up.
@@ -328,6 +340,7 @@ namespace Atropos.Machine_Learning
         {
             await base.DoOnResumeAsync(Task.Delay(500), AutoRestart: false);
             ButtonStates.Update(this);
+            ContinuousLogger.TrueActivate(StopToken);
             // Attempting to prevent the dataset name field acquiring focus initially - seems to work.
             Task.Delay(100).ContinueWith((t) => { _datasetNameField.Enabled = true; }).LaunchAsOrphan();
         }
@@ -360,7 +373,7 @@ namespace Atropos.Machine_Learning
                         if (!_advancedCueMode)
                         {
                             CuePrompter?.MarkGestureStart();
-                            CurrentGestureStage.Activate();
+                            CurrentStage.Activate();
                         }
                         return true; // Handled it, thanks.
                     }
@@ -381,11 +394,27 @@ namespace Atropos.Machine_Learning
 
                         if (!_advancedCueMode)
                         {
-                            // Halt the gesture-collection stage and query it.
-                            var resultData = CurrentGestureStage.StopAndReturnResults();
-                            var resultSeq = new Sequence<DKS>() { SourcePath = resultData };
-                            resultSeq.Metadata = CurrentGestureStage.GetMetadata();
-                            ResolveEndOfGesture(resultSeq);
+                            Log.Debug("KeyUp", $"Key released at {ContinuousLogger.Timestamp}; data {ContinuousLogger.LoggedData.Count} pts.");
+                            Task.Run(async () =>
+                            {
+                                try
+                                {
+                                    await Task.Delay(ContinuousLogger.LagAfter);
+                                    Log.Debug("KeyUp", $"Wait elapsed at {ContinuousLogger.Timestamp}; data {ContinuousLogger.LoggedData.Count} pts.");
+
+                                    // Halt the gesture-collection stage and query it.
+                                    var resultData = CurrentStage.StopAndReturnResults();
+                                    var resultSeq = new Sequence<DKS>() { SourcePath = resultData };
+                                    resultSeq.Metadata = CurrentStage.GetMetadata();
+                                    RunOnUiThread(() => ResolveEndOfGesture(resultSeq));
+                                    //ResolveEndOfGesture(resultSeq);
+                                }
+                                catch (Exception ex)
+                                {
+                                    Log.Debug("MachineLearning|OnKeyUp", ex.ToString());
+                                    throw ex;
+                                }
+                            });
                         }
                         else // Advanced Cue Mode - where releasing the button is NOT the end of the gesture... merely the start of the cue timer.
                         {
@@ -443,10 +472,13 @@ namespace Atropos.Machine_Learning
             }
             //});
 
-            _listView.Adapter = _listAdapter;
-            _listView.RequestLayout();
-            _latestSampleDisplay.RequestLayout();
-            ButtonStates.Update(this);
+            //RunOnUiThread(() =>
+            //{
+                //_listView.Adapter = _listAdapter;
+                //_listView.RequestLayout();
+                //_latestSampleDisplay.RequestLayout();
+                ButtonStates.Update(this);
+            //});
         }
 
         protected virtual void SetUpButtonClicks()
@@ -670,9 +702,16 @@ namespace Atropos.Machine_Learning
                             streamWriter.Write(serialForm);
 
                             var ClipboardMgr = (ClipboardManager)GetSystemService(Service.ClipboardService);
-                            var myClip = ClipData.NewPlainText("AtroposSavedDataset", serialForm);
-                            ClipboardMgr.PrimaryClip = myClip;
-                            Toast.MakeText(this, "Dataset compressed and saved to clipboard.", ToastLength.Short).Show();
+                            try
+                            {
+                                var myClip = ClipData.NewPlainText("AtroposSavedDataset", serialForm);
+                                ClipboardMgr.PrimaryClip = myClip;
+                                Toast.MakeText(this, "Dataset compressed and saved to clipboard.", ToastLength.Short);
+                            }
+                            catch
+                            {
+                                Toast.MakeText(this, "Error copying dataset to clipboard - presumably too long for it.", ToastLength.Short);
+                            }
                         }
                     }
                     else return;
@@ -840,7 +879,16 @@ namespace Atropos.Machine_Learning
                 //{
                 //    currentGC.CueClassifier = await ClassifierSelection.FindBestClassifier(Dataset, currentGC);
                 //}
-                CueClassifiers.Add(SelectedGestureClass.className, await ClassifierSelection.FindBestClassifier(Dataset, SelectedGestureClass));
+                //CueClassifiers.Add(SelectedGestureClass.className, await ClassifierSelection.FindBestClassifier(Dataset, SelectedGestureClass));
+                //Classifier = await ClassifierSelection.FindBestClassifier(Dataset, null);
+                Classifier = new Classifier();
+                //Classifier.CreateMachine(Dataset, new FeatureListExtractor("Pull_X_LinAccelVec", "AccelParallelToG"));
+                Classifier.CreateMachine(Dataset, new FeatureListExtractor("AccelXandParallelToG"));
+                await Classifier.Assess(Dataset, 100);
+
+                Dataset.TallySequences(true);
+                DismissProgressIndicator();
+                ButtonStates.Update(this);
             };
 
             if (_addNewClassButton != null) _addNewClassButton.Click +=
@@ -874,6 +922,8 @@ namespace Atropos.Machine_Learning
                         else if (currentClassIndex == Dataset.Classes.Count) SelectedGestureClass = Dataset.Classes.Last();
                         else if (Dataset.Classes.Count > 0) SelectedGestureClass = Dataset.Classes[0];
                         else SelectedGestureClass = null;
+
+                        Classifier = new Classifier();
                     }
 
                     ButtonStates.Update(this);
@@ -977,7 +1027,7 @@ namespace Atropos.Machine_Learning
                 await Task.Run(async () =>
                 {
                     // Now start the gesture recognition stage and run until it comes back saying it's got one.
-                    var resultSeq = await ((SelfEndpointingSingleGestureRecognizer)CurrentGestureStage).RunUntilFound(SelectedGestureClass);
+                    var resultSeq = await ((SelfEndpointingSingleGestureRecognizer)CurrentStage).RunUntilFound(SelectedGestureClass);
 
                     //// To work out the "promptness" component of their score, we need to see where the best fit *beginning* of their gesture was.
                     //var reversePeakFinder = new PeakFinder<DKS>.IncrementingStartIndexVariant<DKS>(
@@ -994,7 +1044,7 @@ namespace Atropos.Machine_Learning
                     //resultSeq = new Sequence<DKS>() { SourcePath = reversePeakFinder.FindBestSequence().ToArray() };
                     ////MostRecentSample = Current.Analyze(resultSeq).Result;
 
-                    CuePrompter.TimeElapsed = (CurrentGestureStage as MachineLearningStage).RunTime - PromptStartTimeStamp;
+                    CuePrompter.TimeElapsed = (CurrentStage as MachineLearningStage).RunTime - PromptStartTimeStamp;
                     ResolveEndOfGesture(resultSeq);
 
                 });
@@ -1219,9 +1269,9 @@ namespace Atropos.Machine_Learning
                 _latestSampleDisplay.Visibility = ViewStates.Visible;
                 _discardSampleBtn.Enabled = SubmitButtonPermitted;
 
-                //_listView.Adapter = null;
-                //_listView.Adapter = _listAdapter;
                 Dataset.TallySequences(); // Note sure if these are still needed or not, given the existence of ButtonStates.Update()... but we'll let it stand in any event.
+                _listView.Adapter = null;
+                _listView.Adapter = _listAdapter;
                 _listView.RequestLayout();
             });
         }

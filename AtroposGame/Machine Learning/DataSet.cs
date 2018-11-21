@@ -178,16 +178,20 @@ namespace Atropos.Machine_Learning
 
             // Have to run through and relabel all our indices...
             int tgtIndex = tgtClass.index;
+            var samplesCopy = Samples.ToArray();
+            Samples.Clear();
             if (tgtIndex >= 0)
             {
-                foreach (var seq in Samples.ToArray()) // Make a copy so we don't have issues with removing items midway
+                foreach (var seq in samplesCopy) // Make a copy so we don't have issues with removing items midway
                 {
-                    if (seq.TrueClassIndex == tgtIndex) Samples.Remove(seq);
+                    if (seq.TrueClassIndex == tgtIndex) continue;
                     else
                     {
                         if (seq.RecognizedAsIndex == tgtIndex) seq.RecognizedAsIndex = -1; // Un-recognize it.
                         if (seq.TrueClassIndex > tgtIndex) seq.TrueClassIndex--;
                         if (seq.RecognizedAsIndex > tgtIndex) seq.RecognizedAsIndex--;
+
+                        Samples.Add(seq);
                     }
                 }
                 foreach (var gC in Classes) if (gC.index > tgtIndex) gC.index--;
