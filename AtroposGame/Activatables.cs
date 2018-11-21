@@ -148,12 +148,12 @@ namespace Atropos
             tokenRegistrations.Add(cts.Token, cts.Token.Register(Deactivate));
         }
 
-        public bool IsActive { get { return (cts != null && !cts.IsCancellationRequested); } }
+        public virtual bool IsActive { get { return (cts != null && !cts.IsCancellationRequested); } }
 
         // Utility class used to create Activator.AlwaysActive and Activator.NeverActive
         public class FixedStateActivator : ActivatorBase
         {
-            private bool _isActive;
+            private readonly bool _isActive;
             public FixedStateActivator(bool state)
             {
                 _isActive = state;

@@ -228,8 +228,26 @@ namespace Atropos.DataStructures
 
         #region Standard operators defined based on the underlying type
         // Note that I suspect none of these are necessary due to the implicit conversions to and from T... but for symmetry with Datapoint<T1,T2> it was easy to just add them explicitly to save on casts.
-        public static Datapoint<T> operator +(Datapoint<T> first, Datapoint<T> second) { return (Datapoint<T>)Operator.Add(first.Value, second.Value); }
-        public static Datapoint<T> operator -(Datapoint<T> first, Datapoint<T> second) { return (Datapoint<T>)Operator.Subtract(first.Value, second.Value); }
+        public static Datapoint<T> operator +(Datapoint<T> first, Datapoint<T> second)
+        {
+            if (typeof(T) == typeof(Quaternion)) // For some reason the simple Operator.Add<Quaternion, Quaternion> fails IN RELEASE MODE ONLY. WTF?!?!?
+            {
+                Quaternion fst = Operator.Convert<T, Quaternion>(first.Value);
+                Quaternion scnd = Operator.Convert<T, Quaternion>(second.Value);
+                return (Datapoint<T>)Datapoint.From<T>(Operator.Convert<Quaternion, T>(fst + scnd));
+            }
+            return (Datapoint<T>)Operator.Add(first.Value, second.Value);
+        }
+        public static Datapoint<T> operator -(Datapoint<T> first, Datapoint<T> second)
+        {
+            if (typeof(T) == typeof(Quaternion)) // Ditto Operator.Subtract.
+            {
+                Quaternion fst = Operator.Convert<T, Quaternion>(first.Value);
+                Quaternion scnd = Operator.Convert<T, Quaternion>(second.Value);
+                return (Datapoint<T>)Datapoint.From<T>(Operator.Convert<Quaternion, T>(fst - scnd));
+            }
+            return (Datapoint<T>)Operator.Subtract(first.Value, second.Value);
+        }
         public static Datapoint<T> operator -(Datapoint<T> self) { return (Datapoint<T>)Operator.Negate(self.Value); }
 
         // Multiplication operators get a little more complex because the "other woman" can have varying types, and AFAIK the operator overloading is picky about specifics there.

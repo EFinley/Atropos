@@ -237,7 +237,7 @@ namespace Atropos
 
         public int DebugCounter = 0;
 
-        public ShakingMonitor(int numShakes = 5, TimeSpan withinTime = default(TimeSpan), TimeSpan minTime = default(TimeSpan)) : 
+        public ShakingMonitor(double threshold = 2, int numShakes = 5, TimeSpan withinTime = default(TimeSpan), TimeSpan minTime = default(TimeSpan)) : 
             base(new Vector3Provider(SensorType.LinearAcceleration) { Delay = SensorDelay.Fastest },
                 (ths, v, t) =>
                 {
@@ -252,8 +252,8 @@ namespace Atropos
                     _this.LastAccel = v;
 
                     // Does this count as a "shake"?  If so, record it.
-                    // Since normal use produces accels in the 1-4 m/s2 range, a dot product of -1 implies a fairly violent course correction within that 20ms.  Doable, but not trivial.
-                    if (dot < -1) _this.ReversalTimestamps.Enqueue(DateTime.Now);
+                    // Since normal use produces accels in the 1-4 m/s2 range, a dot product of (e.g.) -4 implies a fairly violent course correction within that 20ms.  Doable, but not trivial.
+                    if (dot < -1 * threshold * threshold) _this.ReversalTimestamps.Enqueue(DateTime.Now);
 
                     var count = _this.ReversalTimestamps.Count;
                     if (count == 0 && _this.DebugCounter > 0) { _this.DebugCounter = 0; Log.Debug("Shaking", "Resetting counter to zero."); }

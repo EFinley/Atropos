@@ -32,7 +32,7 @@ namespace Atropos
         protected NfcAdapter _nfcAdapter;
         protected PowerManager.WakeLock _wakeLock;
         protected double _wakeLockMinutes = 15.0;
-        protected bool _autoRestart = true;
+        protected bool _autoRestart = false;
 
         private static BaseActivity _currentActivity;
         private static BaseActivity _previousActivity;
@@ -407,12 +407,26 @@ namespace Atropos
         protected System.Diagnostics.Stopwatch volumeButtonStopwatch = new System.Diagnostics.Stopwatch();
         public override bool OnKeyDown([GeneratedEnum] Keycode keyCode, KeyEvent e)
         {
+<<<<<<< HEAD
+            if (useVolumeTrigger)
+=======
             if (useVolumeTrigger && !volumeTriggerBeingHeld)
+>>>>>>> 2e634bd5e8b178c02cf5e4b9b35108e5a5af9e30
             {
                 if (keyCode == Keycode.VolumeDown || keyCode == Keycode.VolumeUp)
                 {
-                    lock (volumeButtonSyncLock)
+                    if (listeningForVolumeTrigger)
                     {
+<<<<<<< HEAD
+                        lock (volumeButtonSyncLock)
+                        {
+                            listeningForVolumeTrigger = false;
+                            OnVolumeButtonPressed?.Invoke(this, EventArgs.Empty);
+                            return true;
+                        }
+                    }
+                    else return true;
+=======
                         if (!volumeTriggerBeingHeld)
                         {
                             volumeTriggerBeingHeld = true;
@@ -422,12 +436,27 @@ namespace Atropos
                         }
                     }
                     if (volumeTriggerBeingHeld) return true;
+>>>>>>> 2e634bd5e8b178c02cf5e4b9b35108e5a5af9e30
                 }
             }
             return base.OnKeyDown(keyCode, e);
         }
         public override bool OnKeyUp([GeneratedEnum] Keycode keyCode, KeyEvent e)
         {
+<<<<<<< HEAD
+            if (useVolumeTrigger)
+            {
+                if (keyCode == Keycode.VolumeDown || keyCode == Keycode.VolumeUp)
+                {
+                    if (!listeningForVolumeTrigger)
+                    {
+                        lock (volumeButtonSyncLock)
+                        {
+                            listeningForVolumeTrigger = true;
+                            OnVolumeButtonReleased?.Invoke(this, EventArgs.Empty);
+                            return true;
+                        }
+=======
             if (useVolumeTrigger && volumeTriggerBeingHeld)
             {
                 if (keyCode == Keycode.VolumeDown || keyCode == Keycode.VolumeUp)
@@ -448,7 +477,9 @@ namespace Atropos
 
                             return true;
                         } 
+>>>>>>> 2e634bd5e8b178c02cf5e4b9b35108e5a5af9e30
                     }
+                    else return true;
                 }
             }
             return base.OnKeyUp(keyCode, e);

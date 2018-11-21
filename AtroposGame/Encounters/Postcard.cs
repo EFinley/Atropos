@@ -110,7 +110,7 @@ namespace Atropos.Encounters
                     await Speech.SayAllOf("You open your inner eye to the swirling currents of astral space, and see a few watcher spirits cruising about.  You'll want to get your spirit ward up before the party proceeds any further.");
 
                 })
-                .Otherwise().Then("Gotta be a hacker. Duh.")
+                .Otherwise().Then("Gotta be a sorcerer. Duh.")
                 .End_DependingOn()
             .OnQR("Door Studio A", "This is the studio Vanessa is shooting in.  You really don't want to risk her wrath.  Trust me.")
             .OnQR_Locked("Door Studio B", Lock.LockByAngles("Studio B", 20, -30, -40))

@@ -103,8 +103,8 @@ namespace Atropos
 
         /// <summary>
         /// Inheriting from https://github.com/jamesmontemagno/TextToSpeechPlugin (version 2.0.0)
-        /// gets us these baseline methods:
-        ///     this.Speak(text, queue, locale, pitch, volume (nonfunctional on Android))
+        /// gets us this baseline method:
+        ///     this.Speak(text, queue, locale, pitch, volume)
         ///     
         /// </summary>
         public Speech(bool SpeakerMode = false)
@@ -118,11 +118,11 @@ namespace Atropos
         }
 
         private string[] againPrompts = new string[] { "Again", "As before", "Once more", "Same again", "Ditto", "Like before", "Same instructions" };
-
-
         private CancellationTokenSource _currentCTS;
         public Task SayNow(string content, stringOrID[] parameters = null, bool interrupt = false, CrossLocale? crossLocale = null, double? pitch = 1.0, double? speakRate = 1.0, double? volume = 1.0, CancellationToken? cancelToken = null)
         {
+            if (String.IsNullOrEmpty(content)) return Task.CompletedTask;
+
             RecentUtterances = RecentUtterances.Where(u => u.timeOfUttering > DateTime.Now - SuppressUtteranceInterval).ToList();
             if (RecentUtterances.Count(u => u.content == content) > 0)
                 content = againPrompts.GetRandom();
@@ -132,7 +132,7 @@ namespace Atropos
             //return Speak(utteranceContent, crossLocale, (float?)pitch, (float?)speakRate, (float?)volume);
             //var cts = new CancellationTokenSource();
             _currentCTS = CancellationTokenSource.CreateLinkedTokenSource(cancelToken ?? CancellationToken.None);
-            var ret = Speak(content, crossLocale, (float?)pitch, (float?)speakRate, (float?)volume, cancelToken);
+            var ret = Speak(content, crossLocale, (float?)pitch, (float?)speakRate, (float?)volume, _currentCTS.Token);
             //return Task.WhenAny(ret, Task.Delay(200 * utteranceContent.Length));
             //return pollForCompletion();
             
@@ -149,13 +149,13 @@ namespace Atropos
                 .LaunchAsOrphan($"Speech: {content}");
         }
 
-        public static void Say(string content, SoundOptions options)
+        public static void Say(string content, SoundOptions options, Action doOnStart = null)
         {
             Say(content, null, options.Interrupt, null,
                 options.Pitch ?? 1.0,
                 options.Speed ?? 1.0,
                 options.Volume ?? 1.0,
-                null,
+                doOnStart,
                 options.UseSpeakers,
                 options.CancelToken);
         }
@@ -182,15 +182,23 @@ namespace Atropos
             //Res.Speech.SpeakerMode = previousSpeakerMode;
         }
 
-        public static async Task SayAllOf(string content, SoundOptions options)
+        public static async Task SayAllOf(string content, SoundOptions options, Action doOnStart = null)
         {
             await SayAllOf(content, null, options.Interrupt, null,
                 options.Pitch ?? 1.0,
                 options.Speed ?? 1.0,
                 options.Volume ?? 1.0,
-                null,
+                doOnStart,
                 options.UseSpeakers,
                 options.CancelToken);
+        }
+
+        public static async Task<TimeSpan> Measure(string content, double atSpeed = 1, double compressBy = 1)
+        {
+            var stopwatch = new System.Diagnostics.Stopwatch();
+            var speechTask = SayAllOf(content, speakRate: atSpeed * compressBy, volume: 0, doOnStart: stopwatch.Start);
+            await speechTask;
+            return stopwatch.Elapsed.MultipliedBy(compressBy);
         }
     }
 }

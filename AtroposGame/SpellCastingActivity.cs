@@ -96,15 +96,21 @@ namespace Atropos
 
         protected async void PerformSpellSelection()
         {
+            if (GlyphCastStage.CurrentGlyph != null)
+            {
+                GlyphCastStage.CurrentGlyph.Deactivate();
+                GlyphCastStage.CurrentGlyph = null;
+            }
+
             SpellDefinition ChosenSpell = null;
-            useVolumeTrigger = false;
+            //useVolumeTrigger = false;
 
             try
             {
                 //Log.Debug("SpellSelection", $"Diagnostics: #sensors {Res.NumSensors}; CurrentStage {(CurrentStage as GestureRecognizerStage)?.Label}; Background stages activity: {BaseActivity.BackgroundStages?.Select(s => $"{(s as GestureRecognizerStage)?.Label}:{s.IsActive}").Join()}");
                 var MagnitudeGlyph = await new GlyphCastStage(Glyph.MagnitudeGlyphs, Glyph.StartOfSpell, 2.0).AwaitResult();
-                double timeCoefficient = (MagnitudeGlyph == Glyph.L) ? 2.0 :
-                                         (MagnitudeGlyph == Glyph.M) ? 0.75 :
+                double timeCoefficient = (MagnitudeGlyph == Glyph.L) ? 4.0 :
+                                         (MagnitudeGlyph == Glyph.M) ? 1.5 :
                                          (MagnitudeGlyph == Glyph.H) ? -2.0 :
                                          -5.0; // for Magnitude == Glyph.G
                 var SpellTypeGlyph = await new GlyphCastStage(Glyph.SpellTypeGlyphs, MagnitudeGlyph, timeCoefficient).AwaitResult();
@@ -145,6 +151,7 @@ namespace Atropos
             // Set up the barrier glow effect
             ImageView barrierEffect = new ImageView(this);
             barrierEffect.SetImageResource(Resource.Drawable.barrier_glow);
+            barrierEffect.Elevation = -1;
             mainPanel.AddView(barrierEffect);
 
             SpellDefinition.Barrier.OnChange += (o, e) =>
@@ -192,10 +199,13 @@ namespace Atropos
 
         public class GlyphCastStage : AwaitableStage<Glyph>
         {
+            public static GlyphCastStage CurrentGlyph { get; set; }
+
             public StillnessProvider Stillness;
             //private FrameShiftedOrientationProvider AttitudeProvider;
             private Vector3Provider GravityProvider;
             private RollingAverage<float> AverageStillness;
+            private ShakingMonitor Shaking;
 
             private double TimeCoefficient;
 
@@ -221,11 +231,16 @@ namespace Atropos
                 : base($"Selecting glyphs among {String.Join("/", validGlyphs)}.")
             {
                 Res.DebuggingSignalFlag = true;
+                CurrentGlyph = this;
 
                 Stillness = new StillnessProvider();
                 //Stillness.StartDisplayLoop(Current, 500);
                 SetUpProvider(Stillness);
-                AverageStillness = new RollingAverage<float>(70);
+                //AverageStillness = new RollingAverage<float>(70);
+
+                Shaking = new ShakingMonitor();
+                //StopToken.Register(Shaking.Deactivate);
+                Shaking.DependsOn(StopToken);
 
                 //AttitudeProvider = new GravityOrientationProvider();
                 //AttitudeProvider.Activate();
@@ -256,15 +271,29 @@ namespace Atropos
                     await Speech.SayAllOf("Casting mistake.  You don't know any spells which begin with that sequence of glyphs.");
                     Deactivate();
                 }
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        await Shaking.AwaitResult();
+                        if (Shaking.AwaitableTask.Status != TaskStatus.RanToCompletion) return;
+                        abortAction();
+                        Deactivate();
+                    }
+                    catch (TaskCanceledException)
+                    {
+                        Log.Info("Atropos|GlyphCastStage", "Shaking monitor canceled.");
+                    }
+                }, StopToken).LaunchAsOrphan();
             }
 
             protected override bool nextStageCriterion()
             {
                 //if (!FrameShiftFunctions.CheckIsReady(AttitudeProvider)) return false;
                 if (Stillness.RunTime.TotalSeconds < 0.75) return false;
-                var leeWay = Stillness.StillnessScore + TimeCoefficient * Sqrt(Stillness.RunTime.TotalSeconds);
+                var leeWay = Stillness.StillnessScore + Stillness.InstantaneousScore + TimeCoefficient * Sqrt(Stillness.RunTime.TotalSeconds);
                 var ease = SpellCaster.Me.EaseOfCasting;
-                if (GlyphsSortedByAngle[0].AngleTo(GravityProvider) < ease * (10f + 1.5 * leeWay)) // Was 25.0f + leeway, seems awfully generous
+                if (GlyphsSortedByAngle[0].AngleTo(GravityProvider) < ease * (15f + leeWay))
                 {
                     if (LastGlyph != Glyph.StartOfSpell && GlyphsSortedByAngle[0].AngleTo(GravityProvider) > LastGlyph.AngleTo(GravityProvider)) return false;
                     if (ValidGlyphs.Count < 2) return true;
@@ -280,7 +309,8 @@ namespace Atropos
                     //foreach (var fx in ValidGlyphs.Select(s => GetFeedbackFX(s))) fx.Deactivate();
                     foreach (var glyph in ValidGlyphs)
                     {
-                        var fx = glyph.FeedbackSFX;
+                        var fx = GetFeedbackFX(glyph);
+                        if (glyph == null || fx == null) continue;
                         fx.Stop();
                         fx.Deactivate();
                         glyph.FeedbackSFX = null;
@@ -317,31 +347,35 @@ namespace Atropos
 
             protected override void interimAction()
             {
-                foreach (var s in GlyphsSortedByAngle.Take(1))
+                foreach (var s in GlyphsSortedByAngle.Take(1)) // Used to be we'd do this for all of them, not just the nearest.  Might go back to that in time.
                 {
                     //FeedbackFX(s).Volume = Exp(-Sqrt(s.AngleTo(AttitudeProvider) / 8.0) + 0.65); // Old version
                     var ease = SpellCaster.Me.EaseOfCasting;
-                    GetFeedbackFX(s).Volume = 1.2f * Exp(-0.45f * (s.AngleTo(GravityProvider) / ease / 5f - 1f));
+                    //GetFeedbackFX(s).Volume = 1.2f * Exp(-0.45f * (s.AngleTo(GravityProvider) / ease / 5f - 1f));
+                    GetFeedbackFX(s).Volume = 1.2f * Exp(-0.75f * (s.AngleTo(GravityProvider) / ease / 5f - 1f));
                 }
                 //AverageStillness.Update(Stillness.StillnessScore);
             }
 
             protected override bool abortCriterion()
             {
-                AverageStillness.Update(Stillness.StillnessScore);
-                return Stillness.RunTime > TimeSpan.FromMilliseconds(1250) && AverageStillness < -18;
+                //AverageStillness.Update(Stillness.StillnessScore);
+                //return Stillness.RunTime > TimeSpan.FromMilliseconds(1250) && AverageStillness < -18;
+                return false; // See StartActionAsync for the new ShakingMonitor solution here.
             }
 
             protected override void abortAction()
             {
                 foreach (var glyph in ValidGlyphs)
                 {
-                    var fx = glyph.FeedbackSFX;
+                    var fx = GetFeedbackFX(glyph);
+                    if (glyph == null || fx == null) continue;
                     fx.Stop();
                     fx.Deactivate();
                     glyph.FeedbackSFX = null;
                 }
 
+                Speech.Say("Cancelled.");
                 Plugin.Vibrate.CrossVibrate.Current.Vibration(50);
 
                 var activity = SpellCastingActivity.Current;
@@ -396,6 +430,7 @@ namespace Atropos
             InstructionField.Text = glyph.Instruction_Short;
             PictureField.SetImageResource(glyph.IllustrationId);
 
+            v.Elevation = +1;
             return v;
         }
     }

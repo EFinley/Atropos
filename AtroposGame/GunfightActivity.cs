@@ -33,8 +33,8 @@ namespace Atropos
     /// <summary>
     /// This is the activity started when we detect a "gun" NFC tag.
     /// </summary>
-    [Activity(ScreenOrientation = Android.Content.PM.ScreenOrientation.Portrait)]
-    public class GunfightActivity : BaseActivity_Portrait
+    [Activity(ScreenOrientation = Android.Content.PM.ScreenOrientation.ReverseLandscape)]
+    public class GunfightActivity : BaseActivity
     {
         protected static GunfightActivity Current { get { return (GunfightActivity)CurrentActivity; } set { CurrentActivity = value; } }
         public static event EventHandler<EventArgs<double>> OnGunshotFired;
@@ -116,6 +116,7 @@ namespace Atropos
             //CurrentStage = (InteractionLibrary.Current == InteractionLibrary.GunCalibration) ?
             //    calibration_startStage : aiming_startStage;
             CurrentStage = aiming_startStage;
+            CurrentStage.Activate(StopToken);
 
             //var button = FindViewById<Button>(Resource.Id.finish_btn);
             //button.Click += (sender, args) => { InteractionMode.Current = null; Finish(); };
@@ -269,7 +270,7 @@ namespace Atropos
 
             protected override void interimAction()
             {
-                if (Vector3.Dot(Gravity.Vector, Weapon.vectorPointedForward) > 0.5) return; // Not close enough to vertical, ignore.
+                if (Gravity.Vector.Normalize().Dot(Weapon.vectorPointedForward) > 0.5) return; // Not close enough to vertical, ignore.
                 if (Stillness.StillnessScore + Stillness.InstantaneousScore > 15 
                     && !exhaleCueHasBeenProvided 
                     && DateTime.Now > nextReadyTime)
@@ -298,7 +299,7 @@ namespace Atropos
                     if (Weapon.CurrentAmmoCount == 0)
                     {
                         //Log.Debug("Gunfight|Empty", $"Clicking on empty; currently, the dot product from 'forward' to 'gravity' is {Vector3.Dot(Gravity.Vector, Weapon.vectorPointedForward)}.");
-                        if (Math.Abs(Vector3.Dot(Gravity.Vector, Weapon.vectorPointedForward)) < 0.75)
+                        if (Math.Abs(Gravity.Vector.Normalize().Dot(Weapon.vectorPointedForward)) < 0.75)
                         {
                             await (Weapon.ClickEmptySFX?.PlayToCompletion(null, true) ?? Task.CompletedTask);
                             return;
@@ -380,7 +381,7 @@ namespace Atropos
 
             public bool DidItHit()
             {
-                if (Vector3.Dot(Gravity.Vector, Weapon.vectorPointedForward) > 0.66)
+                if (Gravity.Vector.Normalize().Dot(Weapon.vectorPointedForward) > 0.66)
                 {
                     OnGunshotFired.Raise(-10);
                     return false; // Not close enough to horizontal, automatic miss.

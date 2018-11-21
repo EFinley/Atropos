@@ -618,6 +618,8 @@ namespace Atropos
         public virtual void Play(SoundOptions options)
         {
             Activate(options.CancelToken ?? CancellationToken.None);
+            SetSpeed(options.Speed ?? Speed);
+            SetPitch(options.Pitch ?? Pitch);
             Play(options.Volume, options.Looping, options.UseSpeakers);
         }
 
@@ -786,7 +788,8 @@ namespace Atropos
         }
         public Task PlayToCompletion(SoundOptions options)
         {
-            return PlayToCompletion(options.Volume, options.UseSpeakers);
+            Play(options);
+            return endOfPlaybackSignal.Task.SwallowCancellations();
         }
         public Task WhenFinishedPlaying
         {

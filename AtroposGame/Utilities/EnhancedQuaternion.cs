@@ -5,9 +5,6 @@ using Android.Runtime;
 
 using System;
 using System.Numerics;
-using static System.Numerics.Vector2;
-using static System.Numerics.Vector3;
-using static System.Numerics.Quaternion;
 using Android.App;
 using Android.Content;
 using System.Threading.Tasks;
@@ -70,6 +67,61 @@ namespace Atropos
     //    public static Vector3 UnitZ = new Vector3(0f, 0f, 1f);
     //    public static Vector3 Zero = new Vector3(0f, 0f, 0f);
     //}
+
+    [Serializable]
+    public struct Quat : IEquatable<Quat>
+    {
+        private System.Numerics.Quaternion _q;
+
+        public float X { get => _q.X; set => _q.X = value; }
+        public float Y { get => _q.Y; set => _q.Y = value; }
+        public float Z { get => _q.Z; set => _q.Z = value; }
+        public float W { get => _q.W; set => _q.W = value; }
+
+        public Quat(System.Numerics.Quaternion q) { _q = q; }
+        public Quat(Vector3 vectorPart, float scalarPart) { _q = new System.Numerics.Quaternion(vectorPart, scalarPart); }
+        public Quat(float x, float y, float z, float w) { _q = new System.Numerics.Quaternion(x, y, z, w); }
+
+        public static explicit operator System.Numerics.Quaternion(Quat Q) { return Q._q; }
+        public static explicit operator Quat(System.Numerics.Quaternion Q) { return new Quat(Q); }
+
+        public static Quat Identity => (Quat)System.Numerics.Quaternion.Identity;
+        public bool IsIdentity => _q.IsIdentity;
+
+        public static Quat Add(Quat value1, Quat value2) => (Quat)(System.Numerics.Quaternion.Add(value1._q, value2._q));
+        public static Quat Concatenate(Quat value1, Quat value2) => (Quat)(System.Numerics.Quaternion.Concatenate(value1._q, value2._q));
+        public static Quat Conjugate(Quat value) => (Quat)(System.Numerics.Quaternion.Conjugate(value._q));
+        public static Quat CreateFromAxisAngle(Vector3 axis, float angle) => (Quat)(System.Numerics.Quaternion.CreateFromAxisAngle(axis, angle));
+        public static Quat CreateFromRotationMatrix(Matrix4x4 matrix) => (Quat)(System.Numerics.Quaternion.CreateFromRotationMatrix(matrix));
+        public static Quat CreateFromYawPitchRoll(float yaw, float pitch, float roll) => (Quat)(System.Numerics.Quaternion.CreateFromYawPitchRoll(yaw, pitch, roll));
+        public static Quat Divide(Quat value1, Quat value2) => (Quat)(System.Numerics.Quaternion.Divide(value1._q, value2._q));
+        public static float Dot(Quat value1, Quat value2) => System.Numerics.Quaternion.Dot(value1._q, value2._q);
+        public static Quat Inverse(Quat value) => (Quat)(System.Numerics.Quaternion.Inverse(value._q));
+        public static Quat Lerp(Quat value1, Quat value2, float amount) => (Quat)(System.Numerics.Quaternion.Lerp(value1._q, value2._q, amount));
+        public static Quat Multiply(Quat value1, Quat value2) => (Quat)(System.Numerics.Quaternion.Multiply(value1._q, value2._q));
+        public static Quat Multiply(Quat value1, float value2) => (Quat)(System.Numerics.Quaternion.Multiply(value1._q, value2));
+        public static Quat Negate(Quat value) => (Quat)(System.Numerics.Quaternion.Negate(value._q));
+        public static Quat Normalize(Quat value) => (Quat)(System.Numerics.Quaternion.Normalize(value._q));
+        public static Quat Slerp(Quat value1, Quat value2, float amount) => (Quat)(System.Numerics.Quaternion.Slerp(value1._q, value2._q, amount));
+        public static Quat Subtract(Quat value1, Quat value2) => (Quat)(System.Numerics.Quaternion.Subtract(value1._q, value2._q));
+
+        public override bool Equals(object obj) => _q.Equals(obj);
+        public bool Equals(Quat other) => _q.Equals(other._q);
+        public override int GetHashCode() => _q.GetHashCode();
+
+        public float Length() => _q.Length();
+        public float LengthSquared() => _q.LengthSquared();
+        public override string ToString() => _q.ToString();
+
+        public static Quat operator +(Quat value1, Quat value2) => Quat.Add(value1, value2);
+        public static Quat operator -(Quat value) => Quat.Negate(value);
+        public static Quat operator -(Quat value1, Quat value2) => Quat.Subtract(value1, value2);
+        public static Quat operator *(Quat value1, Quat value2) => Quat.Multiply(value1, value2);
+        public static Quat operator *(Quat value1, float value2) => Quat.Multiply(value1, value2);
+        public static Quat operator /(Quat value1, Quat value2) => Quat.Divide(value1, value2);
+        public static bool operator ==(Quat value1, Quat value2) => Quat.Equals(value1, value2);
+        public static bool operator !=(Quat value1, Quat value2) => !Quat.Equals(value1, value2);
+    }
 
     //[Serializable]
     //public struct Quaternion

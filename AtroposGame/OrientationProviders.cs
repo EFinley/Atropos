@@ -191,7 +191,7 @@ namespace Atropos
                 return elapsed - previousElapsed;
             }
         }
-        public TimeSpan RunTime
+        public virtual TimeSpan RunTime
         {
             get
             {
@@ -382,7 +382,7 @@ namespace Atropos
                 return elapsed - previousElapsed;
             }
         }
-        public TimeSpan RunTime
+        public virtual TimeSpan RunTime
         {
             get
             {
@@ -842,6 +842,66 @@ namespace Atropos
         public Vector3 Vector { get { return averageGravityVector.Average.Normalize(); } }
     }
 
+    public class GravityOrientationProvider2 : OrientationSensorProvider, IVector3Provider, IProvider<Quaternion>
+    {
+        public GravityOrientationProvider2(CancellationToken? externalStopToken = null, bool useHandedness = true, [CallerMemberName] string callerName = "")
+            : base(SensorType.Gravity, externalStopToken, useHandedness, callerName)
+        {
+            normalizedGravityVector = referenceGravityVector = Vector3.Zero;
+            averageGravityVector = new AdvancedRollingAverageVector3(timeFrameInPeriods: 5, initialAverage: Vector3.UnitZ);
+        }
+
+        protected AdvancedRollingAverageVector3 averageGravityVector;
+        private Vector3 normalizedGravityVector, referenceGravityVector;
+        public bool referenceSet = false;
+        protected bool sensorReady = false, firstPass = true;
+        protected override void SensorChanged(SensorEvent e)
+        {
+            normalizedGravityVector.X = e.Values[0] * Handedness.CoeffX;
+            normalizedGravityVector.Y = e.Values[1] * Handedness.CoeffY;
+            normalizedGravityVector.Z = e.Values[2] * Handedness.CoeffZ;
+            normalizedGravityVector = normalizedGravityVector.Normalize();
+            averageGravityVector.Update(normalizedGravityVector);
+            if (!referenceSet) // Startup runs
+            {
+                if (firstPass) firstPass = false;
+                else if (!sensorReady)
+                {
+                    sensorReady = (normalizedGravityVector != referenceGravityVector);
+                    referenceGravityVector = normalizedGravityVector;
+                }
+                else
+                {
+                    referenceSet = true;
+                    //referenceGravityVector = normalizedGravityVector;
+                }
+            }
+        }
+
+        public override Quaternion Quaternion
+        {
+            get
+            {
+                return RawQuaternion;
+            }
+        }
+        protected override Quaternion toDataType()
+        {
+            return Quaternion;
+        }
+
+        protected Quaternion RawQuaternion
+        {
+            get
+            {
+                if (!referenceSet) return Quaternion.Identity;
+                return referenceGravityVector.QuaternionToGetTo(averageGravityVector);
+            }
+        }
+
+        public Vector3 Vector { get { return averageGravityVector.Average.Normalize(); } }
+    }
+
     public class AngleAxisProvider : Vector3Provider
     {
         public Vector3 UpDirection, Axis;
@@ -849,9 +909,9 @@ namespace Atropos
         public AngleAxisProvider(Vector3 upDirection, Vector3 axis, CancellationToken? externalToken = null, bool useHandedness = true, [CallerMemberName] string callerName = "") 
             : base(SensorType.Gravity, externalToken, useHandedness, callerName)
         {
-            UpDirection = upDirection;
+            UpDirection = upDirection.Normalize();
             if (useHandedness) UpDirection.X *= -1;
-            Axis = axis;
+            Axis = axis.Normalize();
         }
 
         private Vector3 gravityInPlane { get { return Vector - Axis * (Axis.Dot(Vector)); } }
