@@ -82,7 +82,7 @@ namespace Atropos.Locks
         public static Tumbler EndOfLock = new Tumbler(double.NaN, 0); // Functions as a signal; its details are never used.
         public static Tumbler ResetToZero = new Tumbler(0.0);
         public static Tumbler PinMoveTarget = new Tumbler(0.0);
-        public static Tumbler None = new Tumbler(0.0);
+        public static Tumbler None = new Tumbler(double.NegativeInfinity);
     }
 
     public class Lock
@@ -110,13 +110,14 @@ namespace Atropos.Locks
         public void AnnounceLockOpened() { OnLockOpened.Raise(NumberOfAttempts); }
 
         // Relevant only for safes
+        public double AngleLeftSittingAt = 0.0;
         public double DegreesBetweenClicks { get; set; } = 3.6; 
 
         // Relevant only for key locks
         public double AngleMinForLiftingPhase { get; set; } = 20.0;
         public double AngleMaxForLiftingPhase { get; set; } = 40.0;
         public double RotationAccuracyRequired { get; set; } = 5.0; // Degrees
-        public double MaxRotationRateInLiftingPhase { get; set; } = 50.0; // Degrees per second
+        public double MaxRotationRateInLiftingPhase { get; set; } = 75.0; // Degrees per second
 
         public Lock(string name = "NoLock", LType type = LType.Unknown, Quaternion? zeroStance = null, string succResult = null, string failResult = null)
         {

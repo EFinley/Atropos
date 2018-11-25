@@ -55,7 +55,7 @@
                     android:paddingRight="20dip"
                     android:visibility="gone" />
                 <TextView
-                    android:text="This side up. Hold steady..."
+                    android:text="This Face Up. Pivot on long axis."
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:id="@+id/vault_notification"

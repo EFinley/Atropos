@@ -84,7 +84,7 @@ namespace Atropos
         private static Persistent<bool> _screenFlipMode = new Persistent<bool>("ScreenFlipMode");
         public static bool ScreenFlipMode { get { return _screenFlipMode; } set { _screenFlipMode.Value = value; } }
 
-        private static Persistent<bool> _allowNfc = new Persistent<bool>("AllowNFC");
+        private static Persistent<bool> _allowNfc = new Persistent<bool>("AllowNFC", true);
         public static bool AllowNfc { get { return _allowNfc; } set { _allowNfc.Value = value; } }
 
         public class InteractionMode

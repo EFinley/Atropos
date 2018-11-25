@@ -37,14 +37,73 @@ namespace Atropos.Machine_Learning
 
             protected bool softStop = false;
 
-            public T[] StopAndReturnResults()
+            public virtual T[] StopAndReturnResults()
             {
                 VectorProvider.Deactivate();
 
-                var ResultArray = VectorProvider.LoggedData;
+                //if (VectorProvider is ContinuousLoggingProvider<T> ContinuousProvider)
+                //{
+                //    var logCount = VectorProvider.LoggedData.Count;
+                //    while (VectorProvider.LoggedData.Count < logCount + 10)
+                //        Task.Delay(50).Wait();
+                //        //VectorProvider.WhenDataReady().Wait();
+                //    //ContinuousProvider.SessionCTS = null;
+                //    VectorProvider.Deactivate();
+                //}
+                //else VectorProvider.Deactivate();
+
+                var ResultArray = VectorProvider.LoggedData.ToList();
                 ResultArray = ResultArray.Smooth(3);
                 softStop = true; // Pushes the actual stop out to the next phase of execution.
                 return ResultArray.ToArray();
+            }
+
+            public virtual Task<T[]> StopAndReturnResultsAsync()
+            {
+                //CurrentToaster.RelayToast("StopAsync");
+                VectorProvider.Deactivate();
+
+                //if (VectorProvider is ContinuousLoggingProvider<T> ContinuousProvider)
+                //{
+                //    var logCount = VectorProvider.LoggedData.Count;
+                //    while (VectorProvider.LoggedData.Count < logCount + 10)
+                //        Task.Delay(50).Wait();
+                //        //VectorProvider.WhenDataReady().Wait();
+                //    //ContinuousProvider.SessionCTS = null;
+                //    VectorProvider.Deactivate();
+                //}
+                //else VectorProvider.Deactivate();
+                //CurrentToaster.RelayToast("StopAsync 2");
+
+                var ResultArray = VectorProvider.LoggedData.ToArray().ToList();
+                //CurrentToaster.RelayToast($"StopAsync 3 [{ResultArray.Count} points]");
+                ResultArray = ResultArray.Smooth(3);
+
+                //// Implementing smoothing manually - ack!  Something subtle is wrong with my RollingAverage<T> code...
+                //if (ResultArray.Count == 0) return Task.FromResult(new T[0]);
+                //T currentAverage = ResultArray[0];
+                //List<T> smoothedResults = new List<T>() { currentAverage };
+                //try
+                //{
+                //    foreach (var element in ResultArray.Skip(1))
+                //    {
+                //        var delta = Operator.Subtract(element, currentAverage);
+                //        //currentAverage = Operator.Add(lastAverage, Operator.MultiplyAlternative(delta, Alpha));
+                //        var v1 = Operator.MultiplyAlternative(delta, 0.5f); // Normally this is 2.0 / (N + 1) for a smooth of "length" N.  So 0.5 corresponds to a standard light smoothing of length 3.
+                //        var v2 = Operator.Add(currentAverage, v1);
+                //        currentAverage = v2;
+                //        smoothedResults.Add(v2);
+                //    }
+                //}
+                //catch (Exception ex)
+                //{
+                //    CurrentToaster.RelayToast($"{ex}", ToastLength.Long);
+                //}
+                //ResultArray = smoothedResults;
+
+                //CurrentToaster.RelayToast("StopAsync 4");
+                softStop = true; // Pushes the actual stop out to the next phase of execution.
+                return Task.FromResult(ResultArray.ToArray());
             }
 
             protected override bool nextStageCriterion()
@@ -62,8 +121,8 @@ namespace Atropos.Machine_Learning
                 var result = new SequenceMetadata()
                 {
                     NumPoints = count,
-                    Delay = VectorProvider.Timestamps[startIndex],
-                    Duration = VectorProvider.Timestamps[startIndex + count - 1] - VectorProvider.Timestamps[startIndex]
+                    Delay = VectorProvider.Timestamps.ElementAtOrDefault(startIndex),
+                    Duration = VectorProvider.Timestamps.ElementAtOrDefault(startIndex + count - 1) - VectorProvider.Timestamps.ElementAtOrDefault(startIndex)
                 };
 
                 //Android.Util.Log.Debug("MachineLearning|MLStage", $"Sequence logged with {count} points, {result.Delay.TotalMilliseconds} ms delay, and {result.Duration.TotalMilliseconds} ms duration.");
@@ -72,7 +131,7 @@ namespace Atropos.Machine_Learning
                 // Scan through (while we have the data to do so) and get the peak accel value using the supplied function
                 foreach (int i in Enumerable.Range(startIndex, count))
                 {
-                    result.PeakAccel = Math.Max(result.PeakAccel, GetAccel(VectorProvider.LoggedData[i]));
+                    result.PeakAccel = Math.Max(result.PeakAccel, GetAccel(VectorProvider.LoggedData.ElementAtOrDefault(i)));
                 }
 
                 // We can't get the Quality Score yet - have to fill that in after analysis (see Classifier.Recognize()).

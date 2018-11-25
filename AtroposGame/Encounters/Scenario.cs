@@ -40,7 +40,8 @@ namespace Atropos.Encounters
             Spy,
             Locked,
             Unlocked,
-            Checked
+            Checked,
+            NotFound
         }
 
         public static Scenario Current { get; set; }
@@ -58,7 +59,7 @@ namespace Atropos.Encounters
         {
             get
             {
-                if (name != UserRole) return Variables[name];
+                if (name != UserRole) return Variables.GetValueOr(name, State.InitialState);
                 else
                 {
                     var activityType = RoleActivity.CurrentActivity.GetType();
@@ -122,6 +123,7 @@ namespace Atropos.Encounters
         public static Action ClearResponses = () => { };
         public Scenario OnVariable(string variableName, State tgtState, Action action)
         {
+            if (tgtState == State.NotFound) throw new Exception("State 'NotFound' reserved for engine use and will never be observed.");
             if (!VariableSetResults.ContainsKeypair(variableName, tgtState))
                 VariableSetResults.Add(variableName, tgtState, new List<Action>());
 
@@ -132,7 +134,8 @@ namespace Atropos.Encounters
         }
         public void SetVariable(string name, State tgtState, bool broadcast = true)
         {
-            if (Variables[name] == tgtState) return;
+            if (tgtState == State.NotFound) throw new Exception("State 'NotFound' reserved for engine use and may not be set manually.");
+            if (Variables.GetValueOr(name, State.NotFound) == tgtState) return;
             Variables[name] = tgtState;
             if (VariableSetResults.ContainsKeypair(name, tgtState))
             {

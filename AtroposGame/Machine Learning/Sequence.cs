@@ -34,7 +34,7 @@ namespace Atropos.Machine_Learning
         string TrueClassName { get; }
         string RecognizedAsName { get; }
         double[] MachineInputs { get; }
-        Bitmap Bitmap { get; }
+        Bitmap Bitmap { get; set; }
         bool HasContributedToClassifier { get; set; }
         //bool HasBeenTallied { get; set; }
         bool HasBeenSampled { get; set; }
@@ -163,6 +163,10 @@ namespace Atropos.Machine_Learning
                 }
 
                 return bitmap;
+            }
+            set
+            {
+                bitmap = value;
             }
         }
 

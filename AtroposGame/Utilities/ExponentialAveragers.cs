@@ -555,12 +555,12 @@ namespace Atropos
     /// <summary>
     /// Utility option #2 - post-facto map it through such an averaging engine, receive the results, and throw away the averaging object when done.
     /// </summary>
-    [Serializable]
+    //[Serializable]
     public static class SmoothedList
     {
         public static List<T> Smooth<T>(this IEnumerable<T> source, float timeFrameInPeriods = 10, T? initialAverage = null) where T : struct
         {
-            var Average = new RollingAverage<T>(timeFrameInPeriods, initialAverage, false);
+            var Average = new RollingAverage<T>(timeFrameInPeriods, initialAverage ?? default(T), false);
             //foreach (int i in Enumerable.Range(0, (int)(timeFrameInPeriods * 1.6))) Average.Update(source.First()); // Create a "solid base" which lets it know that the first datapoint IS the initial average, and IsValidYet should be true always.
             //return source.Select(val => { Average.Update(val); return Average.Average; }).ToList();
             var result = new List<T>();

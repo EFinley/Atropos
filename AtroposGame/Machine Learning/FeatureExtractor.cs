@@ -55,7 +55,7 @@ namespace Atropos.Machine_Learning
 
         public double[][] Preprocess(double[][] extracted, PreprocessorCoefficients? coefficients = null)
         { 
-            // If not using the (more advanced) full-dataset averages & sigmas, calculate them locally here.
+            // If not using the (more advanced) precalculated full-dataset averages & sigmas, calculate them locally here.
             if (coefficients == null)
             {
                 //var dims = Datapoint.From<Tsource>(default(Tsource)).Dimensions;
@@ -75,7 +75,7 @@ namespace Atropos.Machine_Learning
                 }
 
                 // Use our standard crosslinking function to lock values which should share a normalization constant into the same scale as each other.
-                sigmas = CrosslinkAxes.Apply<Tin>(sigmas); // Locks values in the same space - like X and Y axes - to the same window size.
+                if (doCrosslink) sigmas = CrosslinkAxes.Apply<Tin>(sigmas); // Locks values in the same space - like X and Y axes - to the same window size.
                 coefficients = new PreprocessorCoefficients() { Means = means, Sigmas = sigmas };
             }
 
@@ -109,12 +109,6 @@ namespace Atropos.Machine_Learning
             }
         }
 
-        /// <summary>
-        /// Generates the parameters for a preprocessor function which will turn absolute values of the supplied sequence set, into sigmas of same, based on the overall mean and standard deviation within the set.
-        /// </summary>
-        /// <param name="sampleSet">The sample set to examine.  Turns absolute values of parameters into z-scores (based on the set's mean X, and the set's maximum window size (sigma) in X/Y/Z, for every axis within every vector in the datapoint type).</param>
-        /// <param name="crosslinkFunc">A function to correlate sigmas in sets of features which should share a common window size.  Leave blank to use the normal "max sigma in any one axis" funtion, or use <see cref="CrosslinkAxes.None"/> for no crosslinking at all.</param>
-        /// <returns></returns>
         public virtual PreprocessorCoefficients GetPreprocessorCoefficients(IEnumerable<Sequence<Tin>> source)
         {
             var extractedValues = source.Select(s => ExtractSeq(s.SourcePath));
@@ -406,7 +400,9 @@ namespace Atropos.Machine_Learning
                     else
                     { 
                         var subExtrName = extractorName.Substring(PULLX.Length);
-                        int axisNum = (extractorName.StartsWith(PULLX) ? 0 : (extractorName.StartsWith(PULLY) ? 1 : 2));
+                        int axisNum = (extractorName.StartsWith(PULLX) ? 0 
+                                    : (extractorName.StartsWith(PULLY) ? 1 
+                                    : (extractorName.StartsWith(PULLZ) ? 2 : 3)));
                         //if (!AllExtractors.ContainsKey(subExtrName)) throw new ArgumentException($"Unable to parse extractor '{extractorName}'.");
                         // TODO (Optional): Instead of throwing here, check if it starts with INTEGRATE/DBLINTEGRAL and if so use an appropriate FeatureListExtractor(substring) as the extractor here.
                         //Extractors.Add(new FeatureAxisSelector<DatapointKitchenSink>(axisNum, AllExtractors[subExtrName]) { Name = extractorName });
@@ -462,6 +458,17 @@ namespace Atropos.Machine_Learning
                 {
                     (double)(v.LinAccel - gHat * (v.LinAccel.Dot(gHat))).Length()
                 };
+            }));
+            DefineExtractor("AccelXandParallelToG", new FeatureExtractor<DatapointKitchenSink>(2, v =>
+            {
+                return new double[] { v.LinAccel.X, v.LinAccel.Dot(v.Gravity.Normalize()) };
+            }));
+            DefineExtractor("AccelPhoneXandWorldYZ", new FeatureExtractor<DatapointKitchenSink>(3, v =>
+            {
+                if (v.Gravity.LengthSquared() < 1e-8) return new double[] { 0, 0, 0 };
+                var gHat = v.Gravity.Normalize();
+                var yHat = Vector3.Cross(gHat, Vector3.UnitX);
+                return new double[] { v.LinAccel.X, v.LinAccel.Dot(gHat), v.LinAccel.Dot(yHat) };
             }));
             DefineExtractor("AngleBetweenAccelAndG", new FeatureExtractor<DatapointKitchenSink, double>(v => new double[] { v.LinAccel.AngleTo(v.Gravity) }));
             DefineExtractor("AccelParallelToGyroAxis", new FeatureExtractor<DatapointKitchenSink, double>(v => new double[] { v.LinAccel.Dot(v.Gyro.Normalize()) }));

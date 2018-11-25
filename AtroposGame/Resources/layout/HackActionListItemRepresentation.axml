@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="100dip">
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/htask_background" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_margin="10dip">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal">
+        <!--<LinearLayout
+            android:id="@+id/htask_success_bar"
+            android:layout_width="15dp"
+            android:layout_height="match_parent"
+            android:layout_margin="6dp" />
+        <LinearLayout
+            android:id="@+id/htask_risk_bar"
+            android:layout_width="15dp"
+            android:layout_height="match_parent"
+            android:layout_margin="6dp" />-->
+        <!--<RelativeLayout
+            android:id="@+id/htask_graphic"
+            android:layout_width="0dip"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:layout_margin="6dp" />
+        <LinearLayout
+            android:id="@+id/htask_symbols"
+            android:layout_height="match_parent"
+            android:layout_width="50dp"
+            android:gravity="center"
+            android:layout_margin="6dp" />-->
+            <TextView
+                android:id="@+id/htask_namefield"
+                android:layout_width="0dip"
+                android:layout_weight="1"
+                android:layout_height="match_parent"
+                android:textSize="@dimen/abc_text_size_large_material" />
+            <ImageView
+                android:id="@+id/htask_gestureicon"
+                android:layout_width="50dip"
+                android:layout_height="50dip" />
+        </LinearLayout>
+        <ListView
+            android:id="@+id/htask_subtasks"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dip" />
+    </LinearLayout>
+</RelativeLayout>

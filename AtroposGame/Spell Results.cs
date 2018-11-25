@@ -664,7 +664,7 @@ namespace Atropos
             }
         };
 
-        public static SpellDefinition Flame = new SpellDefinition("Flame", Glyph.H, Glyph.A, Glyph.F, Glyph.P)
+        public static SpellDefinition Flame = new SpellDefinition("Flame", Glyph.H, Glyph.A, Glyph.T, Glyph.F, Glyph.P)
         {
             CastSFXresourceID = Resource.Raw._248116_fwehshh,
             CastSFXname = "Magic.Fwehshh",
@@ -849,6 +849,34 @@ namespace Atropos
                 await movedHowFast.ConditionMet();
                 SpellCaster.Me.RemoveDaze("Paralysis");
                 paralysisSound.Stop();
+            }
+        };
+
+        public static SpellDefinition DetectScrying = new SpellDefinition("Detect Scrying", Glyph.M, Glyph.C, Glyph.R, Glyph.K)
+        {
+            CastSFXresourceID = Resource.Raw.silence1s,
+            onCast = async (o) =>
+            {
+                var detectionSound = new Effect("Spell.DetectScry", Resource.Raw._49685_nanoblade_loop);
+                detectionSound.Play(0.25, true, false);
+                Atropos.Encounters.Scenario.Current.SetVariable("PlayerHasDetectScrying", Encounters.Scenario.State.True, false);
+                await Task.Delay(20000 + (int)(25000 * SpellCaster.Me.SpellEfficacy));
+                detectionSound.Stop();
+                Atropos.Encounters.Scenario.Current.SetVariable("PlayerHasDetectScrying", Encounters.Scenario.State.False, false);
+            }
+        };
+
+        public static SpellDefinition PassWard = new SpellDefinition("Pass Ward", Glyph.H, Glyph.C, Glyph.X, Glyph.R, Glyph.B)
+        {
+            CastSFXresourceID = Resource.Raw.silence1s,
+            onCast = async (o) =>
+            {
+                var passwardSound = new Effect("Spell.PassWard", Resource.Raw._344156_alientheremin);
+                passwardSound.Play(0.25, true, true);
+                Atropos.Encounters.Scenario.Current.SetVariable("PlayerHasPassWard", Encounters.Scenario.State.True, true);
+                await Task.Delay(10000 + (int)(15000 * SpellCaster.Me.SpellEfficacy));
+                passwardSound.Stop();
+                Atropos.Encounters.Scenario.Current.SetVariable("PlayerHasPassWard", Encounters.Scenario.State.False, true);
             }
         };
 

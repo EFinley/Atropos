@@ -18,12 +18,13 @@ using Accord.MachineLearning;
 using static System.Math;
 using Log = Android.Util.Log;
 using Atropos.DataStructures;
+using Nito.AsyncEx;
 
 namespace Atropos
 {
     public interface ILoggingProvider : IProvider
     {
-        // No content here - purely present as a 'marker' interface.
+        void ClearData();
     }
 
     public interface ILoggingProvider<T> : IProvider, ILoggingProvider where T : struct
@@ -43,9 +44,9 @@ namespace Atropos
     /// which implements IDatapoint.</typeparam>
     public class LoggingSensorProvider<T> : MultiSensorProvider<T>, ILoggingProvider<T> where T : struct
     {
-        public virtual List<T> LoggedData { get; private set; } = new List<T>(); 
-        public List<TimeSpan> Intervals { get; private set; } = new List<TimeSpan>();
-        public List<TimeSpan> Timestamps { get; private set; } = new List<TimeSpan>();
+        public virtual List<T> LoggedData { get; protected set; } = new List<T>(); 
+        public List<TimeSpan> Intervals { get; protected set; } = new List<TimeSpan>();
+        public List<TimeSpan> Timestamps { get; protected set; } = new List<TimeSpan>();
         protected IProvider<T> Provider;
 
         public LoggingSensorProvider(IProvider<T> provider) : this(provider, CancellationToken.None) { }
@@ -65,6 +66,13 @@ namespace Atropos
         protected override T toImplicitType()
         {
             return LoggedData.LastOrDefault();
+        }
+
+        public void ClearData()
+        {
+            LoggedData.Clear();
+            Intervals.Clear();
+            Timestamps.Clear();
         }
     }
 
@@ -181,6 +189,13 @@ namespace Atropos
             Timestamps.Add(providers[0].RunTime);
             Intervals.Add(providers[0].Interval);
         }
+
+        public void ClearData()
+        {
+            LoggedData.Clear();
+            Timestamps.Clear();
+            Intervals.Clear();
+        }
     }
 
     public class SmoothClusterProvider<T1, T2> : ClusterLoggingProvider<T1, T2>, ILoggingProvider<Datapoint<T1, T2>>
@@ -214,299 +229,131 @@ namespace Atropos
         }
     }
 
-    ///// <summary>
-    ///// Keeps a log of accelerometer data and transforms it into the best-fit frame wherein the data lie
-    ///// generally in a plane defined by gravity and by the axis in which most of the movement occurs.
-    ///// </summary>
-    //public class PlanarizedGestureProvider_new : LoggingSensorProvider<Vector2>
-    //{
-    //    //private List<Vector3> rawData = new List<Vector3>();
-    //    //private List<Vector3> gravVectors = new List<Vector3>();
-    //    //private Quaternion frameShift = Quaternion.Identity;
-    //    //public IEnumerable<Vector3> transformedData { get { return rawData.Select(v => v.RotatedBy(frameShift)); } }
-    //    private List<Vector6> data = new List<Vector6>();
-    //    //public List<AugVector2> PlanarizedAccels, PlanarizedVelocs, PlanarizedDisplacements;
-    //    public List<Vector2> PlanarizedAccels, PlanarizedVelocs, PlanarizedDisplacements;
-    //    //public List<TimeSpan> Intervals;
+    public class ContinuousLoggingProvider<T> : LoggingSensorProvider<T> where T : struct
+    {
+        private string _tag = "ContinuousLoggingProvider";
 
-    //    public double TotalWidth, TotalHeight;
-    //    public TimeSpan TotalTime;
-    //    public Vector3 PlaneNormal = Vector3.Zero;
+        public CancellationTokenSource SessionCTS;
+        public AsyncAutoResetEvent DeactivationSignal;
+        public int DeactivationCounter = 10;
+        public AsyncAutoResetEvent AdditionalPointsSignal;
+        protected TimeSpan LagBefore;
+        public TimeSpan LagAfter;
+        protected TimeSpan SessionActivationTimestamp;
+        //protected TimeSpan SessionDeactivationTimestamp;
 
-    //    protected IVector3Provider AccelProvider;
-    //    //protected FrameShiftedOrientationProvider GravProvider;
-    //    protected IVector3Provider GravProvider;
+        protected TimeSpan InitialInterval = TimeSpan.Zero;
+        protected TimeSpan AccumulatedRuntime = TimeSpan.Zero;
+        public override TimeSpan RunTime => Provider.RunTime + AccumulatedRuntime;
 
-    //    // Constructor inheritance must be explicit
-    //    public PlanarizedGestureProvider_new(CancellationToken? externalStopToken = null)
-    //        : base(
-    //              //new MultiSensorProvider<Vector2>(externalStopToken ?? CancellationToken.None,
-    //              //    new CorrectedAccelerometerProvider(SensorType.LinearAcceleration),
-    //              //    new CorrectedAccelerometerProvider(SensorType.Gravity)),
-    //              null,
-    //              externalStopToken ?? CancellationToken.None)
-    //    {
-    //        AccelProvider = new CorrectedAccelerometerProvider(SensorType.LinearAcceleration);
-    //        GravProvider = new CorrectedAccelerometerProvider(SensorType.Gravity);
-    //        AddProvider(new MultiSensorProvider<Vector2>(StopToken, AccelProvider, GravProvider));
+        public ContinuousLoggingProvider(IProvider<T> provider, TimeSpan lagBefore = default(TimeSpan), TimeSpan lagAfter = default(TimeSpan), CancellationToken? externalToken = null)
+            : base(provider, externalToken ?? CancellationToken.None)
+        {
+            LagBefore = (lagBefore == default(TimeSpan)) ? TimeSpan.FromMilliseconds(150) : lagBefore;
+            LagAfter = (lagAfter == default(TimeSpan)) ? TimeSpan.FromMilliseconds(150) : lagAfter;
 
-    //        //data = new List<AxisSeparatedVector>();
-    //        PlanarizedAccels = new List<Vector2>();
-    //        PlanarizedVelocs = new List<Vector2>();
-    //        PlanarizedDisplacements = new List<Vector2>();
-    //        //Intervals = new List<TimeSpan>();
-    //    }
+            DeactivationSignal = new AsyncAutoResetEvent();
+            AdditionalPointsSignal = new AsyncAutoResetEvent();
+        }
 
-    //    protected override void DoWhenAllDataIsReady()
-    //    {
-    //        base.DoWhenAllDataIsReady();
-    //        //rawData.Add(AccelProvider.Vector.RotatedBy(GravProvider.Quaternion));
-    //        //rawData.Add(AccelProvider.Vector);
-    //        //gravVectors.Add(GravProvider.Vector.Normalize());
-    //        //data.Add(new AxisSeparatedVector() { Vector = AccelProvider.Vector, Gravity = GravProvider.Vector, Interval = AccelProvider.Interval });
-    //        //Intervals.Add(AccelProvider.Interval);
-    //        data.Add(new Vector6() { V1 = AccelProvider.Vector, V2 = GravProvider.Vector });
-    //    }
+        private bool AllowDataUpdates = true;
+        protected override void DoWhenAllDataIsReady()
+        {
+            //if (Res.DebuggingSignalFlag)
+            //    Log.Debug(_tag, $"DoWhenAll: {LoggedData.Count} data pts.");
+            if (AllowDataUpdates) //base.DoWhenAllDataIsReady();
+            {
+                LoggedData.Add(Provider.Data);
+                //Timestamps.Add(Timestamps.LastOrDefault() + Provider.Interval);
+                Timestamps.Add(Provider.RunTime + AccumulatedRuntime);
+                Intervals.Add(Provider.Interval);
+            }
+            //if (SessionCTS != null && SessionCTS.IsCancellationRequested)
+            //{
+            //    if (DeactivationCounter == 0)
+            //    {
+            //        SessionCTS = null;
+            //        DeactivationCounter = 10;
+            //        AdditionalPointsSignal.Set();
+            //    }
+            //    else DeactivationCounter--;
+            //}
 
-    //    public void CalculateKinematics(Vector2? vInitial = null, bool forcePlaneVertical = true)
-    //    {
-    //        // TODO: Add smoothing??
-    //        var planarizationTask = GetPlanarizedData(true, forcePlaneVertical);
-    //        planarizationTask.Wait();
-    //        PlanarizedAccels = planarizationTask.Result.ToList();
+            if (InitialInterval == TimeSpan.Zero)
+                InitialInterval = Provider.Interval;
+        }
 
-    //        // Work out the velocities & displacements, usually based on the assumption that the initial velocity is zero.
-    //        // It won't be, which will introduce systematic errors, but we will address that separately.
-    //        Vector2 V = vInitial ?? Vector2.Zero;
-    //        Vector2 D = Vector2.Zero;
-    //        TotalTime = TimeSpan.Zero;
-    //        foreach (var A in PlanarizedAccels
-    //            .Zip(Intervals, (Vector2 accel, TimeSpan interv)
-    //                => new { a = accel, i = interv }).Skip(1))
-    //        {
-    //            V += A.a * (float)A.i.TotalSeconds;
-    //            PlanarizedVelocs.Add(V);
-    //            D += V * (float)A.i.TotalSeconds;
-    //            PlanarizedDisplacements.Add(D);
+        private async void DoTimeoutLoop()
+        {
+            while (Provider.IsActive)
+            {
+                await Task.Delay(1000);
+                if (!SessionActive)
+                {
+                    ClearDataOlderThan(TimeSpan.FromSeconds(1));
+                    if (Provider.Interval > InitialInterval + TimeSpan.FromMilliseconds(120))
+                    {
+                        // Lagging!
+                        Log.Debug(_tag, $"Excessive lag detected ({Provider.Interval.TotalMilliseconds:f0} ms).  Might need to figure out how to reset Provider.");
+                        //AccumulatedRuntime += Provider.RunTime;
+                        //Provider.Deactivate();
+                        //Provider.Activate();
+                    }
+                }
+            }
+        }
 
-    //            TotalTime += A.i;
-    //        }
+        public void ClearDataOlderThan(TimeSpan span)
+        {
+            if (Timestamps.Count == 0) return;
+            var currentTimestamp = Timestamps.Last();
+            var numToSkip = Timestamps.FindIndex(t => t + span >= currentTimestamp);
+            //Log.Debug(_tag, $"At {currentTimestamp}, clearing out {numToSkip} data points, keeping as of {Timestamps.Skip(numToSkip).First()}.");
+            //Provider.Deactivate();
+            AllowDataUpdates = false;
+            LoggedData = LoggedData.Skip(numToSkip).ToList();
+            Intervals = Intervals.Skip(numToSkip).ToList();
+            Timestamps = Timestamps.Skip(numToSkip).ToList();
+            AllowDataUpdates = true;
+            //Provider.Activate();
+        }
 
-    //        var xValues = PlanarizedDisplacements.Select(d => d.X);
-    //        var yValues = PlanarizedDisplacements.Select(d => d.Y);
-    //        TotalWidth = xValues.Max() - xValues.Min();
-    //        TotalHeight = yValues.Max() - yValues.Min();
-    //    }
+        public void TrueActivate(CancellationToken? externalStopToken = null)
+        {
+            base.Activate(externalStopToken);
+            DoTimeoutLoop();
+        }
 
-    //    public void RescaleKinematics(GestureClass tgtClass, double rescaleStrength = 1.0)
-    //    {
-    //        if (TotalTime == null) CalculateKinematics();
+        public void TrueDeactivate()
+        {
+            base.Deactivate();
+        }
 
-    //        if (tgtClass.AverageDuration.TotalMilliseconds < 1) // [Effectively] zero => no averages set yet.
-    //        {
-    //            tgtClass.UpdateAverages(TotalWidth, TotalHeight, TotalTime);
-    //            return;
-    //        }
+        public override void Activate(CancellationToken? externalStopToken = null)
+        {
+            if (SessionCTS != null && !SessionCTS.IsCancellationRequested) return;
+            SessionCTS = CancellationTokenSource.CreateLinkedTokenSource(externalStopToken ?? CancellationToken.None);
 
-    //        List<double> differences = new List<double>
-    //        {
-    //            TotalWidth - tgtClass.AverageWidth,
-    //            TotalHeight - tgtClass.AverageHeight,
-    //            (TotalTime - tgtClass.AverageDuration).TotalMilliseconds
-    //        };
+            ClearDataOlderThan(LagBefore);
+        }
 
-    //        List<double> sigmas = new List<double>
-    //        {
-    //            tgtClass.WidthSigma,
-    //            tgtClass.HeightSigma,
-    //            tgtClass.DurationSigma
-    //        };
+        public override void Deactivate()
+        {
+            //Res.DebuggingSignalFlag = true;
+            //Log.Debug(_tag, $"Upon deactivation requested: {LoggedData.Count} pts @ {DateTime.Now}.");
+            //Task.Delay(LagAfter).ContinueWith((t) =>
+            //{
+            //    Log.Debug(_tag, $"After deactivation delay: {LoggedData.Count} pts @ {DateTime.Now}.");
+            //    DataReadySignal.Set();
+            //    Task.Delay(100).ContinueWith((t2) => { SessionCTS?.Cancel(); }); // Allows time for other code to respond to the signal (and grab our data).                
+            //});
+            //DeactivationSignal.Set();
+            //SessionCTS?.CancelAfter(LagAfter);
+            SessionCTS?.Cancel();
+        }
 
-    //        // Chosen formula: adjust towards mean by (error) * arctan(error / 2sigma) * 2/pi.
-    //        // At < 1sigma, this introduces only a small correction (0.3sigma at 1sigma), 
-    //        // while at larger errors it basically corrects by all-but-one-sigma, give or take.
-    //        List<float> corrections = differences
-    //            .Zip(
-    //            sigmas,
-    //            (d, sigma) =>
-    //            {
-    //                return (float)(d * (Atan(d / sigma / 2)) * 2 / PI);
-    //            }).ToList();
+        //public override bool IsActive { get { return (SessionCTS != null && !SessionCTS.IsCancellationRequested); } }
+        public bool SessionActive { get { return SessionCTS != null && !SessionCTS.IsCancellationRequested; } }
 
-    //        // Hmmm.  Should I (a) adjust the total time and then use the adjusted time to work out the velocity changes,
-    //        // or (b) ignore the total time adjustment because we're trying to just rescale the kinematics?
-    //        // For now, let's go with (b).
-    //        var AdjustmentVector = new Vector2(-corrections[0], -corrections[1]);
-    //        AdjustmentVector = AdjustmentVector / ((float)TotalTime.TotalSeconds);
-
-    //        CalculateKinematics(AdjustmentVector);
-    //    }
-
-    //    /// <summary>
-    //    ///   Multiple Linear Regression.
-    //    /// </summary>
-    //    /// 
-    //    /// <remarks>
-    //    /// <para>
-    //    ///   In multiple linear regression, the model specification is that the dependent
-    //    ///   variable, denoted y_i, is a linear combination of the parameters (but need not
-    //    ///   be linear in the independent x_i variables). As the linear regression has a
-    //    ///   closed form solution, the regression coefficients can be computed by calling
-    //    ///   the <see cref="Regress(double[][], double[])"/> method only once.</para>
-    //    /// </remarks>
-    //    /// 
-    //    /// <example>
-    //    ///  <para>
-    //    ///   The following example shows how to fit a multiple linear regression model
-    //    ///   to model a plane as an equation in the form ax + by + c = z. </para>
-    //    ///   
-    //    ///   <code>
-    //    ///   // We will try to model a plane as an equation in the form
-    //    ///   // "ax + by + c = z". We have two input variables (x and y)
-    //    ///   // and we will be trying to find two parameters a and b and 
-    //    ///   // an intercept term c.
-    //    ///   
-    //    ///   // Create a multiple linear regression for two input and an intercept
-    //    ///   MultipleLinearRegression target = new MultipleLinearRegression(2, true);
-    //    ///   
-    //    ///   // Now suppose we have some points
-    //    ///   double[][] inputs = 
-    //    ///   {
-    //    ///       new double[] { 1, 1 },
-    //    ///       new double[] { 0, 1 },
-    //    ///       new double[] { 1, 0 },
-    //    ///       new double[] { 0, 0 },
-    //    ///   };
-    //    ///   
-    //    ///   // located in the same Z (z = 1)
-    //    ///   double[] outputs = { 1, 1, 1, 1 };
-    //    ///   
-    //    ///   
-    //    ///   // Now we will try to fit a regression model
-    //    ///   double error = target.Regress(inputs, outputs);
-    //    ///   
-    //    ///   // As result, we will be given the following:
-    //    ///   double a = target.Coefficients[0]; // a = 0
-    //    ///   double b = target.Coefficients[1]; // b = 0
-    //    ///   double c = target.Coefficients[2]; // c = 1
-    //    ///   
-    //    ///   // Now, considering we were trying to find a plane, which could be
-    //    ///   // described by the equation ax + by + c = z, and we have found the
-    //    ///   // aforementioned coefficients, we can conclude the plane we were
-    //    ///   // trying to find is giving by the equation:
-    //    ///   //
-    //    ///   //   ax + by + c = z
-    //    ///   //     -> 0x + 0y + 1 = z
-    //    ///   //     -> 1 = z.
-    //    ///   //
-    //    ///   // The plane containing the aforementioned points is, in fact,
-    //    ///   // the plane given by z = 1.
-    //    ///   </code>
-    //    public async static Task<Vector3> FindBestFitPlane(IEnumerable<Vector6> inData, int inputIndex1 = 0, int inputIndex2 = 1, int outputIndex = 2)
-    //    {
-
-    //        // Create a multiple linear regression for two inputs, don't bother to calculate the intercept term.
-    //        MultipleLinearRegression target = new MultipleLinearRegression(2, false);
-
-    //        // Now use the X & Y axes of our accelerometer data
-    //        double[][] inputs = inData.Select(v => new double[] { v.V1.Component(inputIndex1), v.V1.Component(inputIndex2) }).ToArray();
-
-    //        // and their Z accelerations (note that since the Z ones are the most likely to be small, we may want to use (say) Y as an output of X & Z.
-    //        double[] outputs = inData.Select(v => (double)v.V1.Component(outputIndex)).ToArray();
-
-    //        //await Task.Run(() =>
-    //        //{
-    //        //    // Now we will try to fit a regression model
-    //        //    double error = target.Regress(inputs, outputs);
-    //        //});
-    //        double error = target.Regress(inputs, outputs);
-
-    //        // As result, we will be given the following:
-    //        double a = target.Coefficients[0];
-    //        double b = target.Coefficients[1];
-
-    //        //var planeNormal = new Vector3((float)a, (float)b, -1).Normalize(); // Follows from the relationship between the normal vector and the equation of a plane.
-    //        var planeNormal = new Vector3();
-    //        planeNormal = planeNormal.SetComponent(inputIndex1, (float)a);
-    //        planeNormal = planeNormal.SetComponent(inputIndex2, (float)b);
-    //        planeNormal = planeNormal.SetComponent(outputIndex, -1);
-    //        planeNormal = planeNormal.Normalize();
-
-    //        Log.Debug("planeNormal", $"With {outputIndex} in terms of {inputIndex1} & {inputIndex2}, Vnormal = {planeNormal:f3}, error = {error:f3}");
-
-    //        // Enforce a sign convention (since the same best-fit plane will match forwards or backwards and we want to get rid of the ambiguity)
-    //        var maxDot = new Vector3[] { Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ }
-    //                .OrderByDescending(v => Math.Abs(v.Dot(planeNormal)))
-    //                .First();
-    //        if (maxDot.Dot(planeNormal) < 0) planeNormal = -planeNormal;
-    //        return planeNormal;
-
-    //    }
-
-    //    public async Task<Vector2[]> GetPlanarizedData(bool replanarize = false, bool forcePlaneVertical = true)
-    //    {
-    //        if (replanarize || PlaneNormal == Vector3.Zero)
-    //        {
-    //            PlaneNormal = await FindBestFitPlane(data, 0, 1, 2);
-    //            await FindBestFitPlane(data, 0, 2, 1);
-    //            await FindBestFitPlane(data, 1, 2, 0);
-    //        }
-
-    //        //if (forcePlaneVertical) return data.Select(v => v.GetInPlaneZ(PlaneNormal)).ToArray();
-    //        //else return data.Select(v => v.GetInPlane2(PlaneNormal)).ToArray();
-    //        if (forcePlaneVertical) return data.Select(v => AxisSeparatedVector.GetInPlaneZ(v, PlaneNormal)).ToArray();
-    //        else return data.Select(v => AxisSeparatedVector.GetInPlane2(v, PlaneNormal)).ToArray();
-    //    }
-
-    //    public async Task<Vector2[]> GetRawXYData()
-    //    {
-    //        return data.Select(v => new Vector2(v.V1.X, v.V1.Y)).ToArray();
-    //    }
-
-    //    public struct AxisSeparatedVector
-    //    {
-    //        public Vector3 Vector;
-    //        public Vector3 Gravity;
-    //        public TimeSpan Interval;
-
-    //        // This version of the math expresses a vector as a component along the z-axis (world space)
-    //        // and along an axis defined by the primary x-y vector of the sequence.  In essence, it
-    //        // takes the gesture's plane and rotates it around an axis of constant Z until it is fully upright.
-    //        public static Vector2 GetInPlaneZ(Vector6 source, Vector3 Vnormal)
-    //        {
-    //            var Vz = (Vector3.Dot(source.V1, source.V2) * source.V2 / source.V2.LengthSquared());
-    //            var Vxy = source.V1 - Vz;
-    //            var Voop = (Vector3.Dot(Vxy, Vnormal) * Vnormal / Vnormal.LengthSquared());
-    //            var Vip = Vxy - Voop;
-    //            return new Vector2(Vip.Length(), Vz.Length());
-    //        }
-
-    //        // This version of the math expresses the vector using basis vectors which define the primary
-    //        // plane of the sequence
-    //        public static Vector2 GetInPlane2(Vector6 source, Vector3 Vnormal)
-    //        {
-    //            var Nz = (Vector3.Dot(Vnormal, source.V2) * source.V2 / source.V2.LengthSquared());
-    //            var Vz_ip = -1 * (Vnormal - Nz).Normalize();
-    //            var Vperp_ip = Vector3.Cross(Vz_ip, Vnormal.Normalize());
-    //            return new Vector2(Vector3.Dot(source.V1, Vz_ip), Vector3.Dot(source.V1, Vperp_ip));
-    //        }
-    //    }
-
-    //    public struct AugVector2
-    //    {
-    //        public Vector2 Vector;
-    //        public TimeSpan Interval;
-
-    //        public AugVector2(float Vx, float Vz, TimeSpan t)
-    //        {
-    //            Vector = new Vector2(Vx, Vz);
-    //            Interval = t;
-    //        }
-    //        public AugVector2(Vector2 vector, TimeSpan t)
-    //        {
-    //            Vector = vector;
-    //            Interval = t;
-    //        }
-    //    }
-    //}
+    }
 }

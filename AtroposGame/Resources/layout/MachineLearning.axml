@@ -73,7 +73,7 @@
             android:enabled="false" />
         <Button
             android:id="@+id/mlrn_study_gc_btn"
-            android:text="Generate Cue AI for Selected"
+            android:text="Generate Simple AI"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
     <!--<fragment

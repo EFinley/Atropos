@@ -31,13 +31,16 @@ namespace Atropos.Locks
 
 {
     //[Activity(ScreenOrientation = Android.Content.PM.ScreenOrientation.Portrait)]
-    public abstract class LockedObjectOpeningActivity : BargraphDisplayActivity
+    public abstract class LockedObjectOpeningActivity : BaseActivity
     {
         protected Toolkit ThePlayersToolkit;
         protected Lock LockBeingOpened;
         private static LockedObjectOpeningActivity Current { get { return (LockedObjectOpeningActivity)CurrentActivity; } set { CurrentActivity = value; } }
         protected Effect WhistleFX;
         //protected BargraphData StillnessDisplay;
+
+        public Vector3 AxisVector;
+        public Vector3 UpVector;
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
@@ -141,7 +144,7 @@ namespace Atropos.Locks
             protected override bool nextStageCriterion()
             {
                 return (Stillness.ReadsMoreThan(2f)
-                    && Gravity.Vector.AngleTo(UpDirection) < 25);
+                    && Gravity.Vector.AngleTo(UpDirection) < 30);
             }
             protected override async Task nextStageActionAsync()
             {
@@ -316,6 +319,8 @@ namespace Atropos.Locks
             base.OnCreate(savedInstanceState);
             SetContentView(Resource.Layout.Safecrack);
             LockBeingOpened = (Lock.Current != Lock.None) ? Lock.Current : Lock.TestSafe;
+            AxisVector = new Vector3(1f, 2f, -3f).Normalize();
+            UpVector = new Vector3(-6f / 7f, 3f, 12f / 7f).Normalize(); // Orthogonal to AxisVector
         }
 
         protected override void OnResume()
@@ -333,7 +338,7 @@ namespace Atropos.Locks
 
         protected override void SeekReadyPosition()
         {
-            CurrentStage = new BeginOpeningProcessStage("Waiting for zero stance", ThePlayersToolkit, Vector3.UnitY);
+            CurrentStage = new BeginOpeningProcessStage("Waiting for zero stance", ThePlayersToolkit, UpVector);
         }
 
         protected TextView DialText;
@@ -346,7 +351,7 @@ namespace Atropos.Locks
                 //DialText.Visibility = ViewStates.Visible;
                 DialBody.Rotation = 0;
             });
-            var provider = new AngleAxisProvider(Vector3.UnitY, Vector3.UnitZ);
+            var provider = new AngleAxisProvider(UpVector, AxisVector);
             SensorProvider.EnsureIsReady(provider).Wait();
             CurrentStage = new VaultTumblerFindingStage("Tumbler 0", ThePlayersToolkit, Current.LockBeingOpened.Tumblers[0], provider);
         }
@@ -367,7 +372,7 @@ namespace Atropos.Locks
             protected double DegreesBetweenClicks;
             protected bool? Overshot = false;
 
-            public VaultTumblerFindingStage(string label, Toolkit toolkit, Tumbler tgtTumbler, AngleAxisProvider oProvider = null) 
+            public VaultTumblerFindingStage(string label, Toolkit toolkit, Tumbler tgtTumbler, AngleAxisProvider oProvider) 
                 : base(label, toolkit, tgtTumbler, oProvider)
             {
                 DegreesBetweenClicks = Current.LockBeingOpened.DegreesBetweenClicks;
@@ -611,6 +616,8 @@ namespace Atropos.Locks
             base.OnCreate(savedInstanceState);
             SetContentView(Resource.Layout.Lockpick); // TODO - change this!
             LockBeingOpened = (Lock.Current != Lock.None) ? Lock.Current : Lock.TestLock;
+            AxisVector = new Vector3(0f, 2.4f, -1f).Normalize();
+            UpVector = new Vector3(-1f, 0f, 0f).Normalize();
         }
 
         protected override void OnResume()
@@ -635,7 +642,7 @@ namespace Atropos.Locks
 
         protected override void SeekReadyPosition()
         {
-            CurrentStage = new BeginOpeningProcessStage("Waiting for zero stance", ThePlayersToolkit, Vector3.UnitX * -1f);
+            CurrentStage = new BeginOpeningProcessStage("Waiting for zero stance", ThePlayersToolkit, UpVector);
         }
 
         protected TextView DialText;
@@ -647,7 +654,7 @@ namespace Atropos.Locks
                 //DialText = FindViewById<TextView>(Resource.Id.vault_dial_text);
                 //DialText.Visibility = ViewStates.Visible;
             });
-            var provider = new AngleAxisProvider(Vector3.UnitX * -1f, Vector3.UnitY);
+            var provider = new AngleAxisProvider(UpVector, AxisVector);
             SensorProvider.EnsureIsReady(provider).Wait();
             CurrentStage = new LockTumblerFindingStage("Tumbler 0", ThePlayersToolkit, Current.LockBeingOpened.Tumblers[0], provider);
         }

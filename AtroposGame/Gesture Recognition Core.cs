@@ -104,6 +104,7 @@ namespace Atropos
                     // First, wait for our stream to have data ready
                     verbLog("Awaiting data");
                     await NextUpdateAwaiter();
+                    if (!IsActive) break;
 
                     // Then check criteria for interim activities
                     if ((interimCriterion() || await interimCriterionAsync())
@@ -115,6 +116,7 @@ namespace Atropos
                         interimAction();
                         await interimActionAsync();
                     }
+                    if (!IsActive) break;
 
                     // Then check criteria both for proceeding and for aborting
                     if ((nextStageCriterion() || await nextStageCriterionAsync()) && IsActive)

@@ -155,8 +155,8 @@ namespace Atropos.Machine_Learning.Button_Logic
 
         public static FieldState CannotCompute = FieldState.Def("Generate Classification AI", false);
         public static FieldState CanCompute = FieldState.Def("Generate Classification AI", true);
-        public static FieldState CannotComputeSingle = FieldState.Def("Generate Cue AI for Selected", false);
-        public static FieldState CanComputeSingle = FieldState.Def("Generate Cue AI for Selected", true);
+        public static FieldState CannotComputeSingle = FieldState.Def("Generate Special Classifier", false);
+        public static FieldState CanComputeSingle = FieldState.Def("Generate Special Classifier", true);
         public static FieldState IsComputing = FieldState.Def("Computing...", true, false);
         public static FieldState IsReassessing = FieldState.Def("Reassessing data...", true, false);
         public static FieldState DoFullReassess = FieldState.Def("Reassess data", true);
@@ -186,7 +186,7 @@ namespace Atropos.Machine_Learning.Button_Logic
                 var subdir = allFiles.First(f => f.IsDirectory);
                 allFiles.Remove(subdir);
                 var subfiles = subdir.ListFiles().Select(f => f.AbsoluteFile);
-                if (subfiles.Any(f => f.Name.EndsWith("." + DataSet.FileExtension)))
+                if (subfiles.Any(f => f.Name.EndsWith("." + DataSet.FileExtension) || f.Name.EndsWith("." + Classifier.FileExtension)))
                 {
                     foundAtLeastOneDataset = true;
                     break;
@@ -296,12 +296,14 @@ namespace Atropos.Machine_Learning.Button_Logic
                 else if (!HasNewSamples && Classifier.MachineOnline)
                 {
                     Compute.State = JustComputed;
+                    ComputeSingle.State = JustComputed;
                     Clear.State = CanClear;
                 }
                 // Or, lastly, maybe it's got both existing data and a classifier to go with them, AND some new data...
                 else if (HasNewSamples && Classifier.MachineOnline)
                 {
                     Compute.State = CanRecompute;
+                    ComputeSingle.State = CanRecompute;
                     Clear.State = CanClearNewData;
                 }
             }

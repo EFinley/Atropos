@@ -11,7 +11,7 @@
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Atropos</RootNamespace>
-    <AssemblyName>AtroposGame</AssemblyName>
+    <AssemblyName>Atropos</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <AndroidApplication>True</AndroidApplication>
     <AndroidResgenFile>Resources\Resource.Designer.cs</AndroidResgenFile>
@@ -35,13 +35,13 @@
     <WarningLevel>4</WarningLevel>
     <AndroidUseSharedRuntime>true</AndroidUseSharedRuntime>
     <AndroidLinkMode>None</AndroidLinkMode>
-    <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
+    <EmbedAssembliesIntoApk>false</EmbedAssembliesIntoApk>
     <AotAssemblies>false</AotAssemblies>
     <EnableLLVM>false</EnableLLVM>
     <BundleAssemblies>false</BundleAssemblies>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugSymbols>True</DebugSymbols>
+    <DebugSymbols>true</DebugSymbols>
     <DebugType>PdbOnly</DebugType>
     <Optimize>True</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -51,7 +51,11 @@
     <AndroidManagedSymbols>true</AndroidManagedSymbols>
     <AndroidUseSharedRuntime>False</AndroidUseSharedRuntime>
     <AndroidLinkMode>SdkOnly</AndroidLinkMode>
-    <EmbedAssembliesIntoApk>True</EmbedAssembliesIntoApk>
+    <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
+    <AotAssemblies>false</AotAssemblies>
+    <EnableLLVM>false</EnableLLVM>
+    <BundleAssemblies>false</BundleAssemblies>
+    <AndroidCreatePackagePerAbi>false</AndroidCreatePackagePerAbi>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Accord, Version=3.8.0.0, Culture=neutral, processorArchitecture=MSIL">
@@ -156,7 +160,6 @@
     <Compile Include="ActivityBase.cs" />
     <Compile Include="ActivitySelector.cs" />
     <Compile Include="ActOnFoundTag.cs" />
-    <Compile Include="BargraphDisplayActivity.cs" />
     <Compile Include="BypassActivity.cs" />
     <Compile Include="Characters\Character Sheet Activity.cs" />
     <Compile Include="Characters\CharacterStats.cs" />
@@ -199,7 +202,12 @@
     <Compile Include="External Code\TimedLock.cs" />
     <Compile Include="Gesture Recognition Core.cs" />
     <Compile Include="GunfightActivity.cs" />
+    <Compile Include="Hacking\HackingAction.cs" />
+    <Compile Include="Hacking\HackingActivity - Wheel.cs" />
+    <Compile Include="Hacking\HackingMap.cs" />
+    <Compile Include="Hacking\HackingMapsSpecific.cs" />
     <Compile Include="Hacking\HackingTask.cs" />
+    <Compile Include="Hacking\Narrative Parser.cs" />
     <Compile Include="Hacking\Old\ActionOpportunities.cs" />
     <Compile Include="Hacking\Old\HackingState.cs" />
     <Compile Include="Hacking\Old\ICEbreakers.cs" />
@@ -208,8 +216,10 @@
     <Compile Include="Hacking\Old\StateChanges.cs" />
     <Compile Include="Hacking\HackingActivity.cs" />
     <Compile Include="Hacking\HackingResults.cs" />
+    <Compile Include="Hacking\Style Wheel.cs" />
     <Compile Include="Lock Training Activity.cs" />
     <Compile Include="LockedObjectDefinitions.cs" />
+    <Compile Include="LockOpeningActivities New.cs" />
     <Compile Include="LockOpeningActivities.cs" />
     <Compile Include="Encounters\DodgingBackgroundStage.cs" />
     <Compile Include="LoggingProvider.cs" />
@@ -357,6 +367,7 @@
     <Compile Include="Utilities\Handedness.cs" />
     <Compile Include="Utilities\NullableImproved.cs" />
     <Compile Include="Data Structures\SpecialDatapointTypes.cs" />
+    <Compile Include="Utilities\RotatedText.cs" />
     <Compile Include="Utilities\UniqueValues.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -676,7 +687,7 @@
     <AndroidResource Include="Resources\drawable\qr_example_dark.png" />
   </ItemGroup>
   <ItemGroup>
-    <AndroidResource Include="Resources\anim\rotatetext.xml" />
+    <AndroidResource Include="Resources\anim\rotatetext_right.xml" />
   </ItemGroup>
   <ItemGroup>
     <AndroidResource Include="Resources\drawable\hitter_logo.png" />
@@ -923,6 +934,78 @@
       <Generator>MSBuild:UpdateGeneratedFiles</Generator>
       <SubType>Designer</SubType>
     </AndroidResource>
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\layout\HackActionListItemRepresentation.axml">
+      <Generator>MSBuild:UpdateGeneratedFiles</Generator>
+      <SubType>Designer</SubType>
+    </AndroidResource>
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\diagonal_downleft.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\diagonal_downright.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\diagonal_upleft.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\diagonal_upright.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\down_then_left.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\down_then_right.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\swipe_left.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\swipe_right.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\typing_gesture_icon.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\up_then_left.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\up_then_right.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\blank_gesture_icon.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\do_nothing_gesture_icon.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\left_then_down.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\left_then_up.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\right_then_down.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\right_then_up.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\anim\rotatetext_left.xml">
+      <Generator>MSBuild:UpdateGeneratedFiles</Generator>
+      <SubType>Designer</SubType>
+    </AndroidResource>
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\swipe_down.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\drawable\swipe_up.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\raw\_288949_click.wav" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets" />
   <Import Project="..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets" Condition="Exists('..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets')" />

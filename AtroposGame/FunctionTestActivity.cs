@@ -20,6 +20,7 @@ using Android.Hardware;
 using ZXing.Mobile;
 using ZXing;
 using Android.Nfc;
+using Android.Util;
 
 namespace Atropos
 {
@@ -62,6 +63,9 @@ namespace Atropos
 
             categoryAdapter = new ArrayAdapter<string>(this, Android.Resource.Layout.SimpleSpinnerItem, CategoryNames);
             spinner.ItemSelected += Spinner_ItemSelected;
+            spinner.ScaleX = 1.5f;
+            spinner.ScaleY = 1.5f;
+            spinner.TranslationX = 50;
             spinner.Adapter = categoryAdapter;
             spinner.SetSelection(0);
             listView.ItemClick += ListView_ItemClick;
@@ -224,9 +228,9 @@ namespace Atropos
             });
             CreateTest("Pitch increase", () => PlaySpeech("Scaramouche, scaramouche, will you do the fandango?", new SoundOptions() { Pitch = 4.0 }));
             CreateTest("Pitch decrease", () => PlaySpeech("Figaro. Figaro figaro figaro.", new SoundOptions() { Pitch = 0.25 }));
-            CreateTest("Rate increase", () => PlaySpeech("How much wood can a woodchuck chuck?", new SoundOptions() { Speed = 2.0 }));
+            CreateTest("Rate increase", () => PlaySpeech("How much wood can a woodchuck chuck?", new SoundOptions() { Speed = 2.5 }));
             CreateTest("Rate decrease", () => PlaySpeech("Hobbits can be very hasty. Very hasty indeed.", new SoundOptions() { Speed = 0.35 }));
-            CreateTest("Interrupt (Timed)", async () =>
+            CreateTest("Cancelled (Timed)", async () =>
             {
                 cts = new CancellationTokenSource();
                 UpdateInfo("Testing...");
@@ -242,13 +246,27 @@ namespace Atropos
                 UpdateInfo("Test complete.");
                 cts = null;
             });
-            CreateTest("Interrupt (Manual)", async () =>
+            CreateTest("Cancelled (Manual)", async () =>
             {
                 var token = SetupStopButtonOneShot("Interrupt token sent. Sound should stop; test continues.");
 
                 UpdateInfo("Testing...");
                 var speechString = "This is a test of the interrupt mechanism.  This is only a test.  If this were a real interrupt, I would have stopped speaking by now, assuming you hit the stop button by this point.  If not, you should, quick, before I'm done. I'm done.";
                 await Speech.SayAllOf(speechString, new SoundOptions() { CancelToken = token }).SwallowCancellations();
+                UpdateInfo("Test complete.");
+            });
+            CreateTest("Interrupted (Timed)", async () =>
+            {
+                UpdateInfo("Testing...");
+                var speechTask = Speech.SayAllOf("This sentence should be interrupted before it reaches its end.  If you're hearing this, the test has been failed.")
+                                       .SwallowCancellations();
+                await Task.WhenAny(
+                    speechTask,
+                    Task.Delay(1500));
+                UpdateInfo("Interrupt speech sent. Ideally, speech should switch abruptly; test continues.");
+                new Effect("Grunt", Resource.Raw._129346_male_grunt_1).Play();
+                var speechTask2 = Speech.SayAllOf("Aw, never mind.", new SoundOptions() { Interrupt = true });
+                await speechTask2;
                 UpdateInfo("Test complete.");
             });
         }
@@ -286,14 +304,14 @@ namespace Atropos
         protected void CreateSensorTests()
         {
             CategoryNames.Add("Sensor Tests");
-            CreateTest("Accelerometer", () => RunSensor(SensorType.Accelerometer));
-            CreateTest("Linear Accel", () => RunSensor(SensorType.LinearAcceleration));
-            CreateTest("Gravity", () => RunSensor(SensorType.Gravity));
-            CreateTest("Gyroscope", () => RunSensor(SensorType.Gyroscope));
-            CreateTest("Compass", () => RunSensor(SensorType.MagneticField));
-            CreateTest("Rotation Vector", () => RunSensor(SensorType.RotationVector));
-            CreateTest("Game Rot. Vector", () => RunSensor(SensorType.GameRotationVector));
-            CreateTest("Orientation (Grav)", () => RunSensor(new GravityOrientationProvider(), SetupStopButtonOneShot("Sensor stopped."), "Grav Orientation"));
+            CreateTest("Accelerometer", () => RunSensor(SensorType.Accelerometer, "magnitudes around 9.5-10 for small motions"));
+            CreateTest("Linear Accel", () => RunSensor(SensorType.LinearAcceleration, "magnitudes near zero for small motions, up into single digits for sharper ones"));
+            CreateTest("Gravity", () => RunSensor(SensorType.Gravity, "values changing as you reorient, magnitudes constant at ~9.81"));
+            CreateTest("Gyroscope", () => RunSensor(SensorType.Gyroscope, "values changing as you spin, magnitudes < 1 if you can read this without pirouetting along ;)"));
+            CreateTest("Compass", () => RunSensor(SensorType.MagneticField, "magnitudes 50-100ish"));
+            CreateTest("Rotation Vector", () => RunSensor(SensorType.RotationVector, "values changing as you reorient, magnitude 1.0"));
+            CreateTest("Game Rot. Vector", () => RunSensor(SensorType.GameRotationVector, "values changing as you reorient, magnitude 1.0"));
+            CreateTest("Orientation (Grav)", () => RunSensor(new GravityOrientationProvider(), SetupStopButtonOneShot("Sensor stopped."), "Grav Orientation", "values changing as you reorient (other than in the horizontal plane), magnitude 1.0"));
         }
 
         #region Lists of which types of sensors ought to provide which data types (used for RunSensor)
@@ -308,17 +326,18 @@ namespace Atropos
             SensorType.MagneticField, SensorType.MagneticFieldUncalibrated
         };
         #endregion
-        protected async Task RunSensor(SensorType sensorType)
+        protected async Task RunSensor(SensorType sensorType, string expectedValue = "", SensorDelay sensorDelay = SensorDelay.Game)
         {
             var sensorName = Enum.GetName(typeof(SensorType), sensorType);
             UpdateInfo($"Testing sensor {sensorName}...");
 
             var token = SetupStopButtonOneShot("Sensor stopped.");
             IProvider provider = GetProvider(sensorType);
-            await RunSensor(provider, token, sensorName);
+            provider.Delay = sensorDelay;
+            await RunSensor(provider, token, sensorName, expectedValue);
         }
-        protected async Task RunSensor(IProvider provider, CancellationToken token, string sensorName)
-        { 
+        protected async Task RunSensor(IProvider provider, CancellationToken token, string sensorName, string expectedValue)
+        {
             provider.Activate(token);
 
             while (!token.IsCancellationRequested)
@@ -326,7 +345,8 @@ namespace Atropos
                 await Task.WhenAll(provider.WhenDataReady(), Task.Delay(250));
                 var d = provider.GetType().GetProperty("Data").GetValue(provider);
                 var l = d.GetType().GetMethod("Length")?.Invoke(d, new object[0]);
-                UpdateInfo($"{sensorName} value: {d:f3} (magnitude {l:f3})");
+                if (expectedValue == "") UpdateInfo($"{sensorName} value: {d:f3} (magnitude {l:f3})");
+                else UpdateInfo($"{sensorName} value: {d:f3} (magnitude {l:f3}). Expect {expectedValue}.");
             }
         }
         
@@ -376,7 +396,7 @@ namespace Atropos
             });
             CreateTest("NFC Capability", async () =>
             {
-                UpdateInfo("Testing...");
+                UpdateInfo("Testing; pass device near an NFC tag.");
                 var _nfcAdapter = NfcAdapter.GetDefaultAdapter(this);
                 if (_nfcAdapter == null)
                 {
@@ -410,8 +430,8 @@ namespace Atropos
             });
             CreateTest("Vibrate", async () =>
             {
-                UpdateInfo("Testing...");
-                Plugin.Vibrate.CrossVibrate.Current.Vibration(250);
+                UpdateInfo("Trying to vibrate...");
+                Plugin.Vibrate.CrossVibrate.Current.Vibration(1000);
                 await Task.Delay(300);
                 UpdateInfo("Test complete.");
             });

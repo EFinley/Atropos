@@ -545,6 +545,11 @@ namespace Atropos
             sourceEvent?.Invoke(callerName, EventArgs.Empty);
         }
 
+        public static void Raise(this EventHandler sourceEvent, [System.Runtime.CompilerServices.CallerMemberName] string callerName = "this")
+        {
+            sourceEvent?.Invoke(callerName, EventArgs.Empty);
+        }
+
         /// <summary>
         /// Syntactic sugar for a "return default instead of throwing an error" variant on TryGetValue().
         /// </summary>
@@ -565,6 +570,41 @@ namespace Atropos
             Tresult result;
             if (source.TryGetValue(key, out result)) return result;
             else return ifNotFound;
+        }
+
+        public static string ToSpeakableForm(this TimeSpan originalSpan)
+        {
+            string result = "";
+            var span = originalSpan;
+            var h = Math.Floor(span.TotalHours);
+            if (h > 1)
+            {
+                result += $"{h} hours, ";
+                span -= TimeSpan.FromHours(h);
+            }
+            else if (h == 1)
+            {
+                result += "one hour, ";
+                span -= TimeSpan.FromHours(1);
+            }
+
+            var m = Math.Floor(span.TotalMinutes);
+            if (m > 1)
+            {
+                result += $"{m} minutes and ";
+                span -= TimeSpan.FromMinutes(m);
+            }
+            else if (m == 1)
+            {
+                result += $"one minute and ";
+                span -= TimeSpan.FromMinutes(1);
+            }
+
+            if (originalSpan.TotalSeconds >= 5)
+                result += $"{span.TotalSeconds:f0} seconds";
+            else result += $"{span.TotalSeconds:f1} seconds";
+
+            return result;
         }
     }
 
@@ -605,10 +645,15 @@ namespace Atropos
             }
         }
 
-        public static void RotateText(this Activity context, int resID)
+        public static void RotateText(this Activity context, int viewID, int animResourceID)
         {
-            View view = context.FindViewById(resID);
-            view.StartAnimation(Android.Views.Animations.AnimationUtils.LoadAnimation(context, Resource.Animation.rotatetext));
+            View view = context.FindViewById(viewID);
+            RotateText(context, view, animResourceID);
+        }
+
+        public static void RotateText(this Activity context, View view, int animResourceID)
+        {
+            view.StartAnimation(Android.Views.Animations.AnimationUtils.LoadAnimation(context, animResourceID));
         }
 
         public static void tintMenuIcon(this IMenuItem item, Context context, Android.Graphics.Color color)

@@ -105,8 +105,8 @@ namespace Atropos
             CurrentFireMode = FireMode.SingleShot;
         }
 
-        // Values set suring the gun calibration gesture series - unnecessary, once you've derived the propRotation.
-        public Vector3 vectorPointedForward = Vector3.UnitX, vectorPointedDown = -Vector3.UnitY;
+        // Values set during the gun calibration gesture series - unnecessary, once you've derived the propRotation.
+        public Vector3 vectorPointedForward = Vector3.UnitY, vectorPointedDown = Vector3.UnitX;
         public Quaternion orientationPointedForward, orientationPointedDown;
         public void GunCalibrationFinalize()
         {

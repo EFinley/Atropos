@@ -37,7 +37,7 @@ namespace Atropos.Machine_Learning
         public double WeightedAccuracy;
         public double TimePerDatapoint;
 
-        public double OverallScore(double TimeAllowance = 25)
+        public double OverallScore(double TimeAllowance = 150)
         {
             //if (double.IsNaN(CrossEntropyLoss)) return (Exp(Pow(WeightedAccuracy / 100.0 + 0.1, 3)) - 1) * Exp(-Pow(TimePerDatapoint / Timebase, 2));
             //return (1.0 / CrossEntropyLoss) * Exp(-Pow(TimePerDatapoint / Timebase, 2));
@@ -148,8 +148,8 @@ namespace Atropos.Machine_Learning
                     foreach (var bestEx in bestExtractors1)
                     {
                         fExList.Add(new FeatureListExtractor(PULLX + bestEx.Name));
-                        fExList.Add(new FeatureListExtractor(PULLY + bestEx.Name));
-                        fExList.Add(new FeatureListExtractor(PULLZ + bestEx.Name));
+                        if (bestEx.Dimensions >= 2) fExList.Add(new FeatureListExtractor(PULLY + bestEx.Name));
+                        if (bestEx.Dimensions >= 3) fExList.Add(new FeatureListExtractor(PULLZ + bestEx.Name));
                         if (bestEx.Dimensions == 4) fExList.Add(new FeatureAxisSelector<DKS>(3, bestEx) { Name = "PULL_W_" + bestEx.Name });
                     }
                 }

@@ -130,9 +130,35 @@ namespace Atropos.DataStructures
 
             public static DatapointKitchenSink operator -(DatapointKitchenSink source) => (DatapointKitchenSink)Operator.Negate((Datapoint<Vector3, Vector3, Vector3, Quaternion, double>)source);
             public static DatapointKitchenSink operator +(DatapointKitchenSink first, DatapointKitchenSink second)
-                => (DatapointKitchenSink)Operator.Add((Datapoint<Vector3, Vector3, Vector3, Quaternion, double>)first, (Datapoint<Vector3, Vector3, Vector3, Quaternion, double>)second);
+            //                => (DatapointKitchenSink)Operator.Add((Datapoint<Vector3, Vector3, Vector3, Quaternion, double>)first, (Datapoint<Vector3, Vector3, Vector3, Quaternion, double>)second);
+            {
+                return new DatapointKitchenSink()
+                {
+                    Values = new Datapoint<Vector3, Vector3, Vector3, Quaternion, double>()
+                    {
+                        Value1 = first.LinAccel + second.LinAccel,
+                        Value2 = first.Gravity + second.Gravity,
+                        Value3 = first.Gyro + second.Gyro,
+                        Value4 = Quaternion.Add(first.Orientation, second.Orientation),
+                        Value5 = first.Interval + second.Interval
+                    }
+                };
+            }
             public static DatapointKitchenSink operator -(DatapointKitchenSink first, DatapointKitchenSink second)
-                => (DatapointKitchenSink)Operator.Subtract((Datapoint<Vector3, Vector3, Vector3, Quaternion, double>)first, (Datapoint<Vector3, Vector3, Vector3, Quaternion, double>)second);
+            //                => (DatapointKitchenSink)Operator.Subtract((Datapoint<Vector3, Vector3, Vector3, Quaternion, double>)first, (Datapoint<Vector3, Vector3, Vector3, Quaternion, double>)second);
+            {
+                return new DatapointKitchenSink()
+                {
+                    Values = new Datapoint<Vector3, Vector3, Vector3, Quaternion, double>()
+                    {
+                        Value1 = first.LinAccel - second.LinAccel,
+                        Value2 = first.Gravity - second.Gravity,
+                        Value3 = first.Gyro - second.Gyro,
+                        Value4 = Quaternion.Subtract(first.Orientation, second.Orientation),
+                        Value5 = first.Interval - second.Interval
+                    }
+                };
+            }
             public static DatapointKitchenSink operator *(DatapointKitchenSink first, double second)
                 => (DatapointKitchenSink)Operator.MultiplyAlternative((Datapoint<Vector3, Vector3, Vector3, Quaternion, double>)first, (float)second);
             public static DatapointKitchenSink operator *(double second, DatapointKitchenSink first)

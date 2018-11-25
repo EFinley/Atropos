@@ -133,7 +133,7 @@ namespace Atropos.Melee
             {
                 Speech.Say("What the heck was that?");
             }
-            else if (cue.Score < 0)
+            else if (cue.Score < 0) // Encodes "score but for the wrong gesture" in our Cue.Score scheme.
             {
                 var recognizedAsName = Classifiers[cue.ClassifierKey].MatchingDatasetClasses[cue.GestureClassIndex].className;
                 Speech.Say($"Looked more like {recognizedAsName}, with {(-1 * cue.Score):f1} points.", SoundOptions.AtSpeed(2.0));
@@ -166,6 +166,8 @@ namespace Atropos.Melee
 
     public class SendingChoreographer : CommsChoreographer, IChoreographer
     {
+        private string _tag = "SendingChoreographer";
+
         public event EventHandler<EventArgs<ChoreographyCue>> OnPromptCue;
         private CommsContact Opponent;
         protected Dictionary<string, Classifier> Classifiers;
@@ -201,6 +203,7 @@ namespace Atropos.Melee
             var message = messageArgs.Value;
             if (message.Type != MsgType.Notify || !message.Content.StartsWith(RESPONSE)) return;
 
+            Log.Debug(_tag, "Parsing opponent's response message.");
             var cuestring = message.Content.Split(onNEXT, 2)[1];
             var cue = ChoreographyCue.Parse(cuestring);
 
@@ -210,6 +213,7 @@ namespace Atropos.Melee
 
         public void HandlePrompts(object sender, EventArgs<ExchangeOfBlows> e)
         {
+            Log.Debug(_tag, $"Dispatching prompts - {e.Value.MyClassifierKey}#{e.Value.MyGestureIndex} for me, {e.Value.OppClassifierKey}#{e.Value.OppGestureIndex} for them.");
             var msg = new Message(MsgType.Notify, $"{PROMPT}{NEXT}{e.Value.OpponentCue}");
             Opponent.SendMessage(msg);
             OnPromptCue.Raise(e.Value.MyCue);
@@ -217,13 +221,28 @@ namespace Atropos.Melee
 
         public async void SubmitResult(ChoreographyCue cue)
         {
+            Log.Debug(_tag, "Waiting for opponent submission signal.");
             await opponentSubmissionSignal.WaitAsync();
+            Log.Debug(_tag, "Opponent submission received.");
+
+            if (double.IsNaN(cue.Score)) { Speech.Say("Gesture unrecognized."); cue.Score = double.NegativeInfinity; }
+            else if (double.IsNaN(opponentSubmittedCue.Score)) { Opponent.SendMessage(MsgType.PushSpeech, "Gesture unrecognized."); opponentSubmittedCue.Score = double.NegativeInfinity; }
+            else
+            {
+                var ownNetScore = cue.Score - cue.Delay.TotalSeconds;
+                var oppNetScore = opponentSubmittedCue.Score - opponentSubmittedCue.Delay.TotalSeconds;
+                if (Math.Abs(ownNetScore - oppNetScore) < 0.35) { Speech.Say("Tie."); Opponent.SendMessage(MsgType.PushSpeech, "Tie."); }
+                else if (ownNetScore > oppNetScore) Speech.Say("Point.");
+                else Opponent.SendMessage(MsgType.PushSpeech, "Point.");
+            }
+
             Generator.SubmitResults(cue, opponentSubmittedCue);
         }
     }
 
     public class ReceivingChoreographer : CommsChoreographer, IChoreographer
     {
+        private string _tag = "ReceivingChoreographer";
         public event EventHandler<EventArgs<ChoreographyCue>> OnPromptCue;
         private CommsContact Opponent;
 
@@ -249,6 +268,7 @@ namespace Atropos.Melee
             var message = messageArgs.Value;
             if (message.Type != MsgType.Notify || !message.Content.StartsWith(PROMPT)) return;
 
+            Log.Debug(_tag, "Parsing cue prompt message.");
             var cuestring = message.Content.Split(onNEXT, 2)[1];
             var cue = ChoreographyCue.Parse(cuestring);
 
@@ -301,9 +321,9 @@ namespace Atropos.Melee
                 else if (double.IsNaN(cue.Score)) Speech.Say("Second gesture unrecognized.", SoundOptions.AtSpeed(2.0));
                 else
                 {
-                    var P1netscore = Math.Sqrt(PlayerOneCue.Score - PlayerOneCue.Delay.TotalSeconds);
-                    var P2netscore = Math.Sqrt(cue.Score - cue.Delay.TotalSeconds);
-                    if (Math.Abs(P1netscore - P2netscore) < 0.25) Speech.Say("Tie.");
+                    var P1netscore = PlayerOneCue.Score - PlayerOneCue.Delay.TotalSeconds;
+                    var P2netscore = cue.Score - cue.Delay.TotalSeconds;
+                    if (Math.Abs(P1netscore - P2netscore) < 0.35) Speech.Say("Tie.");
                     else if (P1netscore > P2netscore) Speech.Say("Point to first.", SoundOptions.AtSpeed(2.0));
                     else Speech.Say("Point to second.", SoundOptions.AtSpeed(2.0));
                 }
@@ -329,7 +349,7 @@ namespace Atropos.Melee
                 IsOnPlayerTwo = false;
                 OnPromptCue.Raise(e.Value.MyCue);
                 await ReceivedSubmission.WaitAsync();
-                await Task.Delay(1000);
+                await Task.Delay(500);
                 var cue = e.Value.OpponentCue;
                 cue.CueTime = DateTime.Now + TimeSpan.FromMilliseconds(250);
                 OnPromptCue.Raise(cue);
