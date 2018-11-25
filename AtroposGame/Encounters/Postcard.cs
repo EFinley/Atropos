@@ -45,9 +45,9 @@ namespace Atropos.Encounters
                             Current[LockPrefix + "Security Door"] = State.Unlocked;
                             Current["alarmSetOff"] = State.True;
                         };
-                        GunfightActivity.OnGunshotFired += shootOpenDoor;
+                        GunfightActivity_Base.OnGunshotFired += shootOpenDoor;
                         Scenario.Current.OnVariable(LockPrefix + "Security Door", State.Unlocked,
-                            () => { GunfightActivity.OnGunshotFired -= shootOpenDoor; });
+                            () => { GunfightActivity_Base.OnGunshotFired -= shootOpenDoor; });
                         await Speech.SayAllOf("You think you could probably shoot the lock off, if you wanted to.");
                     }
                 })

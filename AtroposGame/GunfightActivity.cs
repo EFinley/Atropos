@@ -1,5 +1,3 @@
-
-
 using System;
 using System.Text;
 using System.Linq;
@@ -30,18 +28,83 @@ using System.Threading;
 
 namespace Atropos
 {
-    /// <summary>
-    /// This is the activity started when we detect a "gun" NFC tag.
-    /// </summary>
-    [Activity(ScreenOrientation = Android.Content.PM.ScreenOrientation.Portrait)]
-    public class GunfightActivity : BaseActivity_Portrait
+    public class GunfightingTarget
     {
-        protected static GunfightActivity Current { get { return (GunfightActivity)CurrentActivity; } set { CurrentActivity = value; } }
+        public virtual Gun.AmmoType OptimalAmmoType { get; set; } = Gun.AmmoType.Standard;
+        public virtual double PercentageCover { get; set; } = 0.0;
+    }
+
+    [Activity]
+    public class SmartgunGunfightActivity : GunfightActivity_Base
+    {
+        protected override void OnCreate(Bundle savedInstanceState)
+        {
+            CurrentGun = new Gun()
+            {
+                AmmoTypesAvailable = new Gun.AmmoType[] { Gun.AmmoType.Standard, Gun.AmmoType.Penetrating, Gun.AmmoType.ArmorPiercing, Gun.AmmoType.Flechette, Gun.AmmoType.Explosive },
+                AutoSelectAmmo = true,
+                CoverImpliedByHorizontalHold = 0.5,
+                MaxAmmoCapacity = 30,
+                SupportsBurstFire = true,
+                SupportsFullAutomatic = true,
+                SupportsRiskyIFFMode = true
+            };
+
+            // Currently these are all the same as the baseline version, but this will change.
+            CurrentGun.CockSFX = new EffectGroup("Gun.Cock", new Effect("Gun.Cock.1", Resource.Raw.gun_cock),
+                                 new Effect("Gun.Cock.2", Resource.Raw._55337_gun_cock_2),
+                                 new Effect("Gun.Cock.3", Resource.Raw._55340_gun_cock_3));
+            CurrentGun.ShotSFX = new EffectGroup("Gun.Shot", new Effect("Gun.Shot.0", Resource.Raw.gunshot_0),
+                                                         new Effect("Gun.Shot.2", Resource.Raw.gunshot_2),
+                                                         new Effect("Gun.Shot.3", Resource.Raw.gunshot_3),
+                                                         new Effect("Gun.Shot.4", Resource.Raw.gunshot_4),
+                                                         new Effect("Gun.Shot.6", Resource.Raw.gunshot_6));
+            CurrentGun.SteadinessHintSFX = new Effect("Gun.Exhale", Resource.Raw.exhale);
+            CurrentGun.ClickEmptySFX = new Effect("Gun.ClickEmpty", Resource.Raw.gun_click_empty);
+            CurrentGun.ReloadSFX = Res.SFX.Preregister("Gun.Reload", Resource.Raw._348155_reload_seq, 0.0, CurrentGun?.ReloadTime.TotalSeconds ?? 5.0);
+
+            base.OnCreate(savedInstanceState);
+        }
+    }
+
+    [Activity]
+    public class PistolGunfightActivity : GunfightActivity_Base
+    {
+        protected override void OnCreate(Bundle savedInstanceState)
+        {
+            CurrentGun = new Gun()
+            {
+                AmmoTypesAvailable = new Gun.AmmoType[] { Gun.AmmoType.Standard, Gun.AmmoType.ArmorPiercing, Gun.AmmoType.Flechette },
+                CoverImpliedByHorizontalHold = 0.25,
+                MaxAmmoCapacity = 12
+            };
+
+            CurrentGun.CockSFX = new EffectGroup("Gun.Cock", new Effect("Gun.Cock.1", Resource.Raw.gun_cock),
+                                             new Effect("Gun.Cock.2", Resource.Raw._55337_gun_cock_2),
+                                             new Effect("Gun.Cock.3", Resource.Raw._55340_gun_cock_3));
+            CurrentGun.ShotSFX = new EffectGroup("Gun.Shot", new Effect("Gun.Shot.0", Resource.Raw.gunshot_0),
+                                                         new Effect("Gun.Shot.2", Resource.Raw.gunshot_2),
+                                                         new Effect("Gun.Shot.3", Resource.Raw.gunshot_3),
+                                                         new Effect("Gun.Shot.4", Resource.Raw.gunshot_4),
+                                                         new Effect("Gun.Shot.6", Resource.Raw.gunshot_6));
+            CurrentGun.SteadinessHintSFX = new Effect("Gun.Exhale", Resource.Raw.exhale);
+            CurrentGun.ClickEmptySFX = new Effect("Gun.ClickEmpty", Resource.Raw.gun_click_empty);
+            CurrentGun.ReloadSFX = Res.SFX.Preregister("Gun.Reload", Resource.Raw._348155_reload_seq, 0.0, CurrentGun?.ReloadTime.TotalSeconds ?? 5.0);
+
+            base.OnCreate(savedInstanceState);
+        }
+    }
+
+    [Activity]
+    public class GunfightActivity_Base : BaseActivity
+    {
+        protected static GunfightActivity_Base Current { get { return (GunfightActivity_Base)CurrentActivity; } set { CurrentActivity = value; } }
         public static event EventHandler<EventArgs<double>> OnGunshotFired;
         public static event EventHandler<EventArgs<double>> OnGunshotHit;
         public static event EventHandler<EventArgs<double>> OnGunshotMiss;
 
-        private Gun ThePlayersGun;
+        public static Gun CurrentGun;
+        public static GunfightingTarget CurrentTarget;
 
         private ImageView killMarkers;
         private int[] killMarkerResourceIDs
@@ -73,34 +136,27 @@ namespace Atropos
             base.OnCreate(savedInstanceState);
             SetContentView(Resource.Layout.Gunfight);
 
-            //currentSignalsDisplay = FindViewById<TextView>(Resource.Id.current_signals_text);
-            //bestSignalsDisplay = FindViewById<TextView>(Resource.Id.best_signals_text);
-            //resultsDisplay = FindViewById<TextView>(Resource.Id.result_text);
-            //// These are no longer needed - but editing the XML is always a pain.  This is easier, for now, and keeps my options open.
-            //currentSignalsDisplay.Visibility = ViewStates.Gone;
-            //bestSignalsDisplay.Visibility = ViewStates.Gone;
-            //resultsDisplay.Visibility = ViewStates.Gone;
-
             stillnessMonitor = new StillnessProvider(externalToken: StopToken);
 
             // See if the current gun is already in our (local, for now) library, and load it if so.  Otherwise, take us to calibration.
-            var gunString = Res.SpecificTags.Get(InteractionLibrary.CurrentSpecificTag);
-            if (gunString != null && CurrentActivity is GunfightActivity)
-            {
-                ThePlayersGun = Gun.FromString(gunString, InteractionLibrary.CurrentSpecificTag);
-            }
-            else if (InteractionLibrary.CurrentSpecificTag == InteractionLibrary.Gunfight.Name + "0000")
-            {
-                ThePlayersGun = new Gun();
-            }
-            else
-            {
-                ThePlayersGun = new Gun(InteractionLibrary.CurrentSpecificTag);
-                //InteractionLibrary.Current = InteractionLibrary.GunCalibration;
-            }
+            //var gunString = Res.SpecificTags.Get(InteractionLibrary.CurrentSpecificTag);
+            //if (gunString != null && CurrentActivity is GunfightActivity)
+            //{
+            //    CurrentGun = Gun.FromString(gunString, InteractionLibrary.CurrentSpecificTag);
+            //}
+            //else if (InteractionLibrary.CurrentSpecificTag == InteractionLibrary.Gunfight.Name + "0000")
+            //{
+            //    CurrentGun = new Gun();
+            //}
+            //else
+            //{
+            //    CurrentGun = new Gun(InteractionLibrary.CurrentSpecificTag);
+            //    //InteractionLibrary.Current = InteractionLibrary.GunCalibration;
+            //}
+            CurrentGun = CurrentGun ?? new Gun();
 
             bulletPane = FindViewById<LinearLayout>(Resource.Id.gunfight_bullet_pane);
-            foreach (var i in Enumerable.Range(0, ThePlayersGun.MaxAmmoCapacity))
+            foreach (var i in Enumerable.Range(0, CurrentGun.MaxAmmoCapacity))
             {
                 var bulletI = new ImageView(this);
                 bulletI.SetImageDrawable(GetDrawable(Resource.Drawable.bullet));
@@ -111,33 +167,7 @@ namespace Atropos
 
             killMarkers = FindViewById<ImageView>(Resource.Id.gunfight_killmarkers);
 
-            //IActivator calibration_startStage = new Gun_Calibration_Stage("GravityCal", ThePlayersGun);
-            IActivator aiming_startStage = new Gunfight_AimStage("Aim", ThePlayersGun, StopToken);
-            //CurrentStage = (InteractionLibrary.Current == InteractionLibrary.GunCalibration) ?
-            //    calibration_startStage : aiming_startStage;
-            CurrentStage = aiming_startStage;
-
-            //var button = FindViewById<Button>(Resource.Id.finish_btn);
-            //button.Click += (sender, args) => { InteractionMode.Current = null; Finish(); };
-
-            //Res.SFX.Register(this, "Gun.Cock", Resource.Raw.gun_cock);
-            //Res.SFX.Register(this, "Gun.Shot.0", Resource.Raw.gunshot_0, "Gun.Shot");
-            //Res.SFX.Register(this, "Gun.Shot.2", Resource.Raw.gunshot_2, "Gun.Shot");
-            //Res.SFX.Register(this, "Gun.Shot.3", Resource.Raw.gunshot_3, "Gun.Shot");
-            //Res.SFX.Register(this, "Gun.Shot.4", Resource.Raw.gunshot_4, "Gun.Shot");
-            //Res.SFX.Register(this, "Gun.Shot.6", Resource.Raw.gunshot_6, "Gun.Shot");
-
-            ThePlayersGun.CockSFX = new EffectGroup("Gun.Cock", new Effect("Gun.Cock.1", Resource.Raw.gun_cock),
-                                                         new Effect("Gun.Cock.2", Resource.Raw._55337_gun_cock_2),
-                                                         new Effect("Gun.Cock.3", Resource.Raw._55340_gun_cock_3));
-            ThePlayersGun.ShotSFX = new EffectGroup("Gun.Shot", new Effect("Gun.Shot.0", Resource.Raw.gunshot_0),
-                                                         new Effect("Gun.Shot.2", Resource.Raw.gunshot_2),
-                                                         new Effect("Gun.Shot.3", Resource.Raw.gunshot_3),
-                                                         new Effect("Gun.Shot.4", Resource.Raw.gunshot_4),
-                                                         new Effect("Gun.Shot.6", Resource.Raw.gunshot_6));
-            ThePlayersGun.SteadinessHintSFX = new Effect("Gun.Exhale", Resource.Raw.exhale);
-            ThePlayersGun.ClickEmptySFX = new Effect("Gun.ClickEmpty", Resource.Raw.gun_click_empty);
-            ThePlayersGun.ReloadSFX = Res.SFX.Preregister("Gun.Reload", Resource.Raw._348155_reload_seq, 0.0, ThePlayersGun?.ReloadTime.TotalSeconds ?? 5.0);
+            CurrentStage = new Gunfight_AimStage("Aim", CurrentGun, StopToken);
 
             ShotHitSFX = new EffectGroup("Gun.Hit", //new Effect("Gun.Hit.0", Resource.Raw._104170_mild_ouch),
                                                          //new Effect("Gun.Hit.1", Resource.Raw._129346_male_grunt_1),
@@ -167,47 +197,37 @@ namespace Atropos
             //LinkSeekbars();
 
             useVolumeTrigger = true;
-            OnVolumeButtonPressed += (o, e) => { ((Gunfight_AimStage)CurrentStage).ResolveTriggerPull(); };
+            OnVolumeButtonClicked += (o, e) => { ((Gunfight_AimStage)CurrentStage).ResolveTriggerPull(); };
 
+            // Automatically distribute "OnGunshotFired" results to the "OnHit" and "OnMiss" events, based on the result.
             OnGunshotFired += (o, e) => 
             {
                 if (e.Value > 0) OnGunshotHit.Raise(e.Value);
                 else OnGunshotMiss.Raise(-e.Value);
             };
+
+            Task.Run(async () =>
+            {
+                await System.Threading.Tasks.Task.Delay(750);
+                //Res.SFX.PlaySound("Gun.Cock");
+                await CurrentGun.CockSFX.PlayToCompletion(useSpeakers: true);
+                //await System.Threading.Tasks.Task.Delay(500);
+            });
         }
 
         protected override void OnResume()
         {
-            base.DoOnResume(async () =>
-            {
-                await System.Threading.Tasks.Task.Delay(750);
-                //Res.SFX.PlaySound("Gun.Cock");
-                ThePlayersGun.CockSFX.Play(useSpeakers: true);
-                await System.Threading.Tasks.Task.Delay(500);
-            });
+            // This displaced into OnCreate as the simplest way to avoid it happening every time the screen reorients.
+            //base.DoOnResume(async () =>
+            //{
+                
+            //});
         }
-
-        //public static void RelayMessage(string message, bool useSecondaryDisplay = false)
-        //{
-        //    //return; // Debug
-        //    try
-        //    {
-        //        //if (!useSecondaryDisplay) CurrentActivity.RunOnUiThread(() =>
-        //        //        {
-        //        //            ((GunfightActivity)CurrentActivity).currentSignalsDisplay.Text = message;
-        //        //        });
-        //        //else CurrentActivity.RunOnUiThread(() => { ((GunfightActivity)CurrentActivity).bestSignalsDisplay.Text = message; });
-        //    }
-        //    catch (Exception)
-        //    {
-        //        throw;
-        //    }
-        //}
 
         public void SetBulletDisplay(int numBullets)
         {
             //bulletList.Select((b, i) => { b.Visibility = (i <= numBullets) ? ViewStates.Visible : ViewStates.Invisible; return b.Visibility; });
-            for (int i = 0; i < ThePlayersGun.MaxAmmoCapacity; i++)
+            for (int i = 0; i < CurrentGun.MaxAmmoCapacity; i++)
             {
                 if (i < numBullets) bulletList[i].Visibility = ViewStates.Visible;
                 else bulletList[i].Visibility = ViewStates.Gone;
@@ -228,6 +248,8 @@ namespace Atropos
         private interface IRespondToTriggerPulls
         {
             void ResolveTriggerPull();
+            void ResolveTriggerHoldStart();
+            void ResolveTriggerHoldEnd(TimeSpan durationOfHold);
         }
 
         private class Gunfight_AimStage : GestureRecognizerStage, IRespondToTriggerPulls
@@ -288,34 +310,55 @@ namespace Atropos
             {
                 try
                 {
-                    lock (volumeButtonSyncLock)
+                    // Both debouncing and conceptually letting the gun's mechanism cycle - two birds, one rock!
+                    if (DateTime.Now < nextReadyTime) return;
+                    lastTriggerPull = DateTime.Now;
+                    nextReadyTime = DateTime.Now + Weapon.CooldownPeriod;
+
+                    // Is the weapon being pointed up?
+                    var AngleToGravity = Gravity.Vector.AngleTo(Weapon.vectorPointedForward);
+                    if (AngleToGravity < 30)
                     {
-                        if (DateTime.Now < nextReadyTime) return; // Both debouncing and conceptually letting the gun's mechanism cycle - two birds, one rock!
-                        lastTriggerPull = DateTime.Now;
-                        nextReadyTime = DateTime.Now + Weapon.CooldownPeriod; 
+                        Weapon.ReloadSFX?.Play(useSpeakers: true);
+                        nextReadyTime += Weapon.ReloadTime;
+                        while (Weapon.CurrentAmmoCount < Weapon.MaxAmmoCapacity)
+                        {
+                            await Task.Delay((int)(Weapon.ReloadTime.TotalMilliseconds / (Weapon.MaxAmmoCapacity + 1)));
+                            //await Task.Delay((int)(Weapon.ReloadTime.TotalMilliseconds / Weapon.MaxAmmoCapacity));
+                            Current.SetBulletDisplay(++Weapon.CurrentAmmoCount);
+                            //Weapon.ClickEmptySFX.Play(0.5); // Stand-in for the currently null ReloadSFX.
+                        }
+                        return;
                     }
 
-                    if (Weapon.CurrentAmmoCount == 0)
+                    // Or... is it being pointed down?  We've coded that to be "change fire mode."
+                    if (AngleToGravity > 150)
                     {
-                        //Log.Debug("Gunfight|Empty", $"Clicking on empty; currently, the dot product from 'forward' to 'gravity' is {Vector3.Dot(Gravity.Vector, Weapon.vectorPointedForward)}.");
-                        if (Math.Abs(Vector3.Dot(Gravity.Vector, Weapon.vectorPointedForward)) < 0.75)
+                        if (!Weapon.SupportsBurstFire && !Weapon.SupportsFullAutomatic)
                         {
-                            await (Weapon.ClickEmptySFX?.PlayToCompletion(null, true) ?? Task.CompletedTask);
+                            Speech.Say("This weapon supports single shot mode only.", SoundOptions.OnHeadphones);
                             return;
                         }
-                        else
+                        if (Weapon.CurrentFireMode == Gun.FireMode.SingleShot)
                         {
-                            Weapon.ReloadSFX?.Play(useSpeakers: true);
-                            nextReadyTime += Weapon.ReloadTime;
-                            while (Weapon.CurrentAmmoCount < Weapon.MaxAmmoCapacity)
-                            {
-                                await Task.Delay((int)(Weapon.ReloadTime.TotalMilliseconds / (Weapon.MaxAmmoCapacity + 1)));
-                                //await Task.Delay((int)(Weapon.ReloadTime.TotalMilliseconds / Weapon.MaxAmmoCapacity));
-                                Current.SetBulletDisplay(++Weapon.CurrentAmmoCount);
-                                //Weapon.ClickEmptySFX.Play(0.5); // Stand-in for the currently null ReloadSFX.
-                            }
-                            return; 
+                            if (Weapon.SupportsBurstFire) Weapon.CurrentFireMode = Gun.FireMode.BurstFire;
+                            else if (Weapon.SupportsFullAutomatic) Weapon.CurrentFireMode = Gun.FireMode.FullAuto;
                         }
+                        else if (Weapon.CurrentFireMode == Gun.FireMode.BurstFire)
+                        {
+                            if (Weapon.SupportsFullAutomatic) Weapon.CurrentFireMode = Gun.FireMode.FullAuto;
+                            else Weapon.CurrentFireMode = Gun.FireMode.SingleShot;
+                        }
+                        else Weapon.CurrentFireMode = Gun.FireMode.SingleShot;
+                        Speech.Say(Weapon.CurrentFireMode.ToString(), SoundOptions.OnHeadphones);
+                        return;
+                    }
+
+                    // Okay. Are they out of ammo?
+                    if (Weapon.CurrentAmmoCount == 0)
+                    {
+                        await (Weapon.ClickEmptySFX?.PlayToCompletion(null, true) ?? Task.CompletedTask);
+                        return;
                     }
 
                     Weapon.CurrentAmmoCount--;
@@ -394,58 +437,67 @@ namespace Atropos
                 return dieRoll < TN;
             }
 
-        }
-
-        public class Gun_Calibration_Stage : GestureRecognizerStage, IRespondToTriggerPulls
-        {
-            private Gun Weapon;
-            private StillnessProvider Stillness;
-            private GravityOrientationProvider Gravity;
-            private Vector3[] simpleAxes = new Vector3[] { Vector3.UnitX, -Vector3.UnitX, Vector3.UnitY, -Vector3.UnitY, Vector3.UnitZ, -Vector3.UnitZ };
-
-            public Gun_Calibration_Stage(string label, Gun gun, bool AutoStart = false) : base(label)
+            public void ResolveTriggerHoldStart()
             {
-                Weapon = gun;
-                //SetUpParser(Weapon.GravityVector, 5.0);
-                Stillness = new StillnessProvider();
-                SetUpProvider(Stillness);
 
-                Gravity = new GravityOrientationProvider();
-                Gravity.Activate();
-
-                if (AutoStart) Activate();
             }
 
-            protected override async void startAction()
+            public void ResolveTriggerHoldEnd(TimeSpan DurationHeld)
             {
-                await Speech.SayAllOf("If your smartphone is mounted either parallel to the barrel of your prop, or perpendicular to it, then simply aim your weapon at the ground now and fire." +
-                    "If not, either wait for Ahtreaupeaus Beta or.  Heh.  rebuild your prop so it is." );
-            }
 
-            //protected override bool nextStageCriterion()
-            //{
-            //    //var relevantData = Data.MostRecent(TimeSpan.FromSeconds(0.75)).Select(pt => (double)pt.value.Length());
-            //    //return (relevantData.StandardDeviation() > 0.5 * relevantData.RootMeanSquare());
-            //    return Stillness.StillnessScore > 0 && simpleAxes.Select(axis => Vector3.Dot(axis, Gravity.Vector)).Max() > 0.8;
-            //}
-            //protected override async Task nextStageActionAsync()
-            //{
-            //    Weapon.vectorPointedForward = simpleAxes.Single(axis => Vector3.Dot(axis, Gravity.Vector) > 0.8);
-            //    Res.SpecificTags.Put(Weapon.TagID, Weapon.ToString());
-            //    await Speech.SayAllOf("Thank you. Storing the information. Your weapon is now ready for use.  Fire at will.");
-            //    CurrentStage = new Gunfight_AimStage("Calibrated", Weapon);
-            //    CurrentStage.Activate();
-            //}
-
-            public async void ResolveTriggerPull()
-            {
-                Weapon.vectorPointedForward = simpleAxes.Single(axis => Vector3.Dot(axis, Gravity.Vector) > 0.8);
-                Res.SpecificTags.Put(Weapon.TagID, Weapon.ToString());
-                await Speech.SayAllOf("Thank you. Storing the information. Your weapon is now ready for use.  Fire at will.");
-                CurrentStage = new Gunfight_AimStage("Calibrated", Weapon);
-                CurrentStage.Activate();
             }
         }
+
+        //public class Gun_Calibration_Stage : GestureRecognizerStage, IRespondToTriggerPulls
+        //{
+        //    private Gun Weapon;
+        //    private StillnessProvider Stillness;
+        //    private GravityOrientationProvider Gravity;
+        //    private Vector3[] simpleAxes = new Vector3[] { Vector3.UnitX, -Vector3.UnitX, Vector3.UnitY, -Vector3.UnitY, Vector3.UnitZ, -Vector3.UnitZ };
+
+        //    public Gun_Calibration_Stage(string label, Gun gun, bool AutoStart = false) : base(label)
+        //    {
+        //        Weapon = gun;
+        //        //SetUpParser(Weapon.GravityVector, 5.0);
+        //        Stillness = new StillnessProvider();
+        //        SetUpProvider(Stillness);
+
+        //        Gravity = new GravityOrientationProvider();
+        //        Gravity.Activate();
+
+        //        if (AutoStart) Activate();
+        //    }
+
+        //    protected override async void startAction()
+        //    {
+        //        await Speech.SayAllOf("If your smartphone is mounted either parallel to the barrel of your prop, or perpendicular to it, then simply aim your weapon at the ground now and fire." +
+        //            "If not, either wait for Ahtreaupeaus Beta or.  Heh.  rebuild your prop so it is." );
+        //    }
+
+        //    //protected override bool nextStageCriterion()
+        //    //{
+        //    //    //var relevantData = Data.MostRecent(TimeSpan.FromSeconds(0.75)).Select(pt => (double)pt.value.Length());
+        //    //    //return (relevantData.StandardDeviation() > 0.5 * relevantData.RootMeanSquare());
+        //    //    return Stillness.StillnessScore > 0 && simpleAxes.Select(axis => Vector3.Dot(axis, Gravity.Vector)).Max() > 0.8;
+        //    //}
+        //    //protected override async Task nextStageActionAsync()
+        //    //{
+        //    //    Weapon.vectorPointedForward = simpleAxes.Single(axis => Vector3.Dot(axis, Gravity.Vector) > 0.8);
+        //    //    Res.SpecificTags.Put(Weapon.TagID, Weapon.ToString());
+        //    //    await Speech.SayAllOf("Thank you. Storing the information. Your weapon is now ready for use.  Fire at will.");
+        //    //    CurrentStage = new Gunfight_AimStage("Calibrated", Weapon);
+        //    //    CurrentStage.Activate();
+        //    //}
+
+        //    public async void ResolveTriggerPull()
+        //    {
+        //        Weapon.vectorPointedForward = simpleAxes.Single(axis => Vector3.Dot(axis, Gravity.Vector) > 0.8);
+        //        Res.SpecificTags.Put(Weapon.TagID, Weapon.ToString());
+        //        await Speech.SayAllOf("Thank you. Storing the information. Your weapon is now ready for use.  Fire at will.");
+        //        CurrentStage = new Gunfight_AimStage("Calibrated", Weapon);
+        //        CurrentStage.Activate();
+        //    }
+        //}
         
     }
 }

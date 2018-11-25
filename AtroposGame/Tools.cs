@@ -75,17 +75,34 @@ namespace Atropos
     /// </summary>
     public class Gun : Tool
     {
+        public enum AmmoType
+        {
+            Standard,
+            Penetrating,
+            ArmorPiercing,
+            Flechette,
+            Explosive
+        }
+
+        public enum FireMode
+        {
+            SingleShot,
+            BurstFire,
+            FullAuto
+        }
+
+        public enum IFFMode
+        {
+            NeverFriendlyFire,
+            RiskOfFriendlyFire,
+            IntentionalFriendlyFire
+        }
+
         public Gun(string tagID = null) : base(tagID)
         {
-            UpdateInterval = TimeSpan.FromSeconds(0.5);
-            MinimumAimTime = TimeSpan.FromSeconds(1.25);
-            MaximumAimTime = TimeSpan.FromSeconds(5.0);
-            MinimumRecoilJerk = 2.0;
-            OptimumRecoilCompensationTime = TimeSpan.FromSeconds(0.7);
-            CooldownPeriod = TimeSpan.FromSeconds(0.5);
-            ReloadTime = TimeSpan.FromSeconds(5.0);
             CurrentAmmoCount = MaxAmmoCapacity;
-            RecoilAmount = 5.0; // Testing
+            CurrentAmmoType = AmmoType.Standard;
+            CurrentFireMode = FireMode.SingleShot;
         }
 
         // Values set suring the gun calibration gesture series - unnecessary, once you've derived the propRotation.
@@ -116,20 +133,31 @@ namespace Atropos
         public IEffect ShotSFX;
         public IEffect SteadinessHintSFX;
         
-        // Game stat values (constant for now)
-        public double MinimumRecoilJerk;
-        public TimeSpan UpdateInterval;
-        public TimeSpan MinimumAimTime;
-        public TimeSpan MaximumAimTime;
-        public TimeSpan OptimumRecoilCompensationTime;
-        public TimeSpan CooldownPeriod;
-        public TimeSpan ReloadTime;
+        // Firing characteristic values (constant for now)
+        public double MinimumRecoilJerk = 2.0;
+        public TimeSpan UpdateInterval = TimeSpan.FromSeconds(0.5);
+        public TimeSpan MinimumAimTime = TimeSpan.FromSeconds(1.25);
+        public TimeSpan MaximumAimTime = TimeSpan.FromSeconds(5.0);
+        public TimeSpan OptimumRecoilCompensationTime = TimeSpan.FromSeconds(0.7);
+        public TimeSpan CooldownPeriod = TimeSpan.FromSeconds(0.5);
+        public TimeSpan ReloadTime = TimeSpan.FromSeconds(5.0);
+        public double RecoilAmount = 5.0; // Testing
 
+        // Capabilities and scalars 
         public int MaxAmmoCapacity = 12; // Constant for now.
-        public int CurrentAmmoCount;
-        public bool IsReadyToFire = true;
+        public AmmoType[] AmmoTypesAvailable = new AmmoType[] { AmmoType.Standard };
+        public bool AutoSelectAmmo = false;
+        public bool SupportsBurstFire = false;
+        public bool SupportsFullAutomatic = false;
+        public bool SupportsRiskyIFFMode = false;
+        public double CoverImpliedByHorizontalHold = 0.25;
 
-        public double RecoilAmount;
+        // Tracking variables, current state, etc
+        public int CurrentAmmoCount;
+        public AmmoType CurrentAmmoType;
+        public FireMode CurrentFireMode;
+        public IFFMode CurrentIFFMode;
+        //public bool IsReadyToFire = true;
 
         public override string ToString()
         {

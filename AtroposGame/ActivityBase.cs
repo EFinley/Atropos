@@ -23,6 +23,7 @@ namespace Atropos
     using Android.Views;
     using Android.Runtime;
     using MiscUtil;
+    using Nito.AsyncEx;
 
     /// <summary>
     /// This is the base type which collects all the stuff we need in, essentially, every activity.
@@ -401,10 +402,12 @@ namespace Atropos
         protected event EventHandler<EventArgs> OnVolumeButtonPressed;
         protected event EventHandler<EventArgs> OnVolumeButtonReleased;
         protected event EventHandler<EventArgs> OnVolumeButtonClicked;
-        protected event EventHandler<EventArgs<TimeSpan>> OnVolumeButtonHeld;
+        protected event EventHandler<EventArgs> OnVolumeButtonHoldStart;
+        protected event EventHandler<EventArgs<TimeSpan>> OnVolumeButtonHoldEnd;
 
         protected static object volumeButtonSyncLock = new object();
         protected System.Diagnostics.Stopwatch volumeButtonStopwatch = new System.Diagnostics.Stopwatch();
+        protected CancellationTokenSource cts;
         public override bool OnKeyDown([GeneratedEnum] Keycode keyCode, KeyEvent e)
         {
             if (useVolumeTrigger && !volumeTriggerBeingHeld)
@@ -418,6 +421,12 @@ namespace Atropos
                             volumeTriggerBeingHeld = true;
                             volumeButtonStopwatch.Restart();
                             OnVolumeButtonPressed?.Invoke(this, EventArgs.Empty);
+
+                            cts = new CancellationTokenSource();
+                            Task.Delay(250, cts.Token)
+                                .ContinueWith((t) => OnVolumeButtonHoldStart.Raise(), TaskContinuationOptions.OnlyOnRanToCompletion)
+                                .SwallowCancellations().LaunchAsOrphan();
+                                
                             return true; 
                         }
                     }
@@ -440,11 +449,19 @@ namespace Atropos
                             volumeTriggerBeingHeld = false;
 
                             volumeButtonStopwatch.Stop();
-                            // If they're not listening for OnHeld, then any length will do; otherwise, only a short click counts.
-                            if (OnVolumeButtonHeld.GetInvocationList().Length == 0
-                                || volumeButtonStopwatch.ElapsedMilliseconds < 250)
+                            cts?.Cancel();
+                            bool HoldIsRelevant = OnVolumeButtonHoldStart.GetInvocationList().Length > 0
+                                                || OnVolumeButtonHoldEnd.GetInvocationList().Length > 0;
+                            // If they're not listening for OnHold, then any length will do; otherwise, only a short click counts.
+                            if (HoldIsRelevant)
+                            {
+                                if (volumeButtonStopwatch.ElapsedMilliseconds < 250)
+                                    OnVolumeButtonClicked.Raise();
+                                else
+                                    OnVolumeButtonHoldEnd.Raise(volumeButtonStopwatch.Elapsed);
+                            }
+                            else
                                 OnVolumeButtonClicked.Raise();
-                            else OnVolumeButtonHeld.Raise(volumeButtonStopwatch.Elapsed);
 
                             return true;
                         } 
