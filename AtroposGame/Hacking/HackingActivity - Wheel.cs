@@ -86,6 +86,9 @@ namespace Atropos.Hacking.Wheel
         public static string ActiveNarrativeName;
 
         public virtual double GetAccelForDatapoint(DKS datapoint) { return datapoint.LinAccel.Length(); }
+
+        // Necessary for new implementation
+        public NarrativeNode CurrentNode;
         #endregion
 
         #region Activity Lifecycle Methods
@@ -97,6 +100,24 @@ namespace Atropos.Hacking.Wheel
 
             Dataset = new DataSet<DKS>();
             Classifier = new Classifier(); // Just in case; it's not actually going to get used until we've loaded the proper one.
+
+            var Parser = new Narrative_Parser();
+            var TestHackString = "Entering the tutorial hacking sequence.[Then]Most of what you'll hear is descriptions of what you see or encounter." +
+                "[Wait one]When your input is possible, you'll hear a sound effect cue.  For instance... [Cue Alpha1: left]This tone is the cue for a left swipe; " +
+                "in this case let's say it's some paydata you've spotted. Note that these aren't mandatory; you're always welcome to decide the paydata isn't " +
+                "worth getting distracted over.[Alpha1: yes]Smart aleck. Well done.[Alpha1: no]Here we go.][End Alpha1]" +
+                "[Cue Alpha: left]Swipe left now! That's the audio cue again.[Alpha: yes]You've chased the paydata; downloading it now.[Wait four]Download complete.[Alpha: no]You've given it a " +
+                "miss this time around.[End Alpha]This sentence will play whichever path you choose.[Cue Beta: right]This cue is for right swipe. If you swiped left " +
+                "before, try doing nothing this time, or vice versa.[Beta: yes]Swiped right.[Beta: no]Skipped the swipe this time.[End Beta]" +
+                "[Then]A different cue indicates you've run across an intrusion countermeasure, or ice.[Ice Gamma]This is that sound cue. Try responding with a " +
+                "wheel sequence such as left and then up, or right and then click." +
+                    "[Gamma: success]You've beaten the ice! Congrats.|You've hacked it. Well done." +
+                    "[Gamma: fail]Maybe too casual; you failed to beat the ice. Try again.[Retry Gamma][End Gamma]" +
+                "[Then]You've beaten the ice, but accumulated some alert status and some insight points, depending on what you picked.[Check Delta1: Alert > 25]" +
+                "[Delta1: yes][Check Delta2: Alert > 50][Delta2: yes]Alert is over fifty.][Delta2: no]Alert is between 25 and 50.[End Delta2][Delta1: no]Alert is " +
+                "under 25.[End Delta1][TransitionBy Gamma] to the next server node, where you find your objective: the end of the tutorial. Congrats![Disconnect]";
+            NarrativeList.Current = Parser.Parse(TestHackString);
+            CurrentNode = new NarrativeNode() { NextNode = NarrativeList.Current[0] };
         }
 
         protected override async void OnResume()
@@ -104,6 +125,8 @@ namespace Atropos.Hacking.Wheel
             await base.DoOnResumeAsync(Task.Delay(500), AutoRestart: false);
             LoadHackingClassifier();
             ContinuousLogger.TrueActivate(StopToken);
+
+            Task.Run(DoNodeLoop).LaunchAsOrphan("Node Loop");
 
             //Communications.Bluetooth.BluetoothMessageCenter.OnReceiveMessage += HandleProposal;
         }
@@ -158,9 +181,9 @@ namespace Atropos.Hacking.Wheel
 
                         ResetStage("Hacking stage");
                         //CuePrompter?.MarkGestureStart();
-                        Stopwatch.Stop();
-                        SingleClickWatch.Restart();
-                        Delay = Stopwatch.Elapsed;
+                        //Stopwatch.Stop();
+                        //SingleClickWatch.Restart();
+                        //Delay = Stopwatch.Elapsed;
                         CurrentStage.Activate();
                         return true;
                     }
@@ -177,36 +200,36 @@ namespace Atropos.Hacking.Wheel
                 {
                     lock (SelectedGestureClass)
                     {
-                        // Respond to single-click events
-                        if (SingleClickWatch.Elapsed < ((HackingChoreographer == null) ? TimeSpan.FromSeconds(0.5) : TimeSpan.FromSeconds(0.2)))
-                        {
-                            RelayToast("Single-clicked.");
-                            if (HackingChoreographer == null)
-                            {
-                                AwaitChoreographer();
-                            }
-                            else
-                            {
-                                HackingChoreographer.Deactivate();
-                                Task.Delay(100).Wait();
-                                HackingChoreographer = null;
-                                CurrentCue = default(ChoreographyCue);
-                                Speech.Say("Shutting down.");
-                            }
-                            // Either way, go no further handling this button-press (and discard the sequence unlooked-at).
-                            CurrentStage.Deactivate();
-                            Stopwatch.Reset();
-                            _collectingData = false;
-                            return true;
-                        }
+                        //// Respond to single-click events
+                        //if (SingleClickWatch.Elapsed < ((HackingChoreographer == null) ? TimeSpan.FromSeconds(0.5) : TimeSpan.FromSeconds(0.2)))
+                        //{
+                        //    RelayToast("Single-clicked.");
+                        //    if (HackingChoreographer == null)
+                        //    {
+                        //        AwaitChoreographer();
+                        //    }
+                        //    else
+                        //    {
+                        //        HackingChoreographer.Deactivate();
+                        //        Task.Delay(100).Wait();
+                        //        HackingChoreographer = null;
+                        //        CurrentCue = default(ChoreographyCue);
+                        //        Speech.Say("Shutting down.");
+                        //    }
+                        //    // Either way, go no further handling this button-press (and discard the sequence unlooked-at).
+                        //    CurrentStage.Deactivate();
+                        //    Stopwatch.Reset();
+                        //    _collectingData = false;
+                        //    return true;
+                        //}
                         //Log.Debug("MachineLearning", $"{keyCode} up");
 
-                        if (HackingChoreographer == null)
-                        {
-                            RelayToast("No choreographer.");
-                            _collectingData = false;
-                            return true; // Long press without "Get Ready" first - ignore.
-                        }
+                        //if (HackingChoreographer == null)
+                        //{
+                        //    RelayToast("No choreographer.");
+                        //    _collectingData = false;
+                        //    return true; // Long press without "Get Ready" first - ignore.
+                        //}
 
                         Task.Run(async () =>
                         {
@@ -230,141 +253,173 @@ namespace Atropos.Hacking.Wheel
         }
         #endregion
 
-        public void BeginListeningFor(NarrativeCondition condition)
+        public async Task DoNodeLoop()
         {
-
-        }
-
-        //private Message opponentsProposal;
-        //private AsyncAutoResetEvent opponentsProposalSignal = new AsyncAutoResetEvent();
-        protected async void AwaitChoreographer()
-        {
-            HackingChoreographer = await InitChoreographer();
-            //while (this.Choreographer == null)
-            //    await Task.Delay(50);
-
-            HackingChoreographer.OnPromptCue += RespondToPromptCue;
-            HackingChoreographer.Activate();
-            Speech.Say("Get ready.");
-        }
-        protected async Task<IChoreographer> InitChoreographer()
-        {
-            if (!CueClassifiers.ContainsKey(HACKING)) throw new Exception($"{HACKING} classifier not found.");
-
-            return new SimpleChoreographer(CueClassifiers); // Placeholder to make it compile.
-
-            //// Establish the choreographer - this depends on whether you're connected or not (and on Solipsism mode)
-            //if (Communications.Bluetooth.BluetoothMessageCenter.TemporaryAddressBook_SingleEntry == null)
-            //{
-            //    if (!Res.SolipsismMode) return new SimpleChoreographer(CueClassifiers);
-            //    else return new SolipsisticChoreographer(CueClassifiers);
-            //}
-            //else
-            //{
-            //    Message myProposal = new Message(MsgType.Notify, PROPOSE);
-            //    Communications.Bluetooth.BluetoothMessageCenter.TemporaryAddressBook_SingleEntry.SendMessage(myProposal);
-            //    Log.Debug(_tag, "Sent proposal message.");
-            //    await opponentsProposalSignal.WaitAsync();
-            //    if (String.Compare(myProposal.ID, opponentsProposal.ID) == 0)
-            //    {
-            //        Log.Debug(_tag, "Tie GUID encountered - WTF???");
-            //        return await InitChoreographer();
-            //    }
-            //    else if (String.Compare(myProposal.ID, opponentsProposal.ID) > 0)
-            //    {
-            //        Log.Debug(_tag, "My GUID wins - I'm choreographer.");
-            //        return new SendingChoreographer(Communications.Bluetooth.BluetoothMessageCenter.TemporaryAddressBook_SingleEntry, CueClassifiers);
-            //    }
-            //    else
-            //    {
-            //        Log.Debug(_tag, "My GUID loses - the other guy is choreographer this time.");
-            //        return new ReceivingChoreographer(Communications.Bluetooth.BluetoothMessageCenter.TemporaryAddressBook_SingleEntry);
-            //    }
-            //}
-        }
-        //private void HandleProposal(object sender, EventArgs<Message> e)
-        //{
-        //    var msg = e.Value;
-        //    if (msg.Type != Communications.MsgType.Notify || !msg.Content.StartsWith(PROPOSE)) return;
-        //    Log.Debug(_tag, "Received opponent's proposal message.");
-        //    opponentsProposal = msg;
-        //    opponentsProposalSignal.Set();
-        //}
-
-        protected async void RespondToPromptCue(object o, EventArgs<ChoreographyCue> eargs)
-        {
-            CurrentCue = eargs.Value;
-            Classifier = CueClassifiers[CurrentCue.ClassifierKey];
-            //await GimmeCue(eargs.Value.GestureClass);
-            SelectedGestureClass = Classifier.MatchingDatasetClasses[CurrentCue.GestureClassIndex];
-            if (CurrentCue.CueTime < DateTime.Now)
+            while (!StopToken.IsCancellationRequested)
             {
-                Log.Debug(_tag, $"Timing issue - CurrentCue.CueTime is {CurrentCue.CueTime}, now is {DateTime.Now}.");
-                CurrentCue.CueTime = DateTime.Now + TimeSpan.FromMilliseconds(250);
+                await CurrentNode.ExecuteNode();
+                CurrentNode = CurrentNode.NextNode;
             }
-            var delay = CurrentCue.CueTime - DateTime.Now;
-            await Task.Delay(delay);
-            Speech.Say(SelectedGestureClass.className, SoundOptions.AtSpeed(2.0));
-            Stopwatch.Restart();
-            if (_singleMode) HackingChoreographer.Deactivate();
         }
+
+        private bool ListeningForGesture = false;
+        private NarrativeGestureConditionNode ListeningForNode;
+
+        public void BeginListeningFor(NarrativeGestureConditionNode conditionNode)
+        {
+            ListeningForNode = conditionNode;
+            ListeningForGesture = true;
+        }
+
+        public void StopListening()
+        {
+            ListeningForNode = null;
+            ListeningForGesture = false;
+        }
+
+        public void DoDisconnect()
+        {
+            Finish();
+        }
+
+        ////private Message opponentsProposal;
+        ////private AsyncAutoResetEvent opponentsProposalSignal = new AsyncAutoResetEvent();
+        //protected async void AwaitChoreographer()
+        //{
+        //    HackingChoreographer = await InitChoreographer();
+        //    //while (this.Choreographer == null)
+        //    //    await Task.Delay(50);
+
+        //    HackingChoreographer.OnPromptCue += RespondToPromptCue;
+        //    HackingChoreographer.Activate();
+        //    Speech.Say("Get ready.");
+        //}
+        //protected async Task<IChoreographer> InitChoreographer()
+        //{
+        //    if (!CueClassifiers.ContainsKey(HACKING)) throw new Exception($"{HACKING} classifier not found.");
+
+        //    return new SimpleChoreographer(CueClassifiers); // Placeholder to make it compile.
+
+        //    //// Establish the choreographer - this depends on whether you're connected or not (and on Solipsism mode)
+        //    //if (Communications.Bluetooth.BluetoothMessageCenter.TemporaryAddressBook_SingleEntry == null)
+        //    //{
+        //    //    if (!Res.SolipsismMode) return new SimpleChoreographer(CueClassifiers);
+        //    //    else return new SolipsisticChoreographer(CueClassifiers);
+        //    //}
+        //    //else
+        //    //{
+        //    //    Message myProposal = new Message(MsgType.Notify, PROPOSE);
+        //    //    Communications.Bluetooth.BluetoothMessageCenter.TemporaryAddressBook_SingleEntry.SendMessage(myProposal);
+        //    //    Log.Debug(_tag, "Sent proposal message.");
+        //    //    await opponentsProposalSignal.WaitAsync();
+        //    //    if (String.Compare(myProposal.ID, opponentsProposal.ID) == 0)
+        //    //    {
+        //    //        Log.Debug(_tag, "Tie GUID encountered - WTF???");
+        //    //        return await InitChoreographer();
+        //    //    }
+        //    //    else if (String.Compare(myProposal.ID, opponentsProposal.ID) > 0)
+        //    //    {
+        //    //        Log.Debug(_tag, "My GUID wins - I'm choreographer.");
+        //    //        return new SendingChoreographer(Communications.Bluetooth.BluetoothMessageCenter.TemporaryAddressBook_SingleEntry, CueClassifiers);
+        //    //    }
+        //    //    else
+        //    //    {
+        //    //        Log.Debug(_tag, "My GUID loses - the other guy is choreographer this time.");
+        //    //        return new ReceivingChoreographer(Communications.Bluetooth.BluetoothMessageCenter.TemporaryAddressBook_SingleEntry);
+        //    //    }
+        //    //}
+        //}
+        ////private void HandleProposal(object sender, EventArgs<Message> e)
+        ////{
+        ////    var msg = e.Value;
+        ////    if (msg.Type != Communications.MsgType.Notify || !msg.Content.StartsWith(PROPOSE)) return;
+        ////    Log.Debug(_tag, "Received opponent's proposal message.");
+        ////    opponentsProposal = msg;
+        ////    opponentsProposalSignal.Set();
+        ////}
+
+        //protected async void RespondToPromptCue(object o, EventArgs<ChoreographyCue> eargs)
+        //{
+        //    CurrentCue = eargs.Value;
+        //    Classifier = CueClassifiers[CurrentCue.ClassifierKey];
+        //    //await GimmeCue(eargs.Value.GestureClass);
+        //    SelectedGestureClass = Classifier.MatchingDatasetClasses[CurrentCue.GestureClassIndex];
+        //    if (CurrentCue.CueTime < DateTime.Now)
+        //    {
+        //        Log.Debug(_tag, $"Timing issue - CurrentCue.CueTime is {CurrentCue.CueTime}, now is {DateTime.Now}.");
+        //        CurrentCue.CueTime = DateTime.Now + TimeSpan.FromMilliseconds(250);
+        //    }
+        //    var delay = CurrentCue.CueTime - DateTime.Now;
+        //    await Task.Delay(delay);
+        //    Speech.Say(SelectedGestureClass.className, SoundOptions.AtSpeed(2.0));
+        //    Stopwatch.Restart();
+        //    if (_singleMode) HackingChoreographer.Deactivate();
+        //}
 
         protected void ResolveEndOfGesture(Sequence<DKS> resultSequence)
         {
             MostRecentSample = resultSequence;
-            if (!_userTrainingMode) MostRecentSample.TrueClassIndex = SelectedGestureClass.index;
+            //if (!_userTrainingMode) MostRecentSample.TrueClassIndex = SelectedGestureClass.index;
             //Dataset?.AddSequence(MostRecentSample);
 
-            string StageLabel = (!_userTrainingMode)
-                ? $"Cued gesture {SelectedGestureClass.className}#{SelectedGestureClass.numExamples + SelectedGestureClass.numNewExamples}"
-                : $"User gesture (#{Dataset.SequenceCount + 1})";
-            if (!_advancedCueMode) ResetStage(StageLabel);
+            //string StageLabel = (!_userTrainingMode)
+            //    ? $"Cued gesture {SelectedGestureClass.className}#{SelectedGestureClass.numExamples + SelectedGestureClass.numNewExamples}"
+            //    : $"User gesture (#{Dataset.SequenceCount + 1})";
+            //if (!_advancedCueMode) ResetStage(StageLabel);
 
             _collectingData = false;
             if (Classifier == null) return;
             MostRecentSample = Analyze(MostRecentSample).Result;
 
+            if (!ListeningForGesture)
+            {
+                RelayToast($"Received gesture {(Gest)MostRecentSample.RecognizedAsIndex}.");
+                return;
+            }
+
+            ListeningForNode.SubmitResult((Gest)MostRecentSample.RecognizedAsIndex);
+
             // If right or wrong, tweak the display properties of the sample.  This depends on the active mode.
             //DisplaySampleInfo(MostRecentSample);
 
-            if (_userTrainingMode && MostRecentSample.RecognizedAsIndex >= 0)
-            {
-                var sc = MostRecentSample.RecognitionScore;
-                var prefix = (sc < 1) ? "Arguably " :
-                             (sc < 1.5) ? "Maybe " :
-                             (sc < 2) ? "Probably " :
-                             (sc < 2.5) ? "Clearly " :
-                             (sc < 3) ? "Certainly " :
-                             "A perfect ";
-                Speech.Say(prefix + MostRecentSample.RecognizedAsName);
-            }
-            else if (!_userTrainingMode)
-            {
-                if (CurrentCue == null)
-                {
-                    CurrentCue = new ChoreographyCue();
-                }
-                else if (MostRecentSample.RecognizedAsIndex == -1)
-                {
-                    CurrentCue.Score = double.NaN;
-                }
-                else if (MostRecentSample.RecognizedAsIndex != MostRecentSample.TrueClassIndex)
-                {
-                    CurrentCue.Score = -1 * MostRecentSample.RecognitionScore;
-                    CurrentCue.GestureClassIndex = MostRecentSample.RecognizedAsIndex;
-                }
-                //CuePrompter?.ReactToFinalizedGesture(MostRecentSample);
-                else
-                {
-                    var points = MostRecentSample.RecognitionScore;
-                    var delay = MostRecentSample.Metadata.Delay;
+            //if (_userTrainingMode && MostRecentSample.RecognizedAsIndex >= 0)
+            //{
+            //    var sc = MostRecentSample.RecognitionScore;
+            //    var prefix = (sc < 1) ? "Arguably " :
+            //                 (sc < 1.5) ? "Maybe " :
+            //                 (sc < 2) ? "Probably " :
+            //                 (sc < 2.5) ? "Clearly " :
+            //                 (sc < 3) ? "Certainly " :
+            //                 "A perfect ";
+            //    Speech.Say(prefix + MostRecentSample.RecognizedAsName);
+            //}
+            //else if (!_userTrainingMode)
+            //{
+            //    if (CurrentCue == null)
+            //    {
+            //        CurrentCue = new ChoreographyCue();
+            //    }
+            //    else if (MostRecentSample.RecognizedAsIndex == -1)
+            //    {
+            //        CurrentCue.Score = double.NaN;
+            //    }
+            //    else if (MostRecentSample.RecognizedAsIndex != MostRecentSample.TrueClassIndex)
+            //    {
+            //        CurrentCue.Score = -1 * MostRecentSample.RecognitionScore;
+            //        CurrentCue.GestureClassIndex = MostRecentSample.RecognizedAsIndex;
+            //    }
+            //    //CuePrompter?.ReactToFinalizedGesture(MostRecentSample);
+            //    else
+            //    {
+            //        var points = MostRecentSample.RecognitionScore;
+            //        var delay = MostRecentSample.Metadata.Delay;
 
-                    CurrentCue.Score = points;
-                    CurrentCue.Delay = delay;
-                }
-                //if (!_singleMode) Choreographer?.ProceedWithNextCue();
-                HackingChoreographer.SubmitResult(CurrentCue);
-            }
+            //        CurrentCue.Score = points;
+            //        CurrentCue.Delay = delay;
+            //    }
+            //    //if (!_singleMode) Choreographer?.ProceedWithNextCue();
+            //    HackingChoreographer.SubmitResult(CurrentCue);
+            //}
         }
 
         protected void LoadHackingClassifier()

@@ -293,7 +293,7 @@ namespace Atropos
 
         protected override void SetUpButtons()
         {
-            SetupButton(typeof(GunfightActivity_Base), "Shoot", Resource.Drawable.assault_shotgun_image, Color.MediumPurple);
+            SetupButton(typeof(SmartgunGunfightActivity), "Shoot", Resource.Drawable.assault_shotgun_image, Color.MediumPurple);
             SetupButton(typeof(Melee.MeleeBetaActivity), "Melee", Resource.Drawable.katana_image, Color.Red);
         }
     }
@@ -306,7 +306,7 @@ namespace Atropos
         protected override void SetUpButtons()
         {
             SetupButton(typeof(SpellCastingActivity), "Cast", Resource.Drawable.spell_casting_image, Color.BlueViolet);
-            SetupButton(typeof(GunfightActivity_Base), "Shoot", Resource.Drawable.handgun_image, Color.MediumPurple);
+            SetupButton(typeof(PistolGunfightActivity), "Shoot", Resource.Drawable.handgun_image, Color.MediumPurple);
         }
     }
 
@@ -317,8 +317,8 @@ namespace Atropos
 
         protected override void SetUpButtons()
         {
-            SetupButton(() => { }, "Hack", Resource.Drawable.command_prompt_image, Color.Green, false);
-            SetupButton(typeof(GunfightActivity_Base), "Shoot", Resource.Drawable.handgun_image, Color.MediumPurple);
+            SetupButton(typeof(Atropos.Hacking.Wheel.HackingActivity), "Hack", Resource.Drawable.command_prompt_image, Color.Green);
+            SetupButton(typeof(PistolGunfightActivity), "Shoot", Resource.Drawable.handgun_image, Color.MediumPurple);
         }
     }
 
@@ -330,7 +330,7 @@ namespace Atropos
         protected override void SetUpButtons()
         {
             SetupButton(typeof(ToolkitActivity), "Tools", Resource.Drawable.toolkit_image, Color.Silver);
-            SetupButton(typeof(GunfightActivity_Base), "Shoot", Resource.Drawable.handgun_image, Color.MediumPurple);
+            SetupButton(typeof(PistolGunfightActivity), "Shoot", Resource.Drawable.handgun_image, Color.MediumPurple);
         }
     }
 

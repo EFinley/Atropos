@@ -38,6 +38,18 @@ namespace Atropos
             return sublists.Join(sep1, brack1);
         }
 
+        public static string Before(this string source, params char[] splitChars)
+        {
+            if (!source.Any(c => splitChars.Contains(c))) return source;
+            return source.Split(splitChars, 2)[0];
+        }
+
+        public static string After(this string source, params char[] splitChars)
+        {
+            if (!source.Any(c => splitChars.Contains(c))) return String.Empty;
+            return source.Split(splitChars, 2)[1].TrimStart(splitChars);
+        }
+
         public static IEnumerable<Tout> Cast<Tin, Tout>(this IEnumerable<Tin> source)
         {
             return source.Select(s => Operator.Convert<Tin, Tout>(s));

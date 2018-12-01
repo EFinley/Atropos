@@ -15,11 +15,12 @@ namespace Atropos.Hacking.Wheel
     // Hacking classifier is ordered as follows: Left, Right, Up, Down, Click.
     public enum Gest
     {
-        Left,
-        Right,
-        Up,
-        Down,
-        Click
+        Unknown = -1,
+        Left = 0,
+        Right = 1,
+        Up = 2,
+        Down = 3,
+        Click = 4
     }
 
     public class WheelDir
@@ -130,9 +131,9 @@ namespace Atropos.Hacking.Wheel
         public static List<IcebreakerDescriptor> IcebreakerDescriptors = new List<IcebreakerDescriptor>()
         {
             TypeB(0, "Jackhammer version 1.2", param: 0.75), // Intense
-            TypeB(0, "Hand-coding I.D.E."), // Intense
+            TypeB(0, "I.D.E. to write some custom code"), // Intense
             TypeA(1, "Synchrony anarch"), // Maestro
-            TypeC(1, "Tonal assault version 2"), // Maestro
+            TypeC(1, "Harmonic assault version 2"), // Maestro
             TypeC(2, "Rapier 5.2", "Encore!", "En garde!", "Tooshay!", "Ack, I am vanquish-ed!"), // Panache
             TypeA(2, "Master thief 1.8"), // Panache
             TypeA(3, "Shatterglass"), // Flashy
