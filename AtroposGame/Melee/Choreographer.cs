@@ -189,6 +189,7 @@ namespace Atropos.Melee
             BluetoothMessageCenter.OnReceiveMessage += HandleResponse;
             Generator.OnExchangeChosen += HandlePrompts;
             Generator.Activate(StopToken);
+            Log.Debug(_tag, "Sending choreographer activating.");
         }
 
         public override void Deactivate()
@@ -201,9 +202,13 @@ namespace Atropos.Melee
         public void HandleResponse(object sender, EventArgs<Message> messageArgs)
         {
             var message = messageArgs.Value;
-            if (message.Type != MsgType.Notify || !message.Content.StartsWith(RESPONSE)) return;
+            if (message.Type != MsgType.Notify || !message.Content.StartsWith(RESPONSE))
+            {
+                Log.Debug(_tag, $"Parsing malformed message: {message.Type} | {message.Content}");
+                return;
+            }
 
-            Log.Debug(_tag, "Parsing opponent's response message.");
+            Log.Debug(_tag, $"Parsing opponent's response message: {message.Type} | {message.Content}");
             var cuestring = message.Content.Split(onNEXT, 2)[1];
             var cue = ChoreographyCue.Parse(cuestring);
 
@@ -255,6 +260,7 @@ namespace Atropos.Melee
         {
             base.Activate(externalStopToken);
             BluetoothMessageCenter.OnReceiveMessage += HandleMessage;
+            Log.Debug(_tag, "Receiving Choreographer activating.");
         }
 
         public override void Deactivate()
@@ -266,9 +272,13 @@ namespace Atropos.Melee
         public void HandleMessage(object sender, EventArgs<Message> messageArgs)
         {
             var message = messageArgs.Value;
-            if (message.Type != MsgType.Notify || !message.Content.StartsWith(PROMPT)) return;
+            if (message.Type != MsgType.Notify || !message.Content.StartsWith(PROMPT))
+            {
+                Log.Debug(_tag, $"Handling malformed message: {message.Type} | {message.Content}");
+                return;
+            }
 
-            Log.Debug(_tag, "Parsing cue prompt message.");
+            Log.Debug(_tag, $"Parsing cue prompt message: {message.Type} | {message.Content}");
             var cuestring = message.Content.Split(onNEXT, 2)[1];
             var cue = ChoreographyCue.Parse(cuestring);
 
@@ -278,6 +288,7 @@ namespace Atropos.Melee
         public void SubmitResult(ChoreographyCue cue)
         {
             var result = new Message(MsgType.Notify, $"{RESPONSE}{NEXT}{cue}");
+            Log.Debug(_tag, $"Sending submission: {result.Content}");
             Opponent.SendMessage(result);
         }
     }

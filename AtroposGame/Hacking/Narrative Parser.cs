@@ -227,7 +227,11 @@ namespace Atropos.Hacking.Wheel
             if (Result == null) await Task.WhenAny(Task.Delay(5000), ResultSubmitted.WaitAsync());
             HackingActivity.Current.StopListening();
 
-            if (Result == TargetGesture) CueFollowed = true;
+            if (Result == TargetGesture)
+            {
+                BaseActivity.CurrentToaster.RelayToast($"Correctly read as {Result}.  Option chosen, maximal insight gained.");
+                CueFollowed = true;
+            }
             else if (Result > Gest.Unknown)
             {
                 CueFollowed = true;
@@ -235,6 +239,8 @@ namespace Atropos.Hacking.Wheel
             }
             else
             {
+                if (Result == Gest.Unknown)
+                    BaseActivity.CurrentToaster.RelayToast("Gesture unrecognized; treating it as if nothing was entered.");
                 CueFollowed = false;
                 await SpeechTask;
             }
@@ -315,7 +321,11 @@ namespace Atropos.Hacking.Wheel
             if (DirectionChosen == null)
                 DirectionChosen = Wheel.Directions
                                     .FirstOrDefault(dir => dir.Primary == primaryGesture && dir.Secondary == Gest.Click);
-            if (DirectionChosen == null)
+            if (DirectionChosen != null)
+            {
+                BaseActivity.CurrentToaster.RelayToast($"Received {primaryGesture} then {secondaryGesture}, implying {DirectionChosen.Descriptor}.");
+            }
+            else
             {
                 Log.Debug("Atropos|ICEconditionNode", $"Found no match for gesture sequence {primaryGesture} // {secondaryGesture}. Using random.");
                 DirectionChosen = Wheel.Directions.GetRandom();
